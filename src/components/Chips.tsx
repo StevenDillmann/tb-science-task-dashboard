@@ -190,6 +190,71 @@ export function CIChip({ ci }: { ci: string | null }) {
   return <Clock className="h-4 w-4 text-amber-600" aria-label="CI pending" />
 }
 
+export function LLMReviewChip({
+  recommendation,
+  url,
+}: {
+  recommendation: "accept" | "uncertain" | "reject" | "unknown" | null
+  url: string | null
+}) {
+  if (!recommendation) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const map: Record<string, { dot: string; label: string; text: string; title: string }> = {
+    accept: {
+      dot: "bg-green-500",
+      label: "accept",
+      text: "text-green-700 dark:text-green-400",
+      title: "LLM rubric review · accept",
+    },
+    uncertain: {
+      dot: "bg-amber-500",
+      label: "uncertain",
+      text: "text-amber-700 dark:text-amber-400",
+      title: "LLM rubric review · uncertain",
+    },
+    reject: {
+      dot: "bg-red-500",
+      label: "reject",
+      text: "text-red-700 dark:text-red-400",
+      title: "LLM rubric review · reject",
+    },
+    unknown: {
+      dot: "bg-muted-foreground",
+      label: "posted",
+      text: "text-muted-foreground",
+      title: "LLM rubric review present (no parseable recommendation)",
+    },
+  }
+  const cfg = map[recommendation] ?? map.unknown
+  const inner = (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-xs font-medium",
+        cfg.text,
+      )}
+    >
+      <span className={cn("size-2 rounded-full", cfg.dot)} />
+      {cfg.label}
+    </span>
+  )
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={cfg.title}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:underline underline-offset-4"
+      >
+        {inner}
+      </a>
+    )
+  }
+  return <span title={cfg.title}>{inner}</span>
+}
+
 export function StatusChip({
   status,
   onClick,

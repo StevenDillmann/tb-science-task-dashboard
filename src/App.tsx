@@ -6,6 +6,7 @@ import logoDark from "@/assets/tb-science-logo-dark.png"
 
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Pipeline } from "@/components/Pipeline"
 import { PRsTable } from "@/components/PRsTable"
 import { ProposalsTable } from "@/components/ProposalsTable"
 import { StatsView } from "@/components/StatsView"
@@ -52,7 +53,7 @@ export default function App() {
             />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">
-                Terminal-Bench Science · Review Hub
+                Terminal-Bench Science · Submission and Review Hub
               </h1>
               <p className="text-sm text-muted-foreground">
                 Task proposal and pull requests for Terminal-Bench Science.
@@ -127,6 +128,9 @@ export default function App() {
               field_to_domain: data.field_to_domain,
             }}
           >
+            <div className="mb-6">
+              <Pipeline />
+            </div>
             <Tabs defaultValue="proposals">
               <TabsList>
                 <TabsTrigger value="proposals">

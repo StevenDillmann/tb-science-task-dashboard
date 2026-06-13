@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Check, ExternalLink, Plus, X } from "lucide-react"
+import { ArrowUpDown, ExternalLink, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,22 +18,68 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { type Proposal } from "@/lib/data"
-import { FieldChip, StatusChip, UserCell } from "./Chips"
+import { type Proposal, type ProposalState } from "@/lib/data"
+import { cn } from "@/lib/utils"
+import { FieldChip, LLMReviewChip, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { SearchInput } from "./Filters"
 
-const STATUS_OPTIONS = [
-  { value: "pending", label: "pending" },
-  { value: "approved", label: "approved" },
-  { value: "rejected", label: "rejected" },
+const LLM_OPTIONS = [
+  { value: "accept", label: "🟢 accept" },
+  { value: "uncertain", label: "🟡 uncertain" },
+  { value: "reject", label: "🔴 reject" },
+  { value: "none", label: "no review yet" },
 ]
 
-const HAS_PR_OPTIONS = [
-  { value: "yes", label: "has PR" },
-  { value: "no", label: "no PR yet" },
-]
+/** Pill toggle: Open / Approved / Closed for proposals. */
+function StateToggle({
+  value,
+  onChange,
+  counts,
+}: {
+  value: ProposalState
+  onChange: (v: ProposalState) => void
+  counts: Record<ProposalState, number>
+}) {
+  const items: { value: ProposalState; label: string }[] = [
+    { value: "open", label: "Open" },
+    { value: "approved", label: "Approved" },
+    { value: "closed", label: "Closed" },
+  ]
+  return (
+    <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
+      {items.map((it) => {
+        const active = value === it.value
+        return (
+          <button
+            key={it.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(it.value)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-medium transition-colors",
+              active
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {it.label}
+            <span
+              className={cn(
+                "font-mono text-[10px]",
+                active ? "text-accent-foreground/70" : "text-muted-foreground/70",
+              )}
+            >
+              {counts[it.value] ?? 0}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, number> {
   const out: Record<string, number> = {}
@@ -50,30 +96,38 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
     { id: "age_days", desc: false },
   ])
   const [search, setSearch] = useState("")
+  const [state, setState] = useState<ProposalState>("open")
   const [field, setField] = useState<string | null>(null)
-  const [status, setStatus] = useState<string | null>(null)
-  const [hasPR, setHasPR] = useState<string | null>(null)
   const [author, setAuthor] = useState<string | null>(null)
+  const [llm, setLlm] = useState<string | null>(null)
+
+  const stateCounts = useMemo(() => {
+    const c: Record<ProposalState, number> = { open: 0, approved: 0, closed: 0 }
+    for (const p of proposals) c[p.state] = (c[p.state] ?? 0) + 1
+    return c
+  }, [proposals])
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return proposals.filter((p) => {
+      if (p.state !== state) return false
       if (field) {
         if (field.startsWith("__domain:")) {
           if (p.domain !== field.slice("__domain:".length)) return false
         } else if (p.subfield !== field) return false
       }
-      if (status && p.status !== status) return false
-      if (hasPR === "yes" && !p.has_pr) return false
-      if (hasPR === "no" && p.has_pr) return false
       if (author && p.author.login !== author) return false
+      if (llm) {
+        const rec = p.llm_review?.recommendation ?? null
+        if (llm === "none" ? rec !== null : rec !== llm) return false
+      }
       if (needle) {
         const hay = `${p.title} ${p.author.login} ${p.field ?? ""}`.toLowerCase()
         if (!hay.includes(needle)) return false
       }
       return true
     })
-  }, [proposals, search, field, status, hasPR, author])
+  }, [proposals, search, state, field, author, llm])
 
   const fieldCounts = useMemo(() => {
     const c = countBy(proposals, (p) => p.subfield)
@@ -141,16 +195,21 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         ),
       },
       {
-        accessorKey: "status",
+        accessorKey: "llm_review",
         header: () => (
           <ColumnFilter
-            title="Status"
-            value={status}
-            onChange={setStatus}
-            options={STATUS_OPTIONS}
+            title="LLM review"
+            value={llm}
+            onChange={setLlm}
+            options={LLM_OPTIONS}
           />
         ),
-        cell: ({ row }) => <StatusChip status={row.original.status} />,
+        cell: ({ row }) => (
+          <LLMReviewChip
+            recommendation={row.original.llm_review?.recommendation ?? null}
+            url={row.original.llm_review?.url ?? null}
+          />
+        ),
       },
       {
         accessorKey: "author",
@@ -163,24 +222,6 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
           />
         ),
         cell: ({ row }) => <UserCell user={row.original.author} />,
-      },
-      {
-        accessorKey: "has_pr",
-        header: () => (
-          <ColumnFilter
-            title="PR?"
-            value={hasPR}
-            onChange={setHasPR}
-            options={HAS_PR_OPTIONS}
-          />
-        ),
-        cell: ({ row }) =>
-          row.original.has_pr ? (
-            <Check className="h-4 w-4 text-green-600" aria-label="has PR" />
-          ) : (
-            <X className="h-4 w-4 text-muted-foreground" aria-label="no PR yet" />
-          ),
-        size: 60,
       },
       {
         accessorKey: "age_days",
@@ -197,7 +238,7 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         ),
       },
     ],
-    [field, status, hasPR, author, fieldCounts, authorOptions],
+    [field, author, llm, fieldCounts, authorOptions],
   )
 
   const table = useReactTable({
@@ -209,7 +250,7 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyFilter = !!(search || field || status || hasPR || author)
+  const anyFilter = !!(search || field || author || llm)
 
   return (
     <div className="space-y-3">
@@ -220,6 +261,7 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
           placeholder="Search"
           className="max-w-md"
         />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} />
         {anyFilter && (
           <Button
             variant="ghost"
@@ -228,9 +270,8 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
             onClick={() => {
               setSearch("")
               setField(null)
-              setStatus(null)
-              setHasPR(null)
               setAuthor(null)
+              setLlm(null)
             }}
           >
             Clear filters

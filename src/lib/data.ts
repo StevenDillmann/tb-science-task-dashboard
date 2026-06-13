@@ -37,6 +37,8 @@ export type PR = {
   labels: string[]
 }
 
+export type ProposalState = "open" | "approved" | "closed"
+
 export type Proposal = {
   number: number
   proposal_number: number | null
@@ -48,11 +50,15 @@ export type Proposal = {
   subfield: string | null
   field: string | null
   status: "approved" | "rejected" | "pending"
+  state: ProposalState
+  closed: boolean
+  llm_review: { recommendation: "accept" | "uncertain" | "reject" | "unknown"; url: string | null } | null
   age_days: number
   updated_days: number
   has_pr: boolean
   created_at: string
   updated_at: string
+  closed_at: string | null
   labels: string[]
 }
 
@@ -66,6 +72,8 @@ export type Stats = {
   merged_prs: number
   closed_prs: number
   open_proposals: number
+  approved_proposals: number
+  closed_proposals: number
   pending_proposals: number
   needs_reviewer: number
   needs_author: number

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12T22:30:27.614568+00:00",
+  "generated_at": "2026-06-13T01:04:51.593003+00:00",
   "upstream": "harbor-framework/terminal-bench-science",
   "taxonomy": {
     "earth-sciences": {
@@ -54,6 +54,72 @@
   },
   "prs": [
     {
+      "number": 277,
+      "title": "[TASK: Applied Mathematics] Spatiotemporal sensor calibration from raw robot logs",
+      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/277",
+      "is_draft": false,
+      "state": "open",
+      "author": {
+        "login": "Gonglitian",
+        "avatar_url": "https://avatars.githubusercontent.com/u/70052908?v=4"
+      },
+      "domain": "mathematical-sciences",
+      "subfield": "applied-mathematics",
+      "field": null,
+      "review_stage": "none",
+      "ball_in_court": "reviewer",
+      "dri": {
+        "login": "robertzhidealx",
+        "avatar_url": "https://avatars.githubusercontent.com/u/58276946?u=bd9f0c7afea81d582ad89864fe03e96545d93ad4&v=4"
+      },
+      "age_days": 2,
+      "updated_days": 0,
+      "merged_days": null,
+      "closed_days": null,
+      "ci": "success",
+      "created_at": "2026-06-10T08:49:45Z",
+      "updated_at": "2026-06-13T00:11:47Z",
+      "merged_at": null,
+      "closed_at": null,
+      "labels": [
+        "new task",
+        "waiting on reviewer"
+      ]
+    },
+    {
+      "number": 268,
+      "title": "[TASK: Applied Mathematics] TITO weak-order comparison",
+      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/268",
+      "is_draft": false,
+      "state": "open",
+      "author": {
+        "login": "Ivann1242",
+        "avatar_url": "https://avatars.githubusercontent.com/u/153408245?u=b073c7dd10139219141cde69f496264c68f425b4&v=4"
+      },
+      "domain": "mathematical-sciences",
+      "subfield": "applied-mathematics",
+      "field": null,
+      "review_stage": "none",
+      "ball_in_court": "reviewer",
+      "dri": {
+        "login": "stebo85",
+        "avatar_url": "https://avatars.githubusercontent.com/u/4021595?u=b5fbdb9566fdc1612ed17f4aa649cfcf82a64a82&v=4"
+      },
+      "age_days": 5,
+      "updated_days": 0,
+      "merged_days": null,
+      "closed_days": null,
+      "ci": "success",
+      "created_at": "2026-06-07T18:38:19Z",
+      "updated_at": "2026-06-12T23:51:58Z",
+      "merged_at": null,
+      "closed_at": null,
+      "labels": [
+        "new task",
+        "waiting on reviewer"
+      ]
+    },
+    {
       "number": 285,
       "title": "Add Diels-Alder stereochemical assignment task",
       "url": "https://github.com/harbor-framework/terminal-bench-science/pull/285",
@@ -67,20 +133,23 @@
       "subfield": "chemistry-and-materials",
       "field": null,
       "review_stage": "none",
-      "ball_in_court": "author",
-      "dri": null,
+      "ball_in_court": "reviewer",
+      "dri": {
+        "login": "ibercovich",
+        "avatar_url": "https://avatars.githubusercontent.com/u/613679?u=f9099502f8c4b358c72bc6932bb06cefc8b06e46&v=4"
+      },
       "age_days": 0,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
       "ci": "success",
       "created_at": "2026-06-12T14:53:22Z",
-      "updated_at": "2026-06-12T21:49:04Z",
+      "updated_at": "2026-06-12T23:43:26Z",
       "merged_at": null,
       "closed_at": null,
       "labels": [
         "new task",
-        "waiting on author"
+        "waiting on reviewer"
       ]
     },
     {
@@ -132,7 +201,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 45,
+      "age_days": 46,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
@@ -165,7 +234,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 29,
+      "age_days": 30,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
@@ -204,39 +273,6 @@
       "ci": "success",
       "created_at": "2026-06-11T18:07:59Z",
       "updated_at": "2026-06-12T20:38:10Z",
-      "merged_at": null,
-      "closed_at": null,
-      "labels": [
-        "new task",
-        "waiting on reviewer"
-      ]
-    },
-    {
-      "number": 277,
-      "title": "[TASK: Applied Mathematics] Robust pose-graph optimization with outlier loop closures",
-      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/277",
-      "is_draft": false,
-      "state": "open",
-      "author": {
-        "login": "Gonglitian",
-        "avatar_url": "https://avatars.githubusercontent.com/u/70052908?v=4"
-      },
-      "domain": "mathematical-sciences",
-      "subfield": "applied-mathematics",
-      "field": null,
-      "review_stage": "none",
-      "ball_in_court": "reviewer",
-      "dri": {
-        "login": "robertzhidealx",
-        "avatar_url": "https://avatars.githubusercontent.com/u/58276946?u=bd9f0c7afea81d582ad89864fe03e96545d93ad4&v=4"
-      },
-      "age_days": 2,
-      "updated_days": 0,
-      "merged_days": null,
-      "closed_days": null,
-      "ci": "success",
-      "created_at": "2026-06-10T08:49:45Z",
-      "updated_at": "2026-06-12T20:35:27Z",
       "merged_at": null,
       "closed_at": null,
       "labels": [
@@ -522,7 +558,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 18,
+      "age_days": 19,
       "updated_days": 2,
       "merged_days": null,
       "closed_days": null,
@@ -533,39 +569,6 @@
       "closed_at": null,
       "labels": [
         "new task"
-      ]
-    },
-    {
-      "number": 268,
-      "title": "[TASK: Applied Mathematics] TITO weak-order comparison",
-      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/268",
-      "is_draft": false,
-      "state": "open",
-      "author": {
-        "login": "Ivann1242",
-        "avatar_url": "https://avatars.githubusercontent.com/u/153408245?u=b073c7dd10139219141cde69f496264c68f425b4&v=4"
-      },
-      "domain": "mathematical-sciences",
-      "subfield": "applied-mathematics",
-      "field": null,
-      "review_stage": "none",
-      "ball_in_court": "reviewer",
-      "dri": {
-        "login": "stebo85",
-        "avatar_url": "https://avatars.githubusercontent.com/u/4021595?u=b5fbdb9566fdc1612ed17f4aa649cfcf82a64a82&v=4"
-      },
-      "age_days": 5,
-      "updated_days": 2,
-      "merged_days": null,
-      "closed_days": null,
-      "ci": "success",
-      "created_at": "2026-06-07T18:38:19Z",
-      "updated_at": "2026-06-10T14:34:47Z",
-      "merged_at": null,
-      "closed_at": null,
-      "labels": [
-        "new task",
-        "waiting on reviewer"
       ]
     },
     {
@@ -921,7 +924,7 @@
         "login": "RishiDesai",
         "avatar_url": "https://avatars.githubusercontent.com/u/13161914?u=1edd70458bd0ea0d42bbeceaee3860f895344855&v=4"
       },
-      "age_days": 10,
+      "age_days": 11,
       "updated_days": 3,
       "merged_days": null,
       "closed_days": null,
@@ -1053,7 +1056,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 24,
+      "age_days": 25,
       "updated_days": 3,
       "merged_days": null,
       "closed_days": null,
@@ -1728,7 +1731,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 24,
+      "age_days": 25,
       "updated_days": 14,
       "merged_days": null,
       "closed_days": null,
@@ -1760,7 +1763,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 24,
+      "age_days": 25,
       "updated_days": 14,
       "merged_days": null,
       "closed_days": null,
@@ -1792,7 +1795,7 @@
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
       },
-      "age_days": 24,
+      "age_days": 25,
       "updated_days": 14,
       "merged_days": null,
       "closed_days": null,
@@ -2033,7 +2036,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 18,
+      "age_days": 19,
       "updated_days": 18,
       "merged_days": null,
       "closed_days": 18,
@@ -2062,7 +2065,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 18,
+      "age_days": 19,
       "updated_days": 18,
       "merged_days": null,
       "closed_days": 18,
@@ -2214,9 +2217,9 @@
       "ball_in_court": null,
       "dri": null,
       "age_days": 75,
-      "updated_days": 31,
-      "merged_days": 31,
-      "closed_days": 31,
+      "updated_days": 32,
+      "merged_days": 32,
+      "closed_days": 32,
       "ci": "success",
       "created_at": "2026-03-29T13:17:36Z",
       "updated_at": "2026-05-12T00:07:12Z",
@@ -2424,7 +2427,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 121,
+      "age_days": 122,
       "updated_days": 75,
       "merged_days": null,
       "closed_days": 75,
@@ -2631,7 +2634,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 105,
+      "age_days": 106,
       "updated_days": 85,
       "merged_days": null,
       "closed_days": 85,
@@ -2661,7 +2664,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 105,
+      "age_days": 106,
       "updated_days": 85,
       "merged_days": null,
       "closed_days": 85,
@@ -2691,7 +2694,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 105,
+      "age_days": 106,
       "updated_days": 85,
       "merged_days": null,
       "closed_days": 85,
@@ -2811,7 +2814,7 @@
       "review_stage": "none",
       "ball_in_court": null,
       "dri": null,
-      "age_days": 121,
+      "age_days": 122,
       "updated_days": 88,
       "merged_days": null,
       "closed_days": 88,
@@ -2870,12 +2873,21 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/61#discussioncomment-16357727"
+      },
       "age_days": 76,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-28T16:23:01Z",
-      "updated_at": "2026-06-12T22:22:07Z",
-      "labels": []
+      "updated_at": "2026-06-12T22:51:23Z",
+      "closed_at": "2026-06-12T22:22:07Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 44,
@@ -2891,11 +2903,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/44#discussioncomment-16204368"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T07:18:48Z",
       "updated_at": "2026-06-12T22:06:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -2912,11 +2931,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/43#discussioncomment-16187014"
+      },
       "age_days": 86,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-18T04:03:53Z",
       "updated_at": "2026-06-12T22:06:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -2933,11 +2959,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/45#discussioncomment-16204379"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T07:37:06Z",
       "updated_at": "2026-06-12T22:06:14Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -2954,11 +2987,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/46#discussioncomment-16204382"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T07:48:01Z",
       "updated_at": "2026-06-12T22:06:13Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -2975,11 +3015,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/48#discussioncomment-16211451"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T09:20:38Z",
       "updated_at": "2026-06-12T22:06:12Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -2996,11 +3043,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/47#discussioncomment-16204387"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T07:53:04Z",
       "updated_at": "2026-06-12T22:06:12Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3017,11 +3071,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/50#discussioncomment-16212049"
+      },
       "age_days": 85,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-19T17:19:35Z",
       "updated_at": "2026-06-12T22:06:10Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3038,11 +3099,18 @@
       "subfield": "astronomy",
       "field": "Astronomy",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/57#discussioncomment-16285236"
+      },
       "age_days": 80,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-24T01:30:27Z",
       "updated_at": "2026-06-12T22:06:09Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3059,11 +3127,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
-      "age_days": 76,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/60#discussioncomment-16351097"
+      },
+      "age_days": 77,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-27T22:54:34Z",
       "updated_at": "2026-06-12T22:06:08Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3080,11 +3155,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
-      "age_days": 74,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/65#discussioncomment-16372806"
+      },
+      "age_days": 75,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-29T22:40:28Z",
       "updated_at": "2026-06-12T22:06:07Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3101,11 +3183,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
-      "age_days": 74,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/66#discussioncomment-16372850"
+      },
+      "age_days": 75,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-29T22:45:11Z",
       "updated_at": "2026-06-12T22:06:06Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3122,11 +3211,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/69#discussioncomment-16381896"
+      },
       "age_days": 74,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-30T14:26:47Z",
       "updated_at": "2026-06-12T22:06:05Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3143,11 +3239,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/70#discussioncomment-16385279"
+      },
       "age_days": 74,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-30T18:57:28Z",
       "updated_at": "2026-06-12T22:06:04Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3164,11 +3267,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
-      "age_days": 73,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/73#discussioncomment-16387527"
+      },
+      "age_days": 74,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-30T23:51:37Z",
       "updated_at": "2026-06-12T22:06:03Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3185,11 +3295,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
-      "age_days": 69,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/80#discussioncomment-16443578"
+      },
+      "age_days": 70,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-03T23:42:22Z",
       "updated_at": "2026-06-12T22:06:02Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3206,11 +3323,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/76#discussioncomment-16413537"
+      },
       "age_days": 72,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-01T19:19:15Z",
       "updated_at": "2026-06-12T22:06:02Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3227,11 +3351,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
-      "age_days": 68,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/83#discussioncomment-16450731"
+      },
+      "age_days": 69,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-04T23:23:39Z",
       "updated_at": "2026-06-12T22:06:01Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3248,11 +3379,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/85#discussioncomment-16464240"
+      },
       "age_days": 67,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-06T13:30:37Z",
       "updated_at": "2026-06-12T22:06:00Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3269,11 +3407,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/86#discussioncomment-16466754"
+      },
       "age_days": 67,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-06T18:04:05Z",
       "updated_at": "2026-06-12T22:05:59Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3290,11 +3435,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/92#discussioncomment-16481201"
+      },
       "age_days": 66,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-07T20:38:05Z",
       "updated_at": "2026-06-12T22:05:58Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3311,11 +3463,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/94#discussioncomment-16512508"
+      },
       "age_days": 63,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-10T06:34:37Z",
       "updated_at": "2026-06-12T22:05:57Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3332,11 +3491,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/95#discussioncomment-16512932"
+      },
       "age_days": 63,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-10T07:14:38Z",
-      "updated_at": "2026-06-12T22:05:56Z",
+      "updated_at": "2026-06-13T00:58:24Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3353,11 +3519,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/96#discussioncomment-16512990"
+      },
       "age_days": 63,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-10T07:21:25Z",
       "updated_at": "2026-06-12T22:05:55Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3374,11 +3547,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
-      "age_days": 60,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/101#discussioncomment-16537608"
+      },
+      "age_days": 61,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-12T23:03:22Z",
       "updated_at": "2026-06-12T22:05:54Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3395,11 +3575,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
-      "age_days": 58,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/106#discussioncomment-16562601"
+      },
+      "age_days": 59,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-14T22:48:31Z",
       "updated_at": "2026-06-12T22:05:53Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3416,11 +3603,18 @@
       "subfield": "astronomy",
       "field": "Astronomy",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/111#discussioncomment-16630328"
+      },
       "age_days": 53,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-20T02:35:23Z",
       "updated_at": "2026-06-12T22:05:52Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3437,11 +3631,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
-      "age_days": 53,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/110#discussioncomment-16628452"
+      },
+      "age_days": 54,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-19T23:16:51Z",
       "updated_at": "2026-06-12T22:05:52Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3458,11 +3659,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/143#discussioncomment-16664934"
+      },
       "age_days": 51,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-22T04:57:43Z",
       "updated_at": "2026-06-12T22:05:51Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3479,11 +3687,18 @@
       "subfield": "astronomy",
       "field": "Astronomy",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/144#discussioncomment-16680777"
+      },
       "age_days": 50,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-23T07:36:34Z",
       "updated_at": "2026-06-12T22:05:50Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3500,11 +3715,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/150#discussioncomment-16785308"
+      },
       "age_days": 41,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-02T02:02:51Z",
       "updated_at": "2026-06-12T22:05:49Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3521,11 +3743,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/145#discussioncomment-16723694"
+      },
       "age_days": 46,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-27T03:24:36Z",
       "updated_at": "2026-06-12T22:05:49Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3542,11 +3771,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/153#discussioncomment-16786094"
+      },
       "age_days": 41,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-02T06:34:57Z",
       "updated_at": "2026-06-12T22:05:48Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3563,11 +3799,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/154#discussioncomment-16828897"
+      },
       "age_days": 37,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-06T15:20:50Z",
       "updated_at": "2026-06-12T22:05:47Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3584,11 +3827,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/155#discussioncomment-16829968"
+      },
       "age_days": 37,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-06T16:52:13Z",
       "updated_at": "2026-06-12T22:05:46Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3605,11 +3855,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/156#discussioncomment-16843901"
+      },
       "age_days": 36,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-07T17:21:14Z",
       "updated_at": "2026-06-12T20:45:36Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3626,11 +3883,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/158#discussioncomment-16861940"
+      },
       "age_days": 34,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-09T11:56:56Z",
       "updated_at": "2026-06-12T20:45:35Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3647,11 +3911,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/159#discussioncomment-16862011"
+      },
       "age_days": 34,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-09T12:14:45Z",
       "updated_at": "2026-06-12T20:45:34Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3668,11 +3939,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/161#discussioncomment-16864115"
+      },
       "age_days": 34,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-09T18:27:02Z",
       "updated_at": "2026-06-12T20:45:33Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3689,11 +3967,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/171#discussioncomment-16917519"
+      },
       "age_days": 29,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-14T09:59:00Z",
       "updated_at": "2026-06-12T20:45:32Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3710,11 +3995,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/173#discussioncomment-16925662"
+      },
       "age_days": 28,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-15T02:55:32Z",
       "updated_at": "2026-06-12T20:45:31Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3731,11 +4023,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/172#discussioncomment-16918795"
+      },
       "age_days": 29,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-14T12:23:32Z",
       "updated_at": "2026-06-12T20:45:31Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3752,12 +4051,21 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/174#discussioncomment-16927796"
+      },
       "age_days": 28,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-15T08:06:02Z",
       "updated_at": "2026-06-12T20:45:30Z",
-      "labels": []
+      "closed_at": "2026-06-12T14:41:45Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 177,
@@ -3773,11 +4081,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/177#discussioncomment-16955960"
+      },
       "age_days": 25,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-18T04:27:45Z",
       "updated_at": "2026-06-12T20:45:29Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3794,11 +4109,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/178#discussioncomment-16956003"
+      },
       "age_days": 25,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-18T04:33:56Z",
       "updated_at": "2026-06-12T20:45:28Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3815,11 +4137,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/179#discussioncomment-16956048"
+      },
       "age_days": 25,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-18T04:40:13Z",
       "updated_at": "2026-06-12T20:45:27Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3836,11 +4165,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/186#discussioncomment-16970071"
+      },
       "age_days": 24,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-19T03:11:44Z",
       "updated_at": "2026-06-12T20:45:26Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3857,11 +4193,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/180#discussioncomment-16957212"
+      },
       "age_days": 25,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-18T07:12:09Z",
       "updated_at": "2026-06-12T20:45:26Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3878,11 +4221,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/189#discussioncomment-16996440"
+      },
       "age_days": 23,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-20T22:20:41Z",
       "updated_at": "2026-06-12T20:45:25Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3899,11 +4249,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/191#discussioncomment-17003873"
+      },
       "age_days": 22,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-21T11:10:32Z",
       "updated_at": "2026-06-12T20:45:24Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3920,11 +4277,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/192#discussioncomment-17009448"
+      },
       "age_days": 22,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-21T19:58:37Z",
       "updated_at": "2026-06-12T20:45:23Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3941,11 +4305,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/193#discussioncomment-17010044"
+      },
       "age_days": 22,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-21T20:57:23Z",
       "updated_at": "2026-06-12T20:45:22Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3962,11 +4333,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/194#discussioncomment-17010961"
+      },
       "age_days": 22,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-21T22:29:54Z",
       "updated_at": "2026-06-12T20:45:18Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -3983,11 +4361,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/198#discussioncomment-17033659"
+      },
       "age_days": 20,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-23T14:00:29Z",
       "updated_at": "2026-06-12T20:45:16Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4004,11 +4389,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/195#discussioncomment-17028553"
+      },
       "age_days": 20,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-23T02:04:00Z",
       "updated_at": "2026-06-12T20:45:16Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4025,11 +4417,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/204#discussioncomment-17046870"
+      },
       "age_days": 18,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-25T06:55:54Z",
       "updated_at": "2026-06-12T20:45:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4046,11 +4445,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/205#discussioncomment-17046899"
+      },
       "age_days": 18,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-25T06:59:51Z",
       "updated_at": "2026-06-12T20:45:14Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4067,11 +4473,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/206#discussioncomment-17046942"
+      },
       "age_days": 18,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-25T07:05:31Z",
       "updated_at": "2026-06-12T20:45:13Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4088,11 +4501,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/209#discussioncomment-17052606"
+      },
       "age_days": 18,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-25T17:32:49Z",
       "updated_at": "2026-06-12T20:45:12Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4109,11 +4529,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/214#discussioncomment-17056103"
+      },
       "age_days": 17,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-26T01:26:34Z",
       "updated_at": "2026-06-12T20:45:11Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4130,11 +4557,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/210#discussioncomment-17053531"
+      },
       "age_days": 18,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-25T19:32:33Z",
       "updated_at": "2026-06-12T20:45:11Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4151,11 +4585,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/220#discussioncomment-17067103"
+      },
       "age_days": 17,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-26T20:13:35Z",
       "updated_at": "2026-06-12T20:45:10Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4172,11 +4613,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/224#discussioncomment-17078747"
+      },
       "age_days": 16,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-27T17:54:17Z",
       "updated_at": "2026-06-12T20:45:09Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4193,11 +4641,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/225#discussioncomment-17083411"
+      },
       "age_days": 15,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-28T02:57:28Z",
       "updated_at": "2026-06-12T20:45:08Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4214,11 +4669,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
-      "age_days": 14,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/228#discussioncomment-17098267"
+      },
+      "age_days": 15,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-28T23:11:12Z",
       "updated_at": "2026-06-12T20:45:07Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4235,11 +4697,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/226#discussioncomment-17095459"
+      },
       "age_days": 15,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-28T18:22:44Z",
       "updated_at": "2026-06-12T20:45:07Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4256,11 +4725,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
-      "age_days": 14,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/229#discussioncomment-17098519"
+      },
+      "age_days": 15,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-28T23:58:58Z",
       "updated_at": "2026-06-12T20:45:06Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4277,11 +4753,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/230#discussioncomment-17111713"
+      },
       "age_days": 13,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-30T02:30:54Z",
       "updated_at": "2026-06-12T20:45:05Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4298,11 +4781,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/231#discussioncomment-17111764"
+      },
       "age_days": 13,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-30T02:37:38Z",
       "updated_at": "2026-06-12T20:45:04Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4319,11 +4809,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/244#discussioncomment-17116736"
+      },
       "age_days": 13,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-30T15:02:13Z",
       "updated_at": "2026-06-12T20:45:03Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4340,11 +4837,18 @@
       "subfield": "water-sciences",
       "field": "Water Sciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/247#discussioncomment-17120846"
+      },
       "age_days": 12,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-31T07:10:17Z",
       "updated_at": "2026-06-12T20:45:02Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4361,11 +4865,18 @@
       "subfield": "water-sciences",
       "field": "Water Sciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/248#discussioncomment-17120928"
+      },
       "age_days": 12,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-31T07:25:11Z",
       "updated_at": "2026-06-12T20:45:01Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4382,11 +4893,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/250#discussioncomment-17126079"
+      },
       "age_days": 12,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-31T20:42:24Z",
       "updated_at": "2026-06-12T20:45:00Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4403,11 +4921,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/251#discussioncomment-17126350"
+      },
       "age_days": 12,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-31T21:13:06Z",
       "updated_at": "2026-06-12T20:44:59Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4424,12 +4949,21 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/254#discussioncomment-17138096"
+      },
       "age_days": 11,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-01T15:24:39Z",
       "updated_at": "2026-06-12T20:44:58Z",
-      "labels": []
+      "closed_at": "2026-06-08T16:44:30Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 252,
@@ -4445,11 +4979,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/252#discussioncomment-17126435"
+      },
       "age_days": 12,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-05-31T21:26:57Z",
       "updated_at": "2026-06-12T20:44:58Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4466,11 +5007,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/256#discussioncomment-17142967"
+      },
       "age_days": 11,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-01T22:03:43Z",
       "updated_at": "2026-06-12T20:44:57Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4487,11 +5035,18 @@
       "subfield": "statistics",
       "field": "Statistics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/257#discussioncomment-17143130"
+      },
       "age_days": 11,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-01T22:18:52Z",
       "updated_at": "2026-06-12T20:44:56Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4508,11 +5063,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
-      "age_days": 10,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/259#discussioncomment-17144418"
+      },
+      "age_days": 11,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-02T00:29:54Z",
       "updated_at": "2026-06-12T20:44:55Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4529,11 +5091,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/260#discussioncomment-17145433"
+      },
       "age_days": 10,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-02T02:39:24Z",
       "updated_at": "2026-06-12T20:44:54Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4550,11 +5119,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/261#discussioncomment-17145654"
+      },
       "age_days": 10,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-02T03:07:40Z",
       "updated_at": "2026-06-12T20:44:53Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4571,11 +5147,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/265#discussioncomment-17175830"
+      },
       "age_days": 8,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-04T05:49:41Z",
       "updated_at": "2026-06-12T20:44:52Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4592,11 +5175,18 @@
       "subfield": "atmospheric-sciences",
       "field": "Atmospheric Sciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/266#discussioncomment-17178498"
+      },
       "age_days": 8,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-04T09:35:42Z",
       "updated_at": "2026-06-12T20:44:51Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4613,11 +5203,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/267#discussioncomment-17211513"
+      },
       "age_days": 5,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-07T17:44:42Z",
       "updated_at": "2026-06-12T20:44:50Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4634,11 +5231,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/271#discussioncomment-17232229"
+      },
       "age_days": 3,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-09T06:21:27Z",
       "updated_at": "2026-06-12T20:44:49Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4655,11 +5259,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/270#discussioncomment-17226465"
+      },
       "age_days": 4,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-08T18:33:30Z",
       "updated_at": "2026-06-12T20:44:49Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4676,11 +5287,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/272#discussioncomment-17233226"
+      },
       "age_days": 3,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-09T07:54:02Z",
       "updated_at": "2026-06-12T20:44:48Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4697,11 +5315,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/273#discussioncomment-17235684"
+      },
       "age_days": 3,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-09T11:08:39Z",
       "updated_at": "2026-06-12T20:44:47Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4718,11 +5343,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/274#discussioncomment-17239654"
+      },
       "age_days": 3,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-09T16:28:59Z",
       "updated_at": "2026-06-12T20:44:46Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4739,11 +5371,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/281#discussioncomment-17258366"
+      },
       "age_days": 1,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-11T03:45:24Z",
       "updated_at": "2026-06-12T20:44:45Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4760,11 +5399,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/275#discussioncomment-17243177"
+      },
       "age_days": 3,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-09T22:24:31Z",
       "updated_at": "2026-06-12T20:44:45Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4781,12 +5427,21 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/283#discussioncomment-17282912"
+      },
       "age_days": 0,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-12T11:38:24Z",
       "updated_at": "2026-06-12T20:44:44Z",
-      "labels": []
+      "closed_at": "2026-06-12T12:46:18Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 284,
@@ -4802,12 +5457,21 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/284#discussioncomment-17279704"
+      },
       "age_days": 0,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-12T12:11:31Z",
       "updated_at": "2026-06-12T20:44:43Z",
-      "labels": []
+      "closed_at": "2026-06-12T12:18:26Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 286,
@@ -4823,11 +5487,18 @@
       "subfield": "autoformalization",
       "field": "Autoformalization",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/286#discussioncomment-17281670"
+      },
       "age_days": 0,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-12T15:31:56Z",
       "updated_at": "2026-06-12T20:44:42Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4844,11 +5515,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/288#discussioncomment-17282422"
+      },
       "age_days": 0,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-06-12T17:01:21Z",
       "updated_at": "2026-06-12T20:44:41Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4865,12 +5543,21 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "closed",
+      "closed": true,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/56#discussioncomment-16262400"
+      },
       "age_days": 82,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-03-22T20:34:41Z",
       "updated_at": "2026-06-12T07:12:24Z",
-      "labels": []
+      "closed_at": "2026-06-12T07:12:24Z",
+      "labels": [
+        "proposal-approved"
+      ]
     },
     {
       "number": 88,
@@ -4886,11 +5573,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/88#discussioncomment-16470570"
+      },
       "age_days": 66,
       "updated_days": 0,
       "has_pr": false,
       "created_at": "2026-04-07T02:48:21Z",
       "updated_at": "2026-06-12T07:11:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4907,11 +5601,18 @@
       "subfield": "applied-mathematics",
       "field": "Applied Mathematics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/108#discussioncomment-16609891"
+      },
       "age_days": 55,
       "updated_days": 1,
       "has_pr": false,
       "created_at": "2026-04-18T04:02:56Z",
       "updated_at": "2026-06-11T01:19:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4928,11 +5629,18 @@
       "subfield": null,
       "field": null,
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/30#discussioncomment-16064130"
+      },
       "age_days": 94,
-      "updated_days": 1,
+      "updated_days": 2,
       "has_pr": false,
       "created_at": "2026-03-10T07:47:50Z",
       "updated_at": "2026-06-10T22:39:09Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4949,11 +5657,18 @@
       "subfield": "chemistry-and-materials",
       "field": "Chemistry and Materials",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/55#discussioncomment-16261529"
+      },
       "age_days": 82,
       "updated_days": 2,
       "has_pr": false,
       "created_at": "2026-03-22T19:12:13Z",
       "updated_at": "2026-06-10T18:08:41Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4970,11 +5685,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/208#discussioncomment-17050998"
+      },
       "age_days": 18,
       "updated_days": 18,
       "has_pr": false,
       "created_at": "2026-05-25T14:10:54Z",
       "updated_at": "2026-05-25T14:11:55Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -4991,11 +5713,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/185#discussioncomment-16969391"
+      },
       "age_days": 24,
       "updated_days": 18,
       "has_pr": false,
       "created_at": "2026-05-19T01:37:26Z",
       "updated_at": "2026-05-25T05:52:02Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5012,11 +5741,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/190#discussioncomment-17000775"
+      },
       "age_days": 22,
       "updated_days": 22,
       "has_pr": false,
       "created_at": "2026-05-21T07:10:48Z",
       "updated_at": "2026-05-21T07:11:53Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5033,11 +5769,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/175#discussioncomment-16947766"
+      },
       "age_days": 26,
       "updated_days": 26,
       "has_pr": false,
       "created_at": "2026-05-17T08:04:54Z",
       "updated_at": "2026-05-17T08:06:03Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5054,11 +5797,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/160#discussioncomment-16863247"
+      },
       "age_days": 34,
       "updated_days": 34,
       "has_pr": false,
       "created_at": "2026-05-09T16:09:11Z",
       "updated_at": "2026-05-09T16:10:07Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5075,11 +5825,18 @@
       "subfield": "medicine",
       "field": "Medicine",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/151#discussioncomment-16785331"
+      },
       "age_days": 41,
       "updated_days": 35,
       "has_pr": false,
       "created_at": "2026-05-02T02:10:19Z",
       "updated_at": "2026-05-08T21:25:07Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5096,11 +5853,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/152#discussioncomment-16785348"
+      },
       "age_days": 41,
       "updated_days": 35,
       "has_pr": false,
       "created_at": "2026-05-02T02:15:20Z",
       "updated_at": "2026-05-08T21:24:54Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5117,11 +5881,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/149#discussioncomment-16777317"
+      },
       "age_days": 42,
       "updated_days": 42,
       "has_pr": false,
       "created_at": "2026-05-01T06:45:41Z",
       "updated_at": "2026-05-01T06:46:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5138,11 +5909,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/147#discussioncomment-16751970"
+      },
       "age_days": 44,
       "updated_days": 44,
       "has_pr": false,
       "created_at": "2026-04-29T06:22:23Z",
       "updated_at": "2026-04-29T06:23:24Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5159,11 +5937,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/133#discussioncomment-16632089"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:30:19Z",
       "updated_at": "2026-04-20T22:46:29Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5180,11 +5965,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/132#discussioncomment-16632080"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:28:55Z",
       "updated_at": "2026-04-20T22:45:14Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5201,11 +5993,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/131#discussioncomment-16632062"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:27:18Z",
       "updated_at": "2026-04-20T22:44:01Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5222,11 +6021,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/130#discussioncomment-16632055"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:25:26Z",
       "updated_at": "2026-04-20T22:42:32Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5243,11 +6049,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/129#discussioncomment-16632040"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:23:52Z",
       "updated_at": "2026-04-20T22:41:36Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5264,11 +6077,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/128#discussioncomment-16632023"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:22:00Z",
       "updated_at": "2026-04-20T22:40:29Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5285,11 +6105,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/127#discussioncomment-16632007"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:20:01Z",
       "updated_at": "2026-04-20T22:39:09Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5306,11 +6133,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/126#discussioncomment-16631987"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:18:22Z",
       "updated_at": "2026-04-20T22:37:37Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5327,11 +6161,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/125#discussioncomment-16631957"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:16:22Z",
       "updated_at": "2026-04-20T22:34:41Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5348,11 +6189,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/124#discussioncomment-16631932"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:14:55Z",
       "updated_at": "2026-04-20T22:33:16Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5369,11 +6217,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/123#discussioncomment-16631889"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:13:21Z",
       "updated_at": "2026-04-20T22:32:49Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5390,11 +6245,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/122#discussioncomment-16631805"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:11:31Z",
       "updated_at": "2026-04-20T22:31:51Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5411,11 +6273,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/121#discussioncomment-16631788"
+      },
       "age_days": 53,
-      "updated_days": 52,
+      "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:09:59Z",
       "updated_at": "2026-04-20T22:30:31Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5432,11 +6301,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/120#discussioncomment-16631773"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:07:22Z",
       "updated_at": "2026-04-20T22:30:04Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5453,11 +6329,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/119#discussioncomment-16631761"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:05:22Z",
       "updated_at": "2026-04-20T22:29:01Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5474,11 +6357,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/118#discussioncomment-16631711"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:59:34Z",
       "updated_at": "2026-04-20T22:24:25Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5495,11 +6385,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/117#discussioncomment-16631692"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:55:16Z",
       "updated_at": "2026-04-20T22:23:20Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5516,11 +6413,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/116#discussioncomment-16631665"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:52:13Z",
       "updated_at": "2026-04-20T22:02:55Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5537,11 +6441,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/115#discussioncomment-16631652"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:49:59Z",
       "updated_at": "2026-04-20T22:00:36Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5558,11 +6469,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/114#discussioncomment-16631620"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:46:35Z",
       "updated_at": "2026-04-20T21:57:18Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5579,11 +6497,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/134#discussioncomment-16632101"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:32:06Z",
       "updated_at": "2026-04-20T20:44:15Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5600,11 +6525,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/135#discussioncomment-16632118"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:34:07Z",
       "updated_at": "2026-04-20T20:43:17Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5621,11 +6553,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/136#discussioncomment-16632135"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:37:11Z",
       "updated_at": "2026-04-20T20:41:30Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5642,11 +6581,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/137#discussioncomment-16632155"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:39:19Z",
       "updated_at": "2026-04-20T20:36:33Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5663,11 +6609,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/138#discussioncomment-16632170"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:40:46Z",
       "updated_at": "2026-04-20T20:35:24Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5684,11 +6637,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/139#discussioncomment-16632186"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:42:18Z",
       "updated_at": "2026-04-20T20:34:28Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5705,11 +6665,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/140#discussioncomment-16632199"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:43:58Z",
       "updated_at": "2026-04-20T19:11:44Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5726,11 +6693,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/141#discussioncomment-16632209"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T06:45:27Z",
       "updated_at": "2026-04-20T19:10:12Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5747,11 +6721,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/104#discussioncomment-16540346"
+      },
       "age_days": 60,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-13T07:05:43Z",
       "updated_at": "2026-04-20T19:02:55Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5768,11 +6749,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/103#discussioncomment-16540202"
+      },
       "age_days": 60,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-13T06:50:06Z",
       "updated_at": "2026-04-20T18:59:36Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5789,11 +6777,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/102#discussioncomment-16540147"
+      },
       "age_days": 60,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-13T06:44:28Z",
       "updated_at": "2026-04-20T18:56:05Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5810,11 +6805,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/113#discussioncomment-16631596"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:43:55Z",
       "updated_at": "2026-04-20T18:51:48Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5831,11 +6833,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/112#discussioncomment-16631567"
+      },
       "age_days": 53,
       "updated_days": 53,
       "has_pr": false,
       "created_at": "2026-04-20T05:41:01Z",
       "updated_at": "2026-04-20T18:47:36Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5852,11 +6861,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/90#discussioncomment-16471086"
+      },
       "age_days": 66,
-      "updated_days": 58,
+      "updated_days": 59,
       "has_pr": false,
       "created_at": "2026-04-07T03:58:47Z",
       "updated_at": "2026-04-14T23:04:40Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5873,11 +6889,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/32#discussioncomment-16076865"
+      },
       "age_days": 93,
       "updated_days": 65,
       "has_pr": false,
       "created_at": "2026-03-11T03:17:19Z",
       "updated_at": "2026-04-08T06:12:08Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5894,11 +6917,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/91#discussioncomment-16471227"
+      },
       "age_days": 66,
       "updated_days": 66,
       "has_pr": false,
       "created_at": "2026-04-07T04:25:08Z",
       "updated_at": "2026-04-07T04:26:08Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5915,11 +6945,18 @@
       "subfield": "neuroscience",
       "field": "Neuroscience",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/89#discussioncomment-16470929"
+      },
       "age_days": 66,
       "updated_days": 66,
       "has_pr": false,
       "created_at": "2026-04-07T03:34:04Z",
       "updated_at": "2026-04-07T03:35:13Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5936,11 +6973,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
-      "age_days": 70,
-      "updated_days": 70,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/78#discussioncomment-16430282"
+      },
+      "age_days": 71,
+      "updated_days": 71,
       "has_pr": false,
       "created_at": "2026-04-02T22:36:12Z",
       "updated_at": "2026-04-02T22:37:05Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5957,11 +7001,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
-      "age_days": 73,
-      "updated_days": 73,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/72#discussioncomment-16387209"
+      },
+      "age_days": 74,
+      "updated_days": 74,
       "has_pr": false,
       "created_at": "2026-03-30T22:56:38Z",
       "updated_at": "2026-03-30T22:57:31Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5978,11 +7029,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/68#discussioncomment-16376810"
+      },
       "age_days": 74,
       "updated_days": 74,
       "has_pr": false,
       "created_at": "2026-03-30T06:41:57Z",
       "updated_at": "2026-03-30T06:42:57Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -5999,11 +7057,18 @@
       "subfield": "physics",
       "field": "Physics",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/59#discussioncomment-16295042"
+      },
       "age_days": 80,
       "updated_days": 80,
       "has_pr": false,
       "created_at": "2026-03-24T15:08:14Z",
       "updated_at": "2026-03-24T15:09:17Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -6020,11 +7085,18 @@
       "subfield": "biology",
       "field": "Biology",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "reject",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/39#discussioncomment-16151863"
+      },
       "age_days": 88,
       "updated_days": 88,
       "has_pr": false,
       "created_at": "2026-03-16T04:50:26Z",
       "updated_at": "2026-03-16T04:51:23Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -6041,11 +7113,18 @@
       "subfield": "astronomy",
       "field": "Astronomy",
       "status": "pending",
-      "age_days": 88,
-      "updated_days": 88,
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "uncertain",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/38#discussioncomment-16148111"
+      },
+      "age_days": 89,
+      "updated_days": 89,
       "has_pr": false,
       "created_at": "2026-03-15T23:52:22Z",
       "updated_at": "2026-03-15T23:53:16Z",
+      "closed_at": null,
       "labels": []
     },
     {
@@ -6062,11 +7141,18 @@
       "subfield": "geosciences",
       "field": "Geosciences",
       "status": "pending",
+      "state": "open",
+      "closed": false,
+      "llm_review": {
+        "recommendation": "accept",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/31#discussioncomment-16074568"
+      },
       "age_days": 94,
       "updated_days": 94,
       "has_pr": false,
       "created_at": "2026-03-10T21:40:41Z",
       "updated_at": "2026-03-10T21:41:33Z",
+      "closed_at": null,
       "labels": []
     }
   ],
@@ -6171,9 +7257,11 @@
     "open_prs": 46,
     "merged_prs": 6,
     "closed_prs": 38,
-    "open_proposals": 153,
+    "open_proposals": 147,
+    "approved_proposals": 0,
+    "closed_proposals": 6,
     "pending_proposals": 153,
-    "needs_reviewer": 33,
-    "needs_author": 4
+    "needs_reviewer": 34,
+    "needs_author": 3
   }
 }

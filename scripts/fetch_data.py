@@ -289,15 +289,49 @@ query($owner:String!,$name:String!,$cursor:String){
     discussions(first:50,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
       pageInfo{ hasNextPage endCursor }
       nodes{
-        number title url body createdAt updatedAt
+        number title url body closed closedAt createdAt updatedAt
         category{ name }
         author{ login ... on User { avatarUrl } }
         labels(first:20){ nodes{ name } }
+        comments(first:30){
+          nodes{
+            url
+            author{ login }
+            bodyText
+          }
+        }
       }
     }
   }
 }
 """
+
+# Detects the auto-posted LLM review's "Recommendation: 🟢 Recommended" line.
+# Captures the emoji + word; emoji alone is enough to map to recommend/uncertain/reject.
+LLM_RECOMMENDATION_RE = re.compile(
+    r"Recommendation\s*:\s*(?P<emoji>🟢|🟡|🔴)\s*(?P<word>\w+)",
+    re.IGNORECASE,
+)
+LLM_REVIEW_MARKERS = ("Task Proposal Rubric Review", "Rubric Review")
+LLM_REVIEW_BOTS = {"github-actions", "github-actions[bot]"}
+
+
+def parse_llm_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Find the latest auto-posted rubric review comment on a discussion."""
+    for c in reversed(comments):  # take the most recent matching
+        author = (c.get("author") or {}).get("login", "")
+        body = c.get("bodyText", "") or ""
+        if author not in LLM_REVIEW_BOTS:
+            continue
+        if not any(m in body for m in LLM_REVIEW_MARKERS):
+            continue
+        m = LLM_RECOMMENDATION_RE.search(body)
+        if not m:
+            return {"recommendation": "unknown", "url": c.get("url")}
+        emoji = m.group("emoji")
+        rec = {"🟢": "accept", "🟡": "uncertain", "🔴": "reject"}.get(emoji, "unknown")
+        return {"recommendation": rec, "url": c.get("url")}
+    return None
 
 
 def paged(query: str, key: str, max_pages: int | None = None) -> list[dict[str, Any]]:
@@ -422,6 +456,18 @@ def build_proposals(
         if proposal_number is not None:
             needle = f"#{proposal_number}"
             has_pr = any(needle in t for t in pr_titles)
+
+        llm_review = parse_llm_review(n.get("comments", {}).get("nodes", []) or [])
+        status = derive_status(labels)
+        # Three-way state for the proposals toggle: maintainer-approved beats
+        # GH-closed (an approved proposal can be closed once its PR opens);
+        # GH-closed otherwise means rejected/abandoned; everything else is open.
+        if status == "approved":
+            state = "approved"
+        elif n.get("closed") or status == "rejected":
+            state = "closed"
+        else:
+            state = "open"
         rows.append({
             "number": n["number"],
             "proposal_number": proposal_number,
@@ -435,12 +481,16 @@ def build_proposals(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
-            "status": derive_status(labels),
+            "status": status,
+            "state": state,
+            "closed": bool(n.get("closed")),
+            "llm_review": llm_review,
             "age_days": age_days(n["createdAt"], now),
             "updated_days": age_days(n["updatedAt"], now),
             "has_pr": has_pr,
             "created_at": n["createdAt"],
             "updated_at": n["updatedAt"],
+            "closed_at": n.get("closedAt"),
             "labels": labels,
         })
     return rows
@@ -524,7 +574,9 @@ def main() -> int:
             "open_prs": sum(1 for p in prs if p["state"] == "open"),
             "merged_prs": sum(1 for p in prs if p["state"] == "merged"),
             "closed_prs": sum(1 for p in prs if p["state"] == "closed"),
-            "open_proposals": len(proposals),
+            "open_proposals": sum(1 for p in proposals if p["state"] == "open"),
+            "approved_proposals": sum(1 for p in proposals if p["state"] == "approved"),
+            "closed_proposals": sum(1 for p in proposals if p["state"] == "closed"),
             "pending_proposals": sum(1 for p in proposals if p["status"] == "pending"),
             "needs_reviewer": sum(1 for p in prs if p["ball_in_court"] == "reviewer"),
             "needs_author": sum(1 for p in prs if p["ball_in_court"] == "author"),
