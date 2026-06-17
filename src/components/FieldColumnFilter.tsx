@@ -60,7 +60,7 @@ export function FieldColumnFilter({
             active && "text-foreground",
           )}
         >
-          <span className="font-medium">Field</span>
+          <span className="font-medium">FIELD</span>
           {active ? (
             <Filter className="h-3 w-3 fill-current" />
           ) : (
@@ -70,7 +70,7 @@ export function FieldColumnFilter({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-0">
         <div className="border-b p-2 text-xs font-medium text-muted-foreground">
-          Filter by field
+          Filter
         </div>
         {active && (
           <button

@@ -59,3 +59,23 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* Minimal markdown styling for the proposal/PR side panels. */
+.prose-tb h1 { @apply mb-3 mt-5 text-base font-semibold; }
+.prose-tb h2 { @apply mb-2 mt-5 text-sm font-semibold uppercase tracking-wider text-muted-foreground; }
+.prose-tb h3 { @apply mb-2 mt-4 text-sm font-semibold; }
+.prose-tb p  { @apply mb-3; }
+.prose-tb ul { @apply mb-3 list-disc pl-5; }
+.prose-tb ol { @apply mb-3 list-decimal pl-5; }
+.prose-tb li { @apply mb-1; }
+.prose-tb a  { @apply text-foreground underline underline-offset-2 hover:text-[#038F99]; }
+.prose-tb code { @apply rounded bg-muted px-1.5 py-0.5 text-[0.9em] font-mono; }
+.prose-tb pre  { @apply mb-3 overflow-x-auto rounded-md border bg-muted p-3 text-xs; }
+.prose-tb pre code { @apply bg-transparent p-0 text-xs; }
+.prose-tb blockquote { @apply mb-3 border-l-2 border-border pl-3 italic text-muted-foreground; }
+.prose-tb hr { @apply my-4 border-border; }
+.prose-tb table { @apply mb-3 w-full border-collapse text-xs; }
+.prose-tb th, .prose-tb td { @apply border border-border px-2 py-1 text-left align-top; }
+.prose-tb th { @apply bg-muted font-semibold; }
+.prose-tb strong { @apply font-semibold; }
+.prose-tb img { @apply my-3 max-w-full rounded; }

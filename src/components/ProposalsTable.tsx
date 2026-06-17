@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ExternalLink, Plus } from "lucide-react"
+import { ArrowUpDown, Check, Clock, ExternalLink, Plus, X as XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,34 +18,91 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { type Proposal, type ProposalState } from "@/lib/data"
+import { DOMAIN_LABELS, type Domain, type Proposal, type ProposalState } from "@/lib/data"
+import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
-import { FieldChip, LLMReviewChip, UserCell } from "./Chips"
+import { FieldChip, HumanReviewChip, LLMReviewChip, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
-import { SearchInput } from "./Filters"
+import { FilterChip, SearchInput } from "./Filters"
+import { ProposalSheet } from "./ProposalSheet"
+
+function IconLabel({
+  icon,
+  text,
+  label,
+}: {
+  icon: "check" | "question" | "x" | "clock"
+  text: string
+  label: string
+}) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 font-medium", text)}>
+      {icon === "check" && <Check className="h-3 w-3" strokeWidth={3} />}
+      {icon === "x" && <XIcon className="h-3 w-3" strokeWidth={3} />}
+      {icon === "clock" && <Clock className="h-3 w-3" strokeWidth={2} />}
+      {icon === "question" && (
+        <span className="inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none">
+          ?
+        </span>
+      )}
+      {label}
+    </span>
+  )
+}
 
 const LLM_OPTIONS = [
-  { value: "accept", label: "🟢 accept" },
-  { value: "uncertain", label: "🟡 uncertain" },
-  { value: "reject", label: "🔴 reject" },
-  { value: "none", label: "no review yet" },
+  {
+    value: "accept",
+    label: "accept",
+    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="accept" />,
+  },
+  {
+    value: "uncertain",
+    label: "uncertain",
+    render: <IconLabel icon="question" text="text-amber-700 dark:text-amber-400" label="uncertain" />,
+  },
+  {
+    value: "reject",
+    label: "reject",
+    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="reject" />,
+  },
 ]
 
-/** Pill toggle: Open / Approved / Closed for proposals. */
+const HUMAN_OPTIONS = [
+  {
+    value: "approved",
+    label: "approved",
+    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="approved" />,
+  },
+  {
+    value: "pending",
+    label: "pending",
+    render: <IconLabel icon="clock" text="text-amber-700 dark:text-amber-400" label="pending" />,
+  },
+  {
+    value: "rejected",
+    label: "declined",
+    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="declined" />,
+  },
+]
+
+/** Pill toggle: All / Open / Approved / Closed for proposals. */
 function StateToggle({
   value,
   onChange,
   counts,
+  total,
 }: {
-  value: ProposalState
-  onChange: (v: ProposalState) => void
+  value: ProposalState | "all"
+  onChange: (v: ProposalState | "all") => void
   counts: Record<ProposalState, number>
+  total: number
 }) {
-  const items: { value: ProposalState; label: string }[] = [
-    { value: "open", label: "Open" },
-    { value: "approved", label: "Approved" },
-    { value: "closed", label: "Closed" },
+  const items: { value: ProposalState | "all"; label: string; count: number }[] = [
+    { value: "all", label: "All", count: total },
+    { value: "open", label: "Open", count: counts.open ?? 0 },
+    { value: "closed", label: "Closed", count: counts.closed ?? 0 },
   ]
   return (
     <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
@@ -72,13 +129,24 @@ function StateToggle({
                 active ? "text-accent-foreground/70" : "text-muted-foreground/70",
               )}
             >
-              {counts[it.value] ?? 0}
+              {it.count}
             </span>
           </button>
         )
       })}
     </div>
   )
+}
+
+function formatPostedDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const sameYear = d.getFullYear() === now.getFullYear()
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  })
 }
 
 function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, number> {
@@ -92,17 +160,22 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
 }
 
 export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
+  const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "age_days", desc: false },
+    // Newest first — sort by Task Proposal number descending. Avoids ties
+    // between proposals submitted on the same day that age_days can't break.
+    { id: "proposal_number", desc: true },
   ])
   const [search, setSearch] = useState("")
-  const [state, setState] = useState<ProposalState>("open")
+  const [state, setState] = useState<ProposalState | "all">("all")
+  const [active, setActive] = useState<Proposal | null>(null)
   const [field, setField] = useState<string | null>(null)
   const [author, setAuthor] = useState<string | null>(null)
   const [llm, setLlm] = useState<string | null>(null)
+  const [human, setHuman] = useState<string | null>(null)
 
   const stateCounts = useMemo(() => {
-    const c: Record<ProposalState, number> = { open: 0, approved: 0, closed: 0 }
+    const c: Record<ProposalState, number> = { open: 0, closed: 0 }
     for (const p of proposals) c[p.state] = (c[p.state] ?? 0) + 1
     return c
   }, [proposals])
@@ -110,7 +183,7 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return proposals.filter((p) => {
-      if (p.state !== state) return false
+      if (state !== "all" && p.state !== state) return false
       if (field) {
         if (field.startsWith("__domain:")) {
           if (p.domain !== field.slice("__domain:".length)) return false
@@ -121,30 +194,36 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         const rec = p.llm_review?.recommendation ?? null
         if (llm === "none" ? rec !== null : rec !== llm) return false
       }
+      if (human && p.status !== human) return false
       if (needle) {
         const hay = `${p.title} ${p.author.login} ${p.field ?? ""}`.toLowerCase()
         if (!hay.includes(needle)) return false
       }
       return true
     })
-  }, [proposals, search, state, field, author, llm])
+  }, [proposals, search, state, field, author, llm, human])
 
+  const stateFiltered = useMemo(
+    () =>
+      state === "all" ? proposals : proposals.filter((p) => p.state === state),
+    [proposals, state],
+  )
   const fieldCounts = useMemo(() => {
-    const c = countBy(proposals, (p) => p.subfield)
-    for (const p of proposals) {
+    const c = countBy(stateFiltered, (p) => p.subfield)
+    for (const p of stateFiltered) {
       if (!p.subfield && p.domain) {
         const key = `__domain:${p.domain}`
         c[key] = (c[key] ?? 0) + 1
       }
     }
     return c
-  }, [proposals])
+  }, [stateFiltered])
   const authorOptions = useMemo(() => {
-    const c = countBy(proposals, (p) => p.author.login)
+    const c = countBy(stateFiltered, (p) => p.author.login)
     return Object.entries(c)
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }))
-  }, [proposals])
+  }, [stateFiltered])
 
   const columns = useMemo<ColumnDef<Proposal>[]>(
     () => [
@@ -166,27 +245,28 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
       },
       {
         accessorKey: "title",
+        size: 380,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Title <ArrowUpDown className="h-3 w-3" />
+            TITLE <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <a
-            href={row.original.url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium hover:underline"
+          <button
+            type="button"
+            onClick={() => setActive(row.original)}
+            className="text-left font-medium hover:underline underline-offset-4"
           >
             {row.original.title}
-          </a>
+          </button>
         ),
       },
       {
         accessorKey: "subfield",
+        size: 220,
         header: () => (
           <FieldColumnFilter value={field} onChange={setField} counts={fieldCounts} />
         ),
@@ -195,10 +275,24 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         ),
       },
       {
-        accessorKey: "llm_review",
+        accessorKey: "author",
+        size: 180,
         header: () => (
           <ColumnFilter
-            title="LLM review"
+            title="AUTHOR"
+            value={author}
+            onChange={setAuthor}
+            options={authorOptions}
+          />
+        ),
+        cell: ({ row }) => <UserCell user={row.original.author} />,
+      },
+      {
+        accessorKey: "llm_review",
+        size: 140,
+        header: () => (
+          <ColumnFilter
+            title="LLM REVIEW"
             value={llm}
             onChange={setLlm}
             options={LLM_OPTIONS}
@@ -212,33 +306,60 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         ),
       },
       {
-        accessorKey: "author",
+        accessorKey: "status",
+        size: 150,
         header: () => (
           <ColumnFilter
-            title="Author"
-            value={author}
-            onChange={setAuthor}
-            options={authorOptions}
+            title="HUMAN REVIEW"
+            value={human}
+            onChange={setHuman}
+            options={HUMAN_OPTIONS}
           />
         ),
-        cell: ({ row }) => <UserCell user={row.original.author} />,
+        cell: ({ row }) => <HumanReviewChip status={row.original.status} />,
+      },
+      {
+        accessorKey: "updated_days",
+        size: 100,
+        header: ({ column }) => (
+          <button
+            className="inline-flex items-start gap-1 text-left"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <span className="font-medium">UPDATED</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
+          </button>
+        ),
+        cell: ({ row }) => {
+          const d = row.original.updated_days
+          return (
+            <span className="text-muted-foreground">{d === 0 ? "today" : `${d}d`}</span>
+          )
+        },
       },
       {
         accessorKey: "age_days",
+        size: 110,
         header: ({ column }) => (
           <button
-            className="inline-flex items-center gap-1"
+            className="inline-flex items-start gap-1 text-left"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Age <ArrowUpDown className="h-3 w-3" />
+            <span className="font-medium">POSTED</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
           </button>
         ),
         cell: ({ row }) => (
-          <span className="text-muted-foreground">{row.original.age_days}d</span>
+          <span
+            className="text-muted-foreground"
+            title={`${row.original.age_days} days ago`}
+          >
+            {formatPostedDate(row.original.created_at)}
+          </span>
         ),
       },
     ],
-    [field, author, llm, fieldCounts, authorOptions],
+    [field, author, llm, human, fieldCounts, authorOptions],
   )
 
   const table = useReactTable({
@@ -250,9 +371,15 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyFilter = !!(search || field || author || llm)
+  const anyFilter = !!(search || field || author || llm || human)
 
   return (
+    <>
+    <ProposalSheet
+      proposal={active}
+      open={active !== null}
+      onOpenChange={(v) => !v && setActive(null)}
+    />
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
         <SearchInput
@@ -261,7 +388,7 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
           placeholder="Search"
           className="max-w-md"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={proposals.length} />
         {anyFilter && (
           <Button
             variant="ghost"
@@ -272,11 +399,43 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
               setField(null)
               setAuthor(null)
               setLlm(null)
+              setHuman(null)
             }}
           >
             Clear filters
           </Button>
         )}
+        {field && (
+          <FilterChip
+            label="Field"
+            value={
+              field.startsWith("__domain:")
+                ? `${DOMAIN_LABELS[field.slice("__domain:".length) as Domain] ?? field.slice("__domain:".length)} (other)`
+                : (field_labels[field] ?? field)
+            }
+            onClear={() => setField(null)}
+          />
+        )}
+        {author && (
+          <FilterChip label="Author" value={author} onClear={() => setAuthor(null)} />
+        )}
+        {llm && (
+          <FilterChip
+            label="LLM review"
+            value={llm}
+            onClear={() => setLlm(null)}
+          />
+        )}
+        {human && (
+          <FilterChip
+            label="Human review"
+            value={human === "rejected" ? "declined" : human}
+            onClear={() => setHuman(null)}
+          />
+        )}
+        <span className="text-xs text-muted-foreground">
+          {filtered.length} {filtered.length === 1 ? "row" : "rows"}
+        </span>
         <a
           href="https://airtable.com/appzZC5gEHrXSfNNw/pagjgS95lAQ5FVJxt/form"
           target="_blank"
@@ -289,12 +448,12 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
       </div>
 
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
                 {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
+                  <TableHead key={h.id} style={{ width: h.getSize() }}>
                     {h.isPlaceholder
                       ? null
                       : flexRender(h.column.columnDef.header, h.getContext())}
@@ -325,5 +484,6 @@ export function ProposalsTable({ proposals }: { proposals: Proposal[] }) {
         </Table>
       </div>
     </div>
+    </>
   )
 }

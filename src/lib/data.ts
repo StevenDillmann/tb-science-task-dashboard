@@ -30,6 +30,40 @@ export type PR = {
   merged_days: number | null
   closed_days: number | null
   ci: string | null
+  trials: {
+    passed: number
+    total: number
+    by_model: Array<{
+      model: "claude" | "gpt" | "gemini" | "other"
+      display: string
+      results: Array<"pass" | "fail" | "none">
+    }>
+    url: string | null
+  } | null
+  rubric: {
+    passed: number
+    failed: number
+    warning: number
+    total: number
+    url: string | null
+  } | null
+  cheat: {
+    succeeded: number
+    blocked: number
+    total: number
+    by_model: Array<{
+      model: "claude" | "gpt" | "gemini" | "other"
+      display: string
+      results: Array<"succeeded" | "blocked" | "none">
+    }>
+    url: string | null
+  } | null
+  linked_proposal: {
+    proposal_number: number | null
+    discussion_number: number
+    title: string
+    url: string
+  } | null
   created_at: string
   updated_at: string
   merged_at: string | null
@@ -37,7 +71,7 @@ export type PR = {
   labels: string[]
 }
 
-export type ProposalState = "open" | "approved" | "closed"
+export type ProposalState = "open" | "closed"
 
 export type Proposal = {
   number: number
@@ -45,6 +79,13 @@ export type Proposal = {
   title: string
   raw_title: string
   url: string
+  body: string
+  comments_list: Array<{
+    url: string | null
+    created_at: string | null
+    author: User
+    body: string
+  }>
   author: User
   domain: Domain | null
   subfield: string | null
@@ -72,8 +113,9 @@ export type Stats = {
   merged_prs: number
   closed_prs: number
   open_proposals: number
-  approved_proposals: number
   closed_proposals: number
+  approved_proposals: number
+  declined_proposals: number
   pending_proposals: number
   needs_reviewer: number
   needs_author: number

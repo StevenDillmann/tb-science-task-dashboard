@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { AlertCircle, Globe, Loader2 } from "lucide-react"
+import { AlertCircle, Globe, Loader2, Mail } from "lucide-react"
 
 import logoLight from "@/assets/tb-science-logo-light.png"
 import logoDark from "@/assets/tb-science-logo-dark.png"
@@ -19,6 +19,7 @@ import { useTheme } from "@/lib/theme"
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const DISCORD_URL = "https://discord.gg/2Pe5uWGcV3"
 const WEBSITE_URL = "https://www.tbench.ai/news/tb-science-announcement"
+const CONTACT_EMAIL = "stevendi@stanford.edu"
 
 function formatGeneratedAt(iso: string): string {
   const d = new Date(iso)
@@ -51,8 +52,8 @@ export default function App() {
               alt="Terminal-Bench Science"
               className="h-12 w-auto"
             />
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">
+            <div className="font-prose">
+              <h1 className="text-xl font-semibold uppercase tracking-wider">
                 Terminal-Bench Science · Submission and Review Hub
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -78,14 +79,12 @@ export default function App() {
               <Globe className="h-5 w-5" />
             </a>
             <a
-              href={`https://github.com/${UPSTREAM}`}
-              target="_blank"
-              rel="noreferrer"
-              title={UPSTREAM}
-              aria-label="GitHub repository"
+              href={`mailto:${CONTACT_EMAIL}`}
+              title={`Email ${CONTACT_EMAIL}`}
+              aria-label="Contact by email"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <GitHubIcon className="h-5 w-5" />
+              <Mail className="h-5 w-5" />
             </a>
             <a
               href={DISCORD_URL}
@@ -96,6 +95,16 @@ export default function App() {
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               <DiscordIcon className="h-5 w-5" />
+            </a>
+            <a
+              href={`https://github.com/${UPSTREAM}`}
+              target="_blank"
+              rel="noreferrer"
+              title={UPSTREAM}
+              aria-label="GitHub repository"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <GitHubIcon className="h-5 w-5" />
             </a>
           </div>
         </div>
@@ -136,13 +145,13 @@ export default function App() {
                 <TabsTrigger value="proposals">
                   Task Proposals
                   <Badge variant="secondary" className="ml-2">
-                    {data.stats.open_proposals}
+                    {data.proposals.length}
                   </Badge>
                 </TabsTrigger>
                 <TabsTrigger value="prs">
                   Task Pull Requests
                   <Badge variant="secondary" className="ml-2">
-                    {data.stats.open_prs}
+                    {data.prs.length}
                   </Badge>
                 </TabsTrigger>
                 <TabsTrigger value="stats">Stats</TabsTrigger>
@@ -162,12 +171,33 @@ export default function App() {
         )}
       </main>
 
-      <footer className="container mx-auto px-6 py-6 text-xs text-muted-foreground">
-        Rebuilds every 15 min from{" "}
-        <a className="underline" href={`https://github.com/${UPSTREAM}`}>
-          {UPSTREAM}
-        </a>
-        .
+      <footer className="container mx-auto flex flex-col gap-1 px-6 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          Rebuilds every 15 min from{" "}
+          <a className="underline hover:text-foreground" href={`https://github.com/${UPSTREAM}`}>
+            {UPSTREAM}
+          </a>
+          . Found an issue or have feedback? Email{" "}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="underline hover:text-foreground"
+          >
+            {CONTACT_EMAIL}
+          </a>
+          .
+        </div>
+        <div>
+          Created by{" "}
+          <a
+            href="https://github.com/StevenDillmann"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-foreground"
+          >
+            Steven Dillmann
+          </a>
+          .
+        </div>
       </footer>
     </div>
   )

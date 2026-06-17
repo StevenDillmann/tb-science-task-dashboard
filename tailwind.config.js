@@ -26,6 +26,19 @@ export default {
           "Consolas",
           "monospace",
         ],
+        // Geist Sans — used by the tbench.ai docs site for body prose. We
+        // apply it to the contribute section so the freeform copy reads like
+        // the docs site, while the rest of the UI stays in Google Sans Code.
+        prose: [
+          "Geist",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
       },
       colors: {
         border: "var(--border)",

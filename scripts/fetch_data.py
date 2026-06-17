@@ -44,12 +44,46 @@ SCIENTIFIC_DOMAIN_RE = re.compile(
     r"##\s*Scientific\s+Domain\s*\n+([^\n]+)", re.IGNORECASE
 )
 
-# Backfilled at the top of every proposal body: `**Proposed by @handle**`.
-# Lets us attribute proposals to the original Airtable submitter rather than
-# the GitHub account that posted the discussion on their behalf.
+# Two ways to attribute a proposal to its original Airtable submitter rather
+# than the GH account that posted the discussion on their behalf:
+#
+#   1. Legacy backfill at the top of the body: `**Proposed by @handle**`.
+#   2. Current Airtable form: an `## Author Information` block at the bottom
+#      with a `GitHub: https://github.com/<handle>` line.
 PROPOSED_BY_RE = re.compile(
     r"\*\*\s*Proposed by\s*@([A-Za-z0-9-]+)\s*\*\*", re.IGNORECASE
 )
+# Accepts both "GitHub: https://github.com/handle" and "GitHub: handle".
+# Stripping the URL prefix when present means a single capture group either
+# way.
+AUTHOR_GITHUB_RE = re.compile(
+    r"GitHub\s*:\s*(?:https?://github\.com/)?([A-Za-z0-9-]+)", re.IGNORECASE
+)
+# Form placeholders to ignore so we don't attribute a proposal to "None".
+_GITHUB_PLACEHOLDERS = {"none", "n-a", "na"}
+AUTHOR_NAME_RE = re.compile(r"^Author\s*:\s*(.+?)$", re.IGNORECASE | re.MULTILINE)
+
+
+def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
+    """Return (login, display_name) for the original proposal submitter.
+
+    Prefer the `Proposed by @handle` legacy line; otherwise pull the handle
+    from a `GitHub: https://github.com/<handle>` line under
+    `## Author Information`. `display_name` is the human name from the
+    `Author:` field when present.
+    """
+    body = body or ""
+    m = PROPOSED_BY_RE.search(body)
+    if m:
+        return m.group(1), None
+    m = AUTHOR_GITHUB_RE.search(body)
+    if m:
+        handle = m.group(1)
+        if handle.lower() in _GITHUB_PLACEHOLDERS:
+            return None, None
+        name_match = AUTHOR_NAME_RE.search(body)
+        return handle, (name_match.group(1).strip() if name_match else None)
+    return None, None
 
 
 def gh(args: list[str]) -> str:
@@ -130,9 +164,9 @@ def derive_type(labels: list[str]) -> str:
 
 
 def derive_status(labels: list[str]) -> str:
-    if "approved" in labels:
+    if "proposal-approved" in labels:
         return "approved"
-    if "rejected" in labels:
+    if "proposal-declined" in labels:
         return "rejected"
     return "pending"
 
@@ -254,10 +288,11 @@ def field_from_proposal_body(
 PR_QUERY = """
 query($owner:String!,$name:String!,$cursor:String){
   repository(owner:$owner,name:$name){
-    pullRequests(states:[OPEN,CLOSED,MERGED],first:50,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+    pullRequests(states:[OPEN,CLOSED,MERGED],first:25,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
       pageInfo{ hasNextPage endCursor }
       nodes{
         number title url isDraft state mergedAt closedAt createdAt updatedAt
+        bodyText
         author{ login ... on User { avatarUrl } }
         labels(first:30){ nodes{ name color } }
         reviewRequests(first:10){
@@ -277,11 +312,311 @@ query($owner:String!,$name:String!,$cursor:String){
             }
           }
         }
+        comments(last:15){
+          nodes{
+            url
+            author{ login }
+            body
+            bodyText
+          }
+        }
       }
     }
   }
 }
 """
+
+
+TRIAL_HEADER = "Agent Trial Results"
+# The auto-posted job-summary line has the canonical totals, e.g. "0 of 8
+# trials passed". Counting raw emojis in the comment body double-counts the
+# per-criterion sub-tables; this is the reliable signal.
+TRIAL_SUMMARY_RE = re.compile(
+    r"(\d+)\s*(?:of|/)\s*(\d+)\s+trials?\s+passed",
+    re.IGNORECASE,
+)
+
+CHEAT_HEADER = "Cheating Agent Trial Results"
+# In the cheat comment ✅ means the cheat SUCCEEDED (bad) and ❌ means the
+# cheat was blocked (good). We're after a robust per-row "X of Y cheats
+# blocked" view, so count ✅ = succeeded and ❌ = blocked across the trial
+# table. Same caveat as trials about the per-criterion sub-tables — we slice
+# to just the top trial table by stopping at "Job Analysis" / "Overall Results".
+
+
+def _slice_trial_table(body: str) -> str:
+    """Return only the section between the header line and the first analysis
+    section, to avoid counting emojis in per-criterion breakdowns.
+    """
+    end_markers = ("Job Analysis", "Overall Results", "Common Patterns", "Failure Pattern")
+    earliest = len(body)
+    for m in end_markers:
+        idx = body.find(m)
+        if idx != -1 and idx < earliest:
+            earliest = idx
+    return body[:earliest]
+
+RUBRIC_HEADER = "Task Implementation Rubric Review"
+
+# Authors use a variety of patterns to link a PR back to its source proposal:
+#   - "Task Proposal #145"            → task-proposal-number form
+#   - "approved task proposal 145"    → ditto, no `#`
+#   - "https://github.com/.../discussions/291" → discussion-number URL
+#   - Under a `## Task Proposal` section: bare `#291` (discussion-number form,
+#     GitHub auto-links these so the explicit URL isn't needed in the body)
+#   - "approved proposal: #244"       → discussion-number form
+LINK_DISCUSSION_URL_RE = re.compile(
+    r"discussions?/(\d+)", re.IGNORECASE
+)
+PROPOSAL_SECTION_RE = re.compile(
+    r"(?:task\s+)?proposal", re.IGNORECASE
+)
+HASH_NUM_RE = re.compile(r"#(\d+)")
+PLAIN_NUM_RE = re.compile(r"task\s+proposal\s*#?\s*(\d+)", re.IGNORECASE)
+
+
+def find_linked_proposal(
+    pr_title: str,
+    pr_body: str,
+    proposals_by_num: dict[int, dict[str, Any]],
+    proposals_by_discussion: dict[int, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Find the source proposal a PR references. Tries, in order:
+
+    1. A `discussions/<N>` URL anywhere in title or body.
+    2. A `task proposal #N` style mention (matches by task-proposal number).
+    3. A `#N` reference within ~300 chars after the first `Task Proposal`
+       mention — N matched against discussion numbers, then proposal numbers.
+    """
+    hay = f"{pr_title}\n{pr_body or ''}"
+
+    # 1. Discussion URL — most precise.
+    m = LINK_DISCUSSION_URL_RE.search(hay)
+    if m:
+        n = int(m.group(1))
+        if n in proposals_by_discussion:
+            return proposals_by_discussion[n]
+
+    # 2. "Task Proposal #145" style — matches task-proposal number.
+    m = PLAIN_NUM_RE.search(hay)
+    if m:
+        n = int(m.group(1))
+        if n in proposals_by_num:
+            return proposals_by_num[n]
+        # Some authors write the discussion number after "task proposal" too
+        # (e.g. `link to the approved task proposal: #265`).
+        if n in proposals_by_discussion:
+            return proposals_by_discussion[n]
+
+    # 3. Bare `#N` near a "Task Proposal" section header. Limit to the window
+    #    just after the header so we don't accidentally grab unrelated `#N`
+    #    references (issue/PR numbers, etc.).
+    section = PROPOSAL_SECTION_RE.search(hay)
+    if section:
+        window = hay[section.end() : section.end() + 300]
+        for hm in HASH_NUM_RE.finditer(window):
+            n = int(hm.group(1))
+            if n in proposals_by_discussion:
+                return proposals_by_discussion[n]
+            if n in proposals_by_num:
+                return proposals_by_num[n]
+    return None
+RUBRIC_PASSED_RE = re.compile(r"(\d+)\s+passed\s+criteria", re.IGNORECASE)
+RUBRIC_FAILED_RE = re.compile(r"(\d+)\s+failed\s+criteria", re.IGNORECASE)
+RUBRIC_WARNING_RE = re.compile(r"(\d+)\s+warning\s+criteria", re.IGNORECASE)
+
+
+def parse_rubric_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Scan PR comments for the latest `📋 Task Implementation Rubric Review`
+    and read the "X passed criteria" / "Y failed criteria" summary lines.
+    """
+    for c in reversed(comments):
+        author = (c.get("author") or {}).get("login", "")
+        body = c.get("bodyText", "") or ""
+        if author not in LLM_REVIEW_BOTS:
+            continue
+        if RUBRIC_HEADER not in body:
+            continue
+        p = RUBRIC_PASSED_RE.search(body)
+        f = RUBRIC_FAILED_RE.search(body)
+        w = RUBRIC_WARNING_RE.search(body)
+        passed = int(p.group(1)) if p else 0
+        failed = int(f.group(1)) if f else 0
+        warning = int(w.group(1)) if w else 0
+        total = passed + failed + warning
+        if total == 0:
+            continue
+        return {
+            "passed": passed,
+            "failed": failed,
+            "warning": warning,
+            "total": total,
+            "url": c.get("url"),
+        }
+    return None
+
+
+def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Scan PR comments for the latest `🔓 Cheating Agent Trial Results`.
+
+    Parses the table the same way as `parse_trial_results`, but the cell
+    semantics are inverted: ✅ in a cheat row means the cheat *succeeded*
+    (bad), ❌ means the cheat was *blocked* (good).
+    """
+    for c in reversed(comments):
+        author = (c.get("author") or {}).get("login", "")
+        body_text = c.get("bodyText", "") or ""
+        body_md = c.get("body", "") or ""
+        if author not in LLM_REVIEW_BOTS:
+            continue
+        if CHEAT_HEADER not in body_text:
+            continue
+        top = _slice_trial_table(body_text)
+        succeeded = top.count("✅")
+        blocked = top.count("❌")
+        total = succeeded + blocked
+        if total == 0:
+            continue
+
+        by_model: list[dict[str, Any]] = []
+        header_idx = body_md.find(CHEAT_HEADER)
+        if header_idx >= 0:
+            tail = body_md[header_idx:]
+            in_table = False
+            header_seen = False
+            for line in tail.splitlines():
+                if line.startswith("|"):
+                    in_table = True
+                    if "---" in line:
+                        header_seen = True
+                        continue
+                    if not header_seen:
+                        continue
+                    cells = [c.strip() for c in line.strip("|").split("|")]
+                    if len(cells) < 2:
+                        continue
+                    model_label = cells[0]
+                    display = re.sub(r"`", "", model_label).split("<br>")[0].strip()
+                    results: list[str] = []
+                    for cell in cells[1:]:
+                        c_clean = cell.strip()
+                        if "✅" in c_clean:
+                            results.append("succeeded")
+                        elif "❌" in c_clean:
+                            results.append("blocked")
+                        else:
+                            results.append("none")
+                    if results:
+                        by_model.append({
+                            "model": _classify_model(model_label),
+                            "display": display,
+                            "results": results,
+                        })
+                elif in_table:
+                    break
+
+        return {
+            "succeeded": succeeded,
+            "blocked": blocked,
+            "total": total,
+            "by_model": by_model,
+            "url": c.get("url"),
+        }
+    return None
+
+
+def _classify_model(text: str) -> str:
+    t = text.lower()
+    if "claude" in t:
+        return "claude"
+    if "gpt" in t or "openai" in t:
+        return "gpt"
+    if "gemini" in t or "google" in t:
+        return "gemini"
+    return "other"
+
+
+def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Scan PR comments for the latest `🧪 Agent Trial Results` post and
+    extract both the summary totals AND the per-model trial breakdown.
+
+    The markdown body has a leading table of the shape:
+
+        | Model (Agent) | Trial 1 | Trial 2 | ... |
+        | claude...     | ❌      | ✅      | ... |
+        | gpt-5.5...    | ✅      | ❌      | ... |
+
+    Each row is one model; each column past the first is one trial. We pull
+    each model's results out into a `by_model` list so the UI can render a
+    grid of dots, one row per model.
+    """
+    for c in reversed(comments):
+        author = (c.get("author") or {}).get("login", "")
+        body_text = c.get("bodyText", "") or ""
+        body_md = c.get("body", "") or ""
+        if author not in LLM_REVIEW_BOTS:
+            continue
+        if TRIAL_HEADER not in body_text:
+            continue
+        m = TRIAL_SUMMARY_RE.search(body_text)
+        if not m:
+            continue
+        passed, total = int(m.group(1)), int(m.group(2))
+        if total == 0:
+            continue
+
+        # Parse the first markdown table after the trial header.
+        by_model: list[dict[str, Any]] = []
+        header_idx = body_md.find("Agent Trial Results")
+        if header_idx >= 0:
+            tail = body_md[header_idx:]
+            # First non-trivial table is the trial table.
+            # Split on lines, pick the first `|...|` block.
+            in_table = False
+            header_seen = False
+            for line in tail.splitlines():
+                if line.startswith("|"):
+                    if not in_table:
+                        in_table = True
+                    if "---" in line:
+                        header_seen = True
+                        continue
+                    if not header_seen:
+                        continue
+                    cells = [c.strip() for c in line.strip("|").split("|")]
+                    if len(cells) < 2:
+                        continue
+                    model_label = cells[0]
+                    # Trim leading backticks etc. and grab a short readable
+                    # display name (first chunk before parens/backticks).
+                    display = re.sub(r"`", "", model_label)
+                    display = display.split("<br>")[0].strip()
+                    results: list[str] = []
+                    for cell in cells[1:]:
+                        c_clean = cell.strip()
+                        if "✅" in c_clean:
+                            results.append("pass")
+                        elif "❌" in c_clean:
+                            results.append("fail")
+                        else:
+                            results.append("none")
+                    if results:
+                        by_model.append({
+                            "model": _classify_model(model_label),
+                            "display": display,
+                            "results": results,
+                        })
+                elif in_table:
+                    # First non-pipe line after entering the table = table end.
+                    break
+
+        return {
+            "passed": passed,
+            "total": total,
+            "by_model": by_model,
+            "url": c.get("url"),
+        }
+    return None
 
 DISCUSSION_QUERY = """
 query($owner:String!,$name:String!,$cursor:String){
@@ -296,7 +631,9 @@ query($owner:String!,$name:String!,$cursor:String){
         comments(first:30){
           nodes{
             url
-            author{ login }
+            createdAt
+            author{ login ... on User { avatarUrl } }
+            body
             bodyText
           }
         }
@@ -359,7 +696,14 @@ def build_prs(
     now: datetime,
     taxonomy: dict[str, dict[str, list[str]]],
     field_to_domain: dict[str, str],
+    proposals: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
+    proposals_by_num: dict[int, dict[str, Any]] = {}
+    proposals_by_discussion: dict[int, dict[str, Any]] = {}
+    for p in proposals or []:
+        if p.get("proposal_number") is not None:
+            proposals_by_num[p["proposal_number"]] = p
+        proposals_by_discussion[p["number"]] = p
     rows = []
     for n in nodes:
         labels = [lab["name"] for lab in n["labels"]["nodes"]]
@@ -391,6 +735,23 @@ def build_prs(
             ci = commits[0]["commit"]["statusCheckRollup"]["state"].lower()
         author = n.get("author") or {}
         state = (n.get("state") or "OPEN").lower()  # "open" | "closed" | "merged"
+        comments = n.get("comments", {}).get("nodes", []) or []
+        trials = parse_trial_results(comments)
+        rubric = parse_rubric_review(comments)
+        cheat = parse_cheat_results(comments)
+        linked = find_linked_proposal(
+            n["title"], n.get("bodyText") or "", proposals_by_num, proposals_by_discussion
+        )
+        linked_proposal = (
+            {
+                "proposal_number": linked["proposal_number"],
+                "discussion_number": linked["number"],
+                "title": linked["title"],
+                "url": linked["url"],
+            }
+            if linked
+            else None
+        )
         rows.append({
             "number": n["number"],
             "title": n["title"],
@@ -412,6 +773,10 @@ def build_prs(
             "merged_days": age_days(n["mergedAt"], now) if n.get("mergedAt") else None,
             "closed_days": age_days(n["closedAt"], now) if n.get("closedAt") else None,
             "ci": ci,
+            "trials": trials,
+            "rubric": rubric,
+            "cheat": cheat,
+            "linked_proposal": linked_proposal,
             "created_at": n["createdAt"],
             "updated_at": n["updatedAt"],
             "merged_at": n.get("mergedAt"),
@@ -443,14 +808,11 @@ def build_proposals(
                 domain, subfield, raw_field = d2, s2, r2
 
         gh_author = n.get("author") or {}
-        # Prefer the **Proposed by @handle** attribution backfilled into the
-        # body — that's the original Airtable submitter. Fall back to the GH
-        # discussion author when no attribution line is present.
         author_login: str = gh_author.get("login", "ghost")
         author_avatar: str | None = gh_author.get("avatarUrl")
-        m = PROPOSED_BY_RE.search(n.get("body") or "")
-        if m:
-            author_login = m.group(1)
+        attributed_login, _attributed_name = parse_proposal_author(n.get("body") or "")
+        if attributed_login:
+            author_login = attributed_login
             author_avatar = f"https://github.com/{author_login}.png?size=80"
         has_pr = False
         if proposal_number is not None:
@@ -458,22 +820,30 @@ def build_proposals(
             has_pr = any(needle in t for t in pr_titles)
 
         llm_review = parse_llm_review(n.get("comments", {}).get("nodes", []) or [])
+        # Human-review status is purely label-driven — a GH-closed discussion
+        # without an explicit `proposal-declined` label stays `pending` (it
+        # just lives in the Closed state-pill bucket).
         status = derive_status(labels)
-        # Three-way state for the proposals toggle: maintainer-approved beats
-        # GH-closed (an approved proposal can be closed once its PR opens);
-        # GH-closed otherwise means rejected/abandoned; everything else is open.
-        if status == "approved":
-            state = "approved"
-        elif n.get("closed") or status == "rejected":
-            state = "closed"
-        else:
-            state = "open"
+        state = "closed" if n.get("closed") else "open"
         rows.append({
             "number": n["number"],
             "proposal_number": proposal_number,
             "title": clean_title or n["title"],
             "raw_title": n["title"],
             "url": n["url"],
+            "body": n.get("body") or "",
+            "comments_list": [
+                {
+                    "url": c.get("url"),
+                    "created_at": c.get("createdAt"),
+                    "author": {
+                        "login": ((c.get("author") or {}).get("login") or "ghost"),
+                        "avatar_url": (c.get("author") or {}).get("avatarUrl"),
+                    },
+                    "body": c.get("body") or "",
+                }
+                for c in (n.get("comments", {}).get("nodes", []) or [])
+            ],
             "author": {
                 "login": author_login,
                 "avatar_url": author_avatar,
@@ -552,10 +922,14 @@ def main() -> int:
     # Cap PR pages so closed/merged history doesn't bloat the payload. 8 pages
     # × 50 = up to 400 most-recently-updated PRs covering every open one plus
     # plenty of recent merges/closes.
-    pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=8)
+    pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=16)
     discussion_nodes = paged(DISCUSSION_QUERY, "discussions")
 
-    prs = build_prs(pr_nodes, now, taxonomy, field_to_domain)
+    # Build proposals first so we can backreference them when linking PRs.
+    # We pass an empty pr_titles list initially since has_pr can still update
+    # after PR build, but the PR's linked_proposal points back here.
+    proposals_pre = build_proposals(discussion_nodes, now, [], field_to_domain)
+    prs = build_prs(pr_nodes, now, taxonomy, field_to_domain, proposals_pre)
     proposals = build_proposals(
         discussion_nodes, now, [p["title"] for p in prs], field_to_domain
     )
@@ -575,8 +949,9 @@ def main() -> int:
             "merged_prs": sum(1 for p in prs if p["state"] == "merged"),
             "closed_prs": sum(1 for p in prs if p["state"] == "closed"),
             "open_proposals": sum(1 for p in proposals if p["state"] == "open"),
-            "approved_proposals": sum(1 for p in proposals if p["state"] == "approved"),
             "closed_proposals": sum(1 for p in proposals if p["state"] == "closed"),
+            "approved_proposals": sum(1 for p in proposals if p["status"] == "approved"),
+            "declined_proposals": sum(1 for p in proposals if p["status"] == "rejected"),
             "pending_proposals": sum(1 for p in proposals if p["status"] == "pending"),
             "needs_reviewer": sum(1 for p in prs if p["ball_in_court"] == "reviewer"),
             "needs_author": sum(1 for p in prs if p["ball_in_court"] == "author"),

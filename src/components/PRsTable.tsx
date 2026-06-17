@@ -8,7 +8,15 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, BookOpen, ExternalLink } from "lucide-react"
+import {
+  ArrowUpDown,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  CircleDashed,
+  ExternalLink,
+  XCircle,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,47 +27,102 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { type PR, type PRState } from "@/lib/data"
+import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
+import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
-import { BallChip, CIChip, FieldChip, StageChip, UserCell } from "./Chips"
+import {
+  BallChip,
+  CheatChip,
+  CIChip,
+  FieldChip,
+  RubricChip,
+  StageChip,
+  TrialsChip,
+  UserCell,
+} from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
-import { SearchInput } from "./Filters"
+import { FilterChip, SearchInput } from "./Filters"
+
+function StageMini({ filled }: { filled: 0 | 1 | 2 | 3 }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[0, 1, 2].map((i) =>
+        i < filled ? (
+          <Check
+            key={i}
+            className="h-3 w-3 text-green-700 dark:text-green-400"
+            strokeWidth={3}
+          />
+        ) : (
+          <CircleDashed
+            key={i}
+            className="h-3 w-3 text-muted-foreground"
+            strokeWidth={2}
+          />
+        ),
+      )}
+    </span>
+  )
+}
 
 const STAGE_OPTIONS = [
-  { value: "none", label: "queued" },
-  { value: "1st", label: "1st pass ✓" },
-  { value: "2nd", label: "2nd pass ✓" },
-  { value: "3rd", label: "3rd pass ✓" },
+  { value: "none", label: "queued", render: <StageMini filled={0} /> },
+  { value: "1st", label: "1st pass", render: <StageMini filled={1} /> },
+  { value: "2nd", label: "2nd pass", render: <StageMini filled={2} /> },
+  { value: "3rd", label: "3rd pass", render: <StageMini filled={3} /> },
 ]
 
 const BALL_OPTIONS = [
-  { value: "reviewer", label: "reviewer" },
-  { value: "author", label: "author" },
+  {
+    value: "reviewer",
+    label: "reviewer",
+    render: (
+      <span className="font-medium text-amber-700 dark:text-amber-400">reviewer</span>
+    ),
+  },
+  {
+    value: "author",
+    label: "author",
+    render: (
+      <span className="font-medium text-red-700 dark:text-red-400">author</span>
+    ),
+  },
 ]
 
 const CI_OPTIONS = [
-  { value: "success", label: "passing" },
-  { value: "failure", label: "failing" },
-  { value: "pending", label: "pending" },
-  { value: "error", label: "error" },
+  {
+    value: "success",
+    label: "passing",
+    render: (
+      <CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-400" />
+    ),
+  },
+  {
+    value: "failure",
+    label: "failing",
+    render: <XCircle className="h-4 w-4 text-red-700 dark:text-red-400" />,
+  },
 ]
 
-/** Pill-shaped Open / Merged / Closed switcher — same shape language as the
- * theme toggle, just with text + count instead of icons. */
+/** Pill-shaped All / Open / Merged / Closed switcher — same shape language as
+ * the theme toggle, just with text + count instead of icons. */
 function StateToggle({
   value,
   onChange,
   counts,
+  total,
 }: {
-  value: PRState
-  onChange: (v: PRState) => void
+  value: PRState | "all"
+  onChange: (v: PRState | "all") => void
   counts: Record<PRState, number>
+  total: number
 }) {
-  const items: { value: PRState; label: string }[] = [
-    { value: "open", label: "Open" },
-    { value: "merged", label: "Merged" },
-    { value: "closed", label: "Closed" },
+  const items: { value: PRState | "all"; label: string; count: number }[] = [
+    { value: "all", label: "All", count: total },
+    { value: "open", label: "Open", count: counts.open ?? 0 },
+    { value: "merged", label: "Merged", count: counts.merged ?? 0 },
+    { value: "closed", label: "Closed", count: counts.closed ?? 0 },
   ]
   return (
     <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
@@ -86,13 +149,24 @@ function StateToggle({
                 active ? "text-accent-foreground/70" : "text-muted-foreground/70",
               )}
             >
-              {counts[it.value] ?? 0}
+              {it.count}
             </span>
           </button>
         )
       })}
     </div>
   )
+}
+
+function formatPostedDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const sameYear = d.getFullYear() === now.getFullYear()
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  })
 }
 
 function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, number> {
@@ -106,12 +180,14 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
 }
 
 export function PRsTable({ prs }: { prs: PR[] }) {
+  const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "ball_in_court", desc: false },
-    { id: "age_days", desc: true },
+    // Newest first — sort by PR number descending. Avoids ties between PRs
+    // created on the same day that age_days can't distinguish.
+    { id: "number", desc: true },
   ])
   const [search, setSearch] = useState("")
-  const [state, setState] = useState<PRState>("open")
+  const [state, setState] = useState<PRState | "all">("all")
   const [field, setField] = useState<string | null>(null)
   const [stage, setStage] = useState<string | null>(null)
   const [ball, setBall] = useState<string | null>(null)
@@ -122,7 +198,7 @@ export function PRsTable({ prs }: { prs: PR[] }) {
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
-      if (p.state !== state) return false
+      if (state !== "all" && p.state !== state) return false
       if (field) {
         // `__domain:<slug>` means "items in this domain with no subfield" (e.g.
         // anything filed under tasks/other/). Plain slug matches by subfield.
@@ -144,37 +220,40 @@ export function PRsTable({ prs }: { prs: PR[] }) {
     })
   }, [prs, search, state, field, stage, ball, author, dri, ci])
 
-  // Counts come from the FULL unfiltered set so the popover always offers all
-  // values; counts reflect availability in the current dataset.
+  // Popover counts respect the active state pill so the dropdown number
+  // matches the actual row count after applying that author/field/etc.
+  const stateFiltered = useMemo(
+    () => (state === "all" ? prs : prs.filter((p) => p.state === state)),
+    [prs, state],
+  )
   const fieldCounts = useMemo(() => {
-    const c = countBy(prs, (p) => p.subfield)
-    // Surface a count for `__domain:<slug>` buckets too so the popover shows
-    // "(uncategorized): N" for domains like `other`.
-    for (const p of prs) {
+    const c = countBy(stateFiltered, (p) => p.subfield)
+    for (const p of stateFiltered) {
       if (!p.subfield && p.domain) {
         const key = `__domain:${p.domain}`
         c[key] = (c[key] ?? 0) + 1
       }
     }
     return c
-  }, [prs])
+  }, [stateFiltered])
   const authorOptions = useMemo(() => {
-    const c = countBy(prs, (p) => p.author.login)
+    const c = countBy(stateFiltered, (p) => p.author.login)
     return Object.entries(c)
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }))
-  }, [prs])
+  }, [stateFiltered])
   const driOptions = useMemo(() => {
-    const c = countBy(prs, (p) => p.dri?.login ?? null)
+    const c = countBy(stateFiltered, (p) => p.dri?.login ?? null)
     return Object.entries(c)
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }))
-  }, [prs])
+  }, [stateFiltered])
 
   const columns = useMemo<ColumnDef<PR>[]>(
     () => [
       {
         accessorKey: "number",
+        size: 70,
         header: "#",
         cell: ({ row }) => (
           <a
@@ -187,16 +266,16 @@ export function PRsTable({ prs }: { prs: PR[] }) {
             <ExternalLink className="h-3 w-3" />
           </a>
         ),
-        size: 70,
       },
       {
         accessorKey: "title",
+        size: 340,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Title <ArrowUpDown className="h-3 w-3" />
+            TITLE <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
@@ -212,6 +291,7 @@ export function PRsTable({ prs }: { prs: PR[] }) {
       },
       {
         accessorKey: "subfield",
+        size: 220,
         header: () => (
           <FieldColumnFilter value={field} onChange={setField} counts={fieldCounts} />
         ),
@@ -220,46 +300,11 @@ export function PRsTable({ prs }: { prs: PR[] }) {
         ),
       },
       {
-        accessorKey: "review_stage",
-        header: () => (
-          <ColumnFilter
-            title="Stage"
-            value={stage}
-            onChange={setStage}
-            options={STAGE_OPTIONS}
-          />
-        ),
-        cell: ({ row }) => <StageChip stage={row.original.review_stage} />,
-      },
-      {
-        accessorKey: "ball_in_court",
-        header: () => (
-          <ColumnFilter
-            title="Action on"
-            value={ball}
-            onChange={setBall}
-            options={BALL_OPTIONS}
-          />
-        ),
-        cell: ({ row }) => <BallChip ball={row.original.ball_in_court} />,
-      },
-      {
-        accessorKey: "dri",
-        header: () => (
-          <ColumnFilter
-            title="DRI"
-            value={dri}
-            onChange={setDri}
-            options={driOptions}
-          />
-        ),
-        cell: ({ row }) => <UserCell user={row.original.dri} />,
-      },
-      {
         accessorKey: "author",
+        size: 180,
         header: () => (
           <ColumnFilter
-            title="Author"
+            title="AUTHOR"
             value={author}
             onChange={setAuthor}
             options={authorOptions}
@@ -268,47 +313,135 @@ export function PRsTable({ prs }: { prs: PR[] }) {
         cell: ({ row }) => <UserCell user={row.original.author} />,
       },
       {
+        accessorKey: "dri",
+        size: 180,
+        header: () => (
+          <ColumnFilter
+            title="REVIEWER"
+            value={dri}
+            onChange={setDri}
+            options={driOptions}
+          />
+        ),
+        cell: ({ row }) => <UserCell user={row.original.dri} />,
+      },
+      {
+        accessorKey: "review_stage",
+        size: 90,
+        header: () => (
+          <ColumnFilter
+            title="STAGE"
+            value={stage}
+            onChange={setStage}
+            options={STAGE_OPTIONS}
+          />
+        ),
+        cell: ({ row }) => (
+          <StageChip
+            stage={row.original.review_stage}
+            action={row.original.ball_in_court}
+          />
+        ),
+      },
+      {
+        accessorKey: "ball_in_court",
+        size: 100,
+        header: () => (
+          <ColumnFilter
+            title="ACTION"
+            value={ball}
+            onChange={setBall}
+            options={BALL_OPTIONS}
+          />
+        ),
+        cell: ({ row }) => <BallChip ball={row.original.ball_in_court} />,
+      },
+      {
         accessorKey: "ci",
+        size: 60,
         header: () => (
           <ColumnFilter title="CI" value={ci} onChange={setCi} options={CI_OPTIONS} />
         ),
         cell: ({ row }) => <CIChip ci={row.original.ci} />,
-        size: 50,
       },
       {
-        accessorKey: "age_days",
-        header: ({ column }) => (
-          <button
-            className="inline-flex items-center gap-1"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Age <ArrowUpDown className="h-3 w-3" />
-          </button>
-        ),
+        accessorKey: "rubric",
+        size: 90,
+        header: "RUBRIC",
+        cell: ({ row }) => <RubricChip rubric={row.original.rubric} />,
+      },
+      {
+        accessorKey: "trials",
+        size: 170,
+        header: "FRONTIER TRIALS",
+        cell: ({ row }) => <TrialsChip trials={row.original.trials} />,
+      },
+      {
+        accessorKey: "cheat",
+        size: 100,
+        header: "CHEAT",
+        cell: ({ row }) => <CheatChip cheat={row.original.cheat} />,
+      },
+      {
+        accessorKey: "linked_proposal",
+        size: 100,
+        header: "PROPOSAL",
         cell: ({ row }) => {
-          const d = row.original.age_days
-          const stale = d >= 14
+          const lp = row.original.linked_proposal
+          if (!lp) return <span className="text-xs text-muted-foreground">—</span>
+          const label = lp.proposal_number !== null ? `#${lp.proposal_number}` : `#d${lp.discussion_number}`
           return (
-            <span className={stale ? "font-medium text-amber-600" : "text-muted-foreground"}>
-              {d}d
-            </span>
+            <a
+              href={lp.url}
+              target="_blank"
+              rel="noreferrer"
+              title={lp.title}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              {label}
+              <ExternalLink className="h-3 w-3" />
+            </a>
           )
         },
       },
       {
         accessorKey: "updated_days",
+        size: 100,
         header: ({ column }) => (
           <button
-            className="inline-flex items-center gap-1"
+            className="inline-flex items-start gap-1 text-left"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Last act. <ArrowUpDown className="h-3 w-3" />
+            <span className="font-medium">UPDATED</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
           </button>
         ),
         cell: ({ row }) => {
           const d = row.original.updated_days
           return <span className="text-muted-foreground">{d === 0 ? "today" : `${d}d`}</span>
         },
+      },
+      {
+        accessorKey: "age_days",
+        size: 110,
+        header: ({ column }) => (
+          <button
+            className="inline-flex items-start gap-1 text-left"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <span className="font-medium">POSTED</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
+          </button>
+        ),
+        cell: ({ row }) => (
+          <span
+            className="text-muted-foreground"
+            title={`${row.original.age_days} days ago`}
+          >
+            {formatPostedDate(row.original.created_at)}
+          </span>
+        ),
       },
     ],
     [field, stage, ball, dri, author, ci, fieldCounts, driOptions, authorOptions],
@@ -343,7 +476,7 @@ export function PRsTable({ prs }: { prs: PR[] }) {
           placeholder="Search"
           className="max-w-sm"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} />
         {anyFilter && (
           <Button
             variant="ghost"
@@ -362,6 +495,41 @@ export function PRsTable({ prs }: { prs: PR[] }) {
             Clear filters
           </Button>
         )}
+        {field && (
+          <FilterChip
+            label="Field"
+            value={
+              field.startsWith("__domain:")
+                ? `${DOMAIN_LABELS[field.slice("__domain:".length) as Domain] ?? field.slice("__domain:".length)} (other)`
+                : (field_labels[field] ?? field)
+            }
+            onClear={() => setField(null)}
+          />
+        )}
+        {stage && (
+          <FilterChip
+            label="Stage"
+            value={STAGE_OPTIONS.find((o) => o.value === stage)?.label ?? stage}
+            onClear={() => setStage(null)}
+          />
+        )}
+        {ball && (
+          <FilterChip label="Action" value={ball} onClear={() => setBall(null)} />
+        )}
+        {dri && <FilterChip label="Reviewer" value={dri} onClear={() => setDri(null)} />}
+        {author && (
+          <FilterChip label="Author" value={author} onClear={() => setAuthor(null)} />
+        )}
+        {ci && (
+          <FilterChip
+            label="CI"
+            value={CI_OPTIONS.find((o) => o.value === ci)?.label ?? ci}
+            onClear={() => setCi(null)}
+          />
+        )}
+        <span className="text-xs text-muted-foreground">
+          {filtered.length} {filtered.length === 1 ? "row" : "rows"}
+        </span>
         <a
           href="https://github.com/harbor-framework/terminal-bench-science/blob/main/CONTRIBUTING.md"
           target="_blank"
@@ -374,12 +542,12 @@ export function PRsTable({ prs }: { prs: PR[] }) {
       </div>
 
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
                 {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
+                  <TableHead key={h.id} style={{ width: h.getSize() }}>
                     {h.isPlaceholder
                       ? null
                       : flexRender(h.column.columnDef.header, h.getContext())}

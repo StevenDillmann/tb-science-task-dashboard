@@ -1,10 +1,42 @@
-import { CheckCircle2, CircleSlash, Clock, XCircle } from "lucide-react"
-import type { MouseEventHandler, ReactNode } from "react"
+import {
+  Check,
+  CheckCircle2,
+  Circle,
+  CircleDashed,
+  Clock,
+  RotateCw,
+  TriangleAlert,
+  X as XIcon,
+  XCircle,
+} from "lucide-react"
+import type { ComponentType, MouseEventHandler, ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { DOMAIN_COLORS, DOMAIN_LABELS, type Domain } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
+
+/** Lucide doesn't ship a plain `?` icon (only CircleHelp), so render one
+ * via a typographic span styled like the other status icons. Accepts the
+ * same props shape as a lucide icon (className, strokeWidth ignored). */
+function QuestionGlyph({
+  className,
+}: {
+  className?: string
+  strokeWidth?: number
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none",
+        className,
+      )}
+      aria-hidden
+    >
+      ?
+    </span>
+  )
+}
 
 /** Wraps a chip's contents in a button when an onClick is provided.
  * Otherwise renders as a static div so it doesn't grab focus.
@@ -128,99 +160,427 @@ export function BallChip({
   onClick?: () => void
   active?: boolean
 }) {
+  // Matches the Stage column's palette: amber when waiting on reviewer (= the
+  // amber pending circle), red when waiting on author (= the red iteration
+  // arrow). Consistent "where is action needed" colour story.
   if (ball === "reviewer") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <Badge className="border-transparent bg-amber-500 text-amber-50 hover:bg-amber-500">
+        <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
           reviewer
-        </Badge>
+        </span>
       </Clickable>
     )
   }
   if (ball === "author") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <Badge className="border-transparent bg-violet-500 text-violet-50 hover:bg-violet-500">
+        <span className="text-xs font-medium text-red-700 dark:text-red-400">
           author
-        </Badge>
+        </span>
       </Clickable>
     )
   }
-  return <Badge variant="outline" className="text-muted-foreground">—</Badge>
+  return <span className="text-xs text-muted-foreground">—</span>
 }
 
 export function StageChip({
   stage,
+  action,
   onClick,
   active,
 }: {
   stage: "1st" | "2nd" | "3rd" | "none"
+  /** Who needs to act on the *in-flight* pass right now.
+   *  - "reviewer" → yellow pending dot
+   *  - "author"   → amber iteration arrow (changes requested)
+   *  - null/undefined → outlined circle */
+  action?: "reviewer" | "author" | null
   onClick?: () => void
   active?: boolean
 }) {
-  if (stage === "none") {
-    return (
-      <Clickable onClick={onClick} active={active}>
-        <Badge variant="outline" className="text-muted-foreground">queued</Badge>
-      </Clickable>
-    )
+  const filled = stage === "1st" ? 1 : stage === "2nd" ? 2 : stage === "3rd" ? 3 : 0
+  const baseLabels = [
+    "No passes yet",
+    "1st pass approved",
+    "2nd pass approved",
+    "All 3 passes approved",
+  ]
+  let title = baseLabels[filled]
+  if (filled < 3 && action === "author") {
+    title = `${baseLabels[filled]} · changes requested on pass ${filled + 1}`
+  } else if (filled < 3 && action === "reviewer") {
+    title = `${baseLabels[filled]} · pass ${filled + 1} pending review`
   }
-  const map = {
-    "1st": "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100",
-    "2nd": "bg-blue-200 text-blue-900 dark:bg-blue-700 dark:text-blue-100",
-    "3rd": "bg-green-200 text-green-900 dark:bg-green-700 dark:text-green-100",
-  } as const
   return (
-    <Clickable onClick={onClick} active={active}>
-      <Badge className={cn("border-transparent", map[stage])}>{stage} pass ✓</Badge>
+    <Clickable onClick={onClick} active={active} title={title}>
+      <span className="inline-flex items-center gap-0.5">
+        {[0, 1, 2].map((i) => {
+          let icon: ReactNode
+          if (i < filled) {
+            icon = (
+              <Check
+                className="h-3.5 w-3.5 text-green-700 dark:text-green-400"
+                strokeWidth={3}
+              />
+            )
+          } else if (i === filled && action === "author") {
+            icon = (
+              <RotateCw
+                className="h-3 w-3 text-red-700 dark:text-red-400"
+                strokeWidth={2.5}
+              />
+            )
+          } else if (i === filled && action === "reviewer") {
+            icon = (
+              <Circle
+                className="h-3 w-3 text-amber-600 dark:text-amber-400"
+                strokeWidth={2.5}
+              />
+            )
+          } else {
+            icon = (
+              <CircleDashed
+                className="h-3 w-3 text-muted-foreground"
+                strokeWidth={2}
+              />
+            )
+          }
+          // Fixed-width slot so the Stage cell stays the same width
+          // regardless of which icon is rendered in each position.
+          return (
+            <span
+              key={i}
+              className="inline-flex h-4 w-4 items-center justify-center"
+            >
+              {icon}
+            </span>
+          )
+        })}
+      </span>
     </Clickable>
   )
 }
 
-export function CIChip({ ci }: { ci: string | null }) {
-  if (!ci) {
-    return <CircleSlash className="h-4 w-4 text-muted-foreground" aria-label="no CI" />
+export function CheatChip({
+  cheat,
+}: {
+  cheat: {
+    succeeded: number
+    blocked: number
+    total: number
+    by_model: Array<{
+      model: "claude" | "gpt" | "gemini" | "other"
+      display: string
+      results: Array<"succeeded" | "blocked" | "none">
+    }>
+    url: string | null
+  } | null
+}) {
+  if (!cheat || cheat.total === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>
   }
+  const { succeeded, blocked, total, by_model, url } = cheat
+  const title = succeeded > 0
+    ? `Cheat trials: ${succeeded} of ${total} succeeded — task is hackable`
+    : `Cheat trials: all ${blocked} blocked`
+
+  // No model labels (cheat uses the same agents as trials, redundant).
+  const inner = by_model.length === 0 ? (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      {succeeded > 0 ? `${succeeded}/${total} hacked` : "safe"}
+    </span>
+  ) : (
+    <span className="inline-flex flex-col gap-0.5">
+      {by_model.map((m, i) => (
+        <span
+          key={i}
+          className="inline-flex items-center gap-px"
+          title={m.display}
+        >
+          {m.results.map((r, j) => {
+            // Mirror upstream literally: ✅ in the cheat table → green check,
+            // ❌ → red X. Reader applies cheat semantics (a ✓ here means the
+            // agent successfully cheated = task is hackable).
+            if (r === "succeeded") {
+              return (
+                <Check
+                  key={j}
+                  className="h-3 w-3 text-green-700 dark:text-green-400"
+                  strokeWidth={3}
+                />
+              )
+            }
+            if (r === "blocked") {
+              return (
+                <XIcon
+                  key={j}
+                  className="h-3 w-3 text-red-700 dark:text-red-400"
+                  strokeWidth={3}
+                />
+              )
+            }
+            return (
+              <TriangleAlert
+                key={j}
+                className="h-3 w-3 text-amber-600 dark:text-amber-400"
+                strokeWidth={2}
+              />
+            )
+          })}
+        </span>
+      ))}
+    </span>
+  )
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={title}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:opacity-80"
+      >
+        {inner}
+      </a>
+    )
+  }
+  return <span title={title}>{inner}</span>
+}
+
+export function RubricChip({
+  rubric,
+}: {
+  rubric: {
+    passed: number
+    failed: number
+    warning: number
+    total: number
+    url: string | null
+  } | null
+}) {
+  if (!rubric || rubric.total === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const { passed, failed, total, url } = rubric
+  const clean = failed === 0
+  const text = clean
+    ? "text-green-700 dark:text-green-400"
+    : "text-amber-700 dark:text-amber-400"
+  const dot = clean ? "bg-green-500" : "bg-amber-500"
+  const inner = (
+    <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", text)}>
+      <span className={cn("size-2 rounded-full", dot)} />
+      {passed}/{total}
+    </span>
+  )
+  const title = `Implementation rubric: ${passed} of ${total} criteria passed${failed ? ` (${failed} failed)` : ""}`
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={title}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:underline underline-offset-4"
+      >
+        {inner}
+      </a>
+    )
+  }
+  return <span title={title}>{inner}</span>
+}
+
+const MODEL_LABEL: Record<string, string> = {
+  claude: "CLAUDE",
+  gpt: "GPT",
+  gemini: "GEMINI",
+  other: "OTHER",
+}
+
+export function TrialsChip({
+  trials,
+}: {
+  trials: {
+    passed: number
+    total: number
+    by_model: Array<{
+      model: "claude" | "gpt" | "gemini" | "other"
+      display: string
+      results: Array<"pass" | "fail" | "none">
+    }>
+    url: string | null
+  } | null
+}) {
+  if (!trials || trials.total === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const { passed, total, by_model, url } = trials
+  const title = `Agent trials: ${passed} of ${total} passed`
+
+  // Fallback to summary chip if we couldn't parse per-model data.
+  const inner = by_model.length === 0 ? (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      {passed}/{total}
+    </span>
+  ) : (
+    <span className="inline-flex flex-col gap-0.5">
+      {by_model.map((m, i) => (
+        <span key={i} className="inline-flex items-center gap-1.5" title={m.display}>
+          <span className="w-12 text-[10px] font-medium tracking-wider text-muted-foreground">
+            {MODEL_LABEL[m.model] ?? "OTHER"}
+          </span>
+          <span className="inline-flex items-center gap-px">
+            {m.results.map((r, j) => {
+              if (r === "pass") {
+                return (
+                  <Check
+                    key={j}
+                    className="h-3 w-3 text-green-700 dark:text-green-400"
+                    strokeWidth={3}
+                  />
+                )
+              }
+              if (r === "fail") {
+                return (
+                  <XIcon
+                    key={j}
+                    className="h-3 w-3 text-red-700 dark:text-red-400"
+                    strokeWidth={3}
+                  />
+                )
+              }
+              return (
+                <TriangleAlert
+                  key={j}
+                  className="h-3 w-3 text-amber-600 dark:text-amber-400"
+                  strokeWidth={2}
+                />
+              )
+            })}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={title}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:opacity-80"
+      >
+        {inner}
+      </a>
+    )
+  }
+  return <span title={title}>{inner}</span>
+}
+
+export function CIChip({ ci }: { ci: string | null }) {
   if (ci === "success") {
-    return <CheckCircle2 className="h-4 w-4 text-green-600" aria-label="CI passing" />
+    return (
+      <CheckCircle2
+        className="h-4 w-4 text-green-700 dark:text-green-400"
+        aria-label="CI passing"
+      />
+    )
   }
   if (ci === "failure" || ci === "error") {
-    return <XCircle className="h-4 w-4 text-red-600" aria-label="CI failing" />
+    return (
+      <XCircle
+        className="h-4 w-4 text-red-700 dark:text-red-400"
+        aria-label="CI failing"
+      />
+    )
   }
-  return <Clock className="h-4 w-4 text-amber-600" aria-label="CI pending" />
+  return <span className="text-xs text-muted-foreground">—</span>
+}
+
+export function HumanReviewChip({
+  status,
+  compact,
+}: {
+  status: "approved" | "rejected" | "pending"
+  /** When true, show only the icon (no label text). */
+  compact?: boolean
+}) {
+  type Cfg = { Icon: typeof Check; label: string; text: string; title: string }
+  const map: Record<string, Cfg> = {
+    approved: {
+      Icon: Check,
+      label: "approved",
+      text: "text-green-700 dark:text-green-400",
+      title: "Maintainer review: approved",
+    },
+    pending: {
+      Icon: Clock,
+      label: "pending",
+      text: "text-amber-700 dark:text-amber-400",
+      title: "Maintainer review: pending",
+    },
+    rejected: {
+      Icon: XIcon,
+      label: "declined",
+      text: "text-red-700 dark:text-red-400",
+      title: "Maintainer review: declined",
+    },
+  }
+  const cfg = map[status] ?? map.pending
+  return (
+    <span
+      title={cfg.title}
+      className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}
+    >
+      <cfg.Icon className="h-3 w-3" strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2} />
+      {!compact && cfg.label}
+    </span>
+  )
 }
 
 export function LLMReviewChip({
   recommendation,
   url,
+  compact,
 }: {
   recommendation: "accept" | "uncertain" | "reject" | "unknown" | null
   url: string | null
+  /** When true, show only the icon (no label text). */
+  compact?: boolean
 }) {
   if (!recommendation) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
-  const map: Record<string, { dot: string; label: string; text: string; title: string }> = {
+  type IconC = ComponentType<{ className?: string; strokeWidth?: number }>
+  type Cfg = { Icon: IconC | null; label: string; text: string; title: string }
+  const map: Record<string, Cfg> = {
     accept: {
-      dot: "bg-green-500",
+      Icon: Check as IconC,
       label: "accept",
       text: "text-green-700 dark:text-green-400",
       title: "LLM rubric review · accept",
     },
     uncertain: {
-      dot: "bg-amber-500",
+      Icon: QuestionGlyph,
       label: "uncertain",
       text: "text-amber-700 dark:text-amber-400",
       title: "LLM rubric review · uncertain",
     },
     reject: {
-      dot: "bg-red-500",
+      Icon: XIcon as IconC,
       label: "reject",
       text: "text-red-700 dark:text-red-400",
       title: "LLM rubric review · reject",
     },
     unknown: {
-      dot: "bg-muted-foreground",
+      Icon: null,
       label: "posted",
       text: "text-muted-foreground",
       title: "LLM rubric review present (no parseable recommendation)",
@@ -228,14 +588,14 @@ export function LLMReviewChip({
   }
   const cfg = map[recommendation] ?? map.unknown
   const inner = (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 text-xs font-medium",
-        cfg.text,
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
+      {cfg.Icon && (
+        <cfg.Icon
+          className="h-3 w-3"
+          strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2}
+        />
       )}
-    >
-      <span className={cn("size-2 rounded-full", cfg.dot)} />
-      {cfg.label}
+      {!compact && cfg.label}
     </span>
   )
   if (url) {
@@ -298,18 +658,18 @@ export function UserCell({
 }) {
   if (!user) return <span className="text-muted-foreground">—</span>
   const inner = (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex max-w-full min-w-0 items-center gap-2 align-middle">
       {user.avatar_url ? (
         <img
           src={user.avatar_url}
           alt=""
-          className="h-5 w-5 rounded-full"
+          className="h-5 w-5 shrink-0 rounded-full"
           loading="lazy"
         />
       ) : (
-        <div className="h-5 w-5 rounded-full bg-muted" />
+        <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
       )}
-      <span className="text-sm">{user.login}</span>
+      <span className="min-w-0 truncate text-sm">{user.login}</span>
     </span>
   )
   if (onClick) {
@@ -322,7 +682,7 @@ export function UserCell({
           onClick()
         }}
         className={cn(
-          "rounded px-1 py-0.5 hover:bg-accent",
+          "flex w-full max-w-full min-w-0 items-center rounded py-0.5 pr-2 hover:bg-accent",
           active && "bg-accent",
         )}
       >
@@ -335,7 +695,7 @@ export function UserCell({
       href={`https://github.com/${user.login}`}
       target="_blank"
       rel="noreferrer"
-      className="hover:underline"
+      className="flex w-full max-w-full min-w-0 items-center pr-2 hover:underline"
     >
       {inner}
     </a>

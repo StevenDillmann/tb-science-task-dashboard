@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { ChevronDown, Filter, X } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils"
 export type FilterOption = {
   value: string
   label: string
+  /** Optional custom render — when present, used in place of `label` so the
+   * filter row matches the cell render (e.g. coloured dot + coloured text).
+   * `label` is still used for the active-filter chip and search matching. */
+  render?: ReactNode
   count?: number
 }
 
@@ -67,7 +71,7 @@ export function ColumnFilter({
       <PopoverContent align={align} className="w-56 p-0">
         <div className="border-b p-2">
           <div className="text-xs font-medium text-muted-foreground">
-            Filter by {title.toLowerCase()}
+            Filter
           </div>
           {options.length > 6 && (
             <Input
@@ -111,7 +115,7 @@ export function ColumnFilter({
                   value === opt.value && "bg-accent font-medium",
                 )}
               >
-                <span className="truncate">{opt.label}</span>
+                <span className="truncate">{opt.render ?? opt.label}</span>
                 {opt.count !== undefined && (
                   <span className="font-mono text-[10px] text-muted-foreground">
                     {opt.count}

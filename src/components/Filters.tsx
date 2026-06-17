@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -107,6 +108,30 @@ export function FieldFilter({
         ))}
       </div>
     </div>
+  )
+}
+
+/** Small chip showing an active column filter, with an × to remove it. */
+export function FilterChip({
+  label,
+  value,
+  onClear,
+}: {
+  label: string
+  value: ReactNode
+  onClear: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClear}
+      className="inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs hover:bg-accent"
+      title={`Clear ${label} filter`}
+    >
+      <span className="text-muted-foreground">{label}:</span>
+      <span>{value}</span>
+      <X className="h-3 w-3 text-muted-foreground" />
+    </button>
   )
 }
 

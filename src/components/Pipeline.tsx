@@ -11,10 +11,10 @@ const BENCHMARK_URL = "https://www.tbench.ai/benchmarks/terminal-bench-science"
 export function Pipeline() {
   return (
     <section className="border-l-2 border-foreground/80 pl-4">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        How to contribute a task
+      <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        How to contribute
       </div>
-      <p className="mb-3 text-xs text-foreground">
+      <p className="mb-3 font-prose text-sm leading-relaxed text-foreground">
         We're looking for tasks that are scientifically grounded, objectively
         verifiable, and beyond frontier AI agent capabilities. For more details,
         see the{" "}
@@ -58,14 +58,10 @@ export function Pipeline() {
           <div className="text-xs font-semibold text-[#038F99]">Aug 17, 2026</div>
         </div>
       </div>
-      <div className="mt-2 space-y-1 text-[10px] text-muted-foreground/80">
+      <div className="mt-2 font-prose text-sm leading-relaxed text-muted-foreground/80">
         <p>
           Accepted task contributors are invited to join the reviewer pool, a
           high-trust project role that earns additional authorship credit.
-        </p>
-        <p className="text-muted-foreground/60">
-          Not every proposal or pull request makes it through — only tasks that
-          meet our scientific, technical, and difficulty bar are merged.
         </p>
       </div>
     </section>
