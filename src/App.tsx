@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertCircle, Globe, Loader2, Mail } from "lucide-react"
+import { AlertCircle, Calendar, Globe, Loader2, Mail } from "lucide-react"
 
-import logoLight from "@/assets/tb-science-logo-light.png"
-import logoDark from "@/assets/tb-science-logo-dark.png"
+import logoLight from "@/assets/tb-science-logo-light-bold.png"
+import logoDark from "@/assets/tb-science-logo-dark-bold.png"
 
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,6 +19,8 @@ import { useTheme } from "@/lib/theme"
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const DISCORD_URL = "https://discord.gg/2Pe5uWGcV3"
 const WEBSITE_URL = "https://www.tbench.ai/news/tb-science-announcement"
+const CALENDAR_URL =
+  "https://calendar.google.com/calendar/embed?src=2ca3e7fdc9e51a42ce18142e897f7db23fbf8e65867da1a06dc3ea5e6ad4e893%40group.calendar.google.com&ctz=America%2FLos_Angeles&mode=WEEK"
 const CONTACT_EMAIL = "stevendi@stanford.edu"
 
 function formatGeneratedAt(iso: string): string {
@@ -28,7 +30,10 @@ function formatGeneratedAt(iso: string): string {
   if (min < 60) return `${min} min ago`
   const hr = Math.round(min / 60)
   if (hr < 24) return `${hr}h ago`
-  return d.toLocaleString()
+  const day = Math.round(hr / 24)
+  if (day < 7) return `${day}d ago`
+  const wk = Math.round(day / 7)
+  return `${wk}w ago`
 }
 
 export default function App() {
@@ -96,12 +101,14 @@ export default function App() {
               <Globe className="h-5 w-5" />
             </a>
             <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              title={`Email ${CONTACT_EMAIL}`}
-              aria-label="Contact by email"
+              href={`https://github.com/${UPSTREAM}`}
+              target="_blank"
+              rel="noreferrer"
+              title={UPSTREAM}
+              aria-label="GitHub repository"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <Mail className="h-5 w-5" />
+              <GitHubIcon className="h-5 w-5" />
             </a>
             <a
               href={DISCORD_URL}
@@ -114,14 +121,22 @@ export default function App() {
               <DiscordIcon className="h-5 w-5" />
             </a>
             <a
-              href={`https://github.com/${UPSTREAM}`}
+              href={CALENDAR_URL}
               target="_blank"
               rel="noreferrer"
-              title={UPSTREAM}
-              aria-label="GitHub repository"
+              title="Terminal-Bench Science calendar — weekly meeting & office hours"
+              aria-label="Terminal-Bench Science calendar"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <GitHubIcon className="h-5 w-5" />
+              <Calendar className="h-5 w-5" />
+            </a>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              title={`Email ${CONTACT_EMAIL}`}
+              aria-label="Contact by email"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Mail className="h-5 w-5" />
             </a>
           </div>
         </div>
