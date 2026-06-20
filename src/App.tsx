@@ -14,7 +14,6 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
 import { loadData, type Data } from "@/lib/data"
 import { TaxonomyProvider } from "@/lib/taxonomy"
-import { useTheme } from "@/lib/theme"
 
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const DISCORD_URL = "https://discord.gg/2Pe5uWGcV3"
@@ -49,8 +48,6 @@ export default function App() {
   const [forcedPRState, setForcedPRState] = useState<
     "open" | "merged" | "closed" | null
   >(null)
-  const { resolved } = useTheme()
-
   // Drafts are excluded everywhere — they aren't part of the contribution
   // funnel until they get marked ready for review.
   const visiblePRs = useMemo(
@@ -69,10 +66,21 @@ export default function App() {
       <header className="border-b">
         <div className="container mx-auto flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
+            {/* Render both logos and toggle visibility via Tailwind's
+                `dark:` variant (keyed off the <html class="dark"> set by
+                applyTheme). Switching `<img src>` on theme change can
+                briefly show a flash of the wrong logo on the first
+                swap because the browser hasn't loaded the new file
+                yet; rendering both keeps the swap instant. */}
             <img
-              src={resolved === "dark" ? logoDark : logoLight}
+              src={logoLight}
               alt="Terminal-Bench Science"
-              className="h-12 w-auto"
+              className="h-12 w-auto dark:hidden"
+            />
+            <img
+              src={logoDark}
+              alt="Terminal-Bench Science"
+              className="hidden h-12 w-auto dark:block"
             />
             <div className="font-prose">
               <h1 className="text-xl font-semibold uppercase tracking-wider">
