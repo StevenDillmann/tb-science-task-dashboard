@@ -53,11 +53,12 @@ SCIENTIFIC_DOMAIN_RE = re.compile(
 PROPOSED_BY_RE = re.compile(
     r"\*\*\s*Proposed by\s*@([A-Za-z0-9-]+)\s*\*\*", re.IGNORECASE
 )
-# Accepts both "GitHub: https://github.com/handle" and "GitHub: handle".
-# Stripping the URL prefix when present means a single capture group either
-# way.
+# Accepts "GitHub: https://github.com/handle", "GitHub: github.com/handle"
+# (no scheme), and bare "GitHub: handle". The scheme and host prefix are both
+# optional so a single capture group yields the handle in every case —
+# otherwise a scheme-less "github.com/handle" captures "github".
 AUTHOR_GITHUB_RE = re.compile(
-    r"GitHub\s*:\s*(?:https?://github\.com/)?([A-Za-z0-9-]+)", re.IGNORECASE
+    r"GitHub\s*:\s*(?:(?:https?://)?github\.com/)?([A-Za-z0-9-]+)", re.IGNORECASE
 )
 # Form placeholders to ignore so we don't attribute a proposal to "None".
 _GITHUB_PLACEHOLDERS = {"none", "n-a", "na"}
