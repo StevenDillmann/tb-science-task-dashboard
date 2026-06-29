@@ -137,6 +137,14 @@ function StateToggle({
     { value: "merged", label: "Merged", count: counts.merged ?? 0 },
     { value: "closed", label: "Closed", count: counts.closed ?? 0 },
   ]
+  // Active highlight matches the state-pill palette: open=amber, merged=green,
+  // closed=grey, all=neutral accent.
+  const activeTone: Record<string, string> = {
+    all: "bg-accent text-accent-foreground",
+    open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+    merged: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+    closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+  }
   return (
     <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
       {items.map((it) => {
@@ -151,7 +159,7 @@ function StateToggle({
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-medium transition-colors",
               active
-                ? "bg-accent text-accent-foreground"
+                ? activeTone[it.value]
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -159,7 +167,7 @@ function StateToggle({
             <span
               className={cn(
                 "font-mono text-[10px]",
-                active ? "text-accent-foreground/70" : "text-muted-foreground/70",
+                active ? "opacity-70" : "text-muted-foreground/70",
               )}
             >
               {it.count}

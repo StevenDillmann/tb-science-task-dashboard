@@ -209,28 +209,23 @@ export function BallChip({
   return <span className="text-xs text-muted-foreground">—</span>
 }
 
-// Small lifecycle pill rendered under the # in the PR / proposal tables.
-// GitHub-ish palette: open=green, merged/approved=done, closed/declined=muted.
+// Subtle lifecycle marker under the # — just small muted lowercase text,
+// faintly tinted by state. No dot, no filled badge, so it recedes.
 type PillTone = "open" | "merged" | "closed" | "approved" | "declined"
 
-const STATE_PILL_TONE: Record<PillTone, string> = {
-  open: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  merged: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
-  approved: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  closed: "bg-muted text-muted-foreground",
-  declined: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+// Same palette as the review-status glyphs: green = done, amber = active/open,
+// grey = closed/declined.
+const STATE_TEXT_TONE: Record<PillTone, string> = {
+  open: "text-amber-600 dark:text-amber-400",
+  merged: "text-green-700 dark:text-green-400",
+  approved: "text-green-700 dark:text-green-400",
+  closed: "text-red-700 dark:text-red-400",
+  declined: "text-red-700 dark:text-red-400",
 }
 
 export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide",
-        STATE_PILL_TONE[tone],
-      )}
-    >
-      {label}
-    </span>
+    <span className={cn("text-[10px] lowercase", STATE_TEXT_TONE[tone])}>{label}</span>
   )
 }
 
