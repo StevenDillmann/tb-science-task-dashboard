@@ -185,7 +185,7 @@ export function ProposalsTable({
     { id: "proposal_number", desc: true },
   ])
   const [search, setSearch] = useState("")
-  const [state, setState] = useState<ProposalStateFilter | "all">("all")
+  const [state, setState] = useState<ProposalStateFilter | "all">("open")
   const [active, setActive] = useState<Proposal | null>(null)
   const [field, setField] = useState<string | null>(null)
   const [author, setAuthor] = useState<string | null>(null)

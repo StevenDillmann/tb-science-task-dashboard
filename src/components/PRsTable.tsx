@@ -210,7 +210,7 @@ export function PRsTable({
     { id: "number", desc: true },
   ])
   const [search, setSearch] = useState("")
-  const [state, setState] = useState<PRState | "all">("all")
+  const [state, setState] = useState<PRState | "all">("open")
   const [active, setActive] = useState<PR | null>(null)
   const [field, setField] = useState<string | null>(null)
   const [stage, setStage] = useState<string | null>(null)
