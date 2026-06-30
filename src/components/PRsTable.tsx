@@ -82,8 +82,8 @@ function StageMini({ filled }: { filled: 0 | 1 | 2 | 3 }) {
 const STAGE_OPTIONS = [
   { value: "none", label: "queued", render: <StageMini filled={0} /> },
   { value: "1st", label: "1 approval", render: <StageMini filled={1} /> },
-  { value: "2nd", label: "both approved", render: <StageMini filled={2} /> },
-  { value: "3rd", label: "final approved", render: <StageMini filled={3} /> },
+  { value: "2nd", label: "2 approvals", render: <StageMini filled={2} /> },
+  { value: "3rd", label: "3 approvals", render: <StageMini filled={3} /> },
 ]
 
 const BALL_OPTIONS = [
