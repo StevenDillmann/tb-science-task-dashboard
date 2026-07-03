@@ -21,6 +21,7 @@ import {
 import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
+import { numberCodec, useUrlState } from "@/lib/useUrlState"
 import { FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
@@ -192,13 +193,19 @@ export function ProposalsTable({
     // between proposals submitted on the same day that age_days can't break.
     { id: "proposal_number", desc: true },
   ])
-  const [search, setSearch] = useState("")
-  const [state, setState] = useState<ProposalStateFilter | "all">("open")
-  const [active, setActive] = useState<Proposal | null>(null)
-  const [field, setField] = useState<string | null>(null)
-  const [author, setAuthor] = useState<string | null>(null)
-  const [llm, setLlm] = useState<string | null>(null)
-  const [human, setHuman] = useState<string | null>(null)
+  // Filters bound to URL query params (p-prefixed so they don't collide with
+  // the PRs tab's params). `prop` holds the opened proposal's number.
+  const [search, setSearch] = useUrlState("pq", "")
+  const [state, setState] = useUrlState<ProposalStateFilter | "all">("pstate", "open")
+  const [activeNum, setActiveNum] = useUrlState<number | null>("prop", null, numberCodec)
+  const [field, setField] = useUrlState<string | null>("pfield", null)
+  const [author, setAuthor] = useUrlState<string | null>("pauthor", null)
+  const [llm, setLlm] = useUrlState<string | null>("llm", null)
+  const [human, setHuman] = useUrlState<string | null>("human", null)
+  const active = useMemo(
+    () => (activeNum == null ? null : (proposals.find((p) => p.number === activeNum) ?? null)),
+    [proposals, activeNum],
+  )
 
   // Derive the 3-way bucket (open / approved / closed) from the
   // underlying `state` + `status` fields. "Approved" peels off
@@ -314,7 +321,7 @@ export function ProposalsTable({
         cell: ({ row }) => (
           <button
             type="button"
-            onClick={() => setActive(row.original)}
+            onClick={() => setActiveNum(row.original.number)}
             className="text-left font-medium hover:underline underline-offset-4"
           >
             {row.original.title}
@@ -435,7 +442,7 @@ export function ProposalsTable({
     <ProposalSheet
       proposal={active}
       open={active !== null}
-      onOpenChange={(v) => !v && setActive(null)}
+      onOpenChange={(v) => !v && setActiveNum(null)}
     />
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">

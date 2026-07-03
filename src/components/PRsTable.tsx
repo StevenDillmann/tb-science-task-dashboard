@@ -31,6 +31,7 @@ import {
 import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
+import { numberCodec, useUrlState } from "@/lib/useUrlState"
 import {
   BallChip,
   CheatChip,
@@ -217,15 +218,23 @@ export function PRsTable({
     // created on the same day that age_days can't distinguish.
     { id: "number", desc: true },
   ])
-  const [search, setSearch] = useState("")
-  const [state, setState] = useState<PRState | "all">("open")
-  const [active, setActive] = useState<PR | null>(null)
-  const [field, setField] = useState<string | null>(null)
-  const [stage, setStage] = useState<string | null>(null)
-  const [ball, setBall] = useState<string | null>(null)
-  const [author, setAuthor] = useState<string | null>(null)
-  const [dri, setDri] = useState<string | null>(null)
-  const [ci, setCi] = useState<string | null>(null)
+  // Filters are bound to URL query params so a filtered view is shareable and
+  // survives reload / back-forward. `pr` holds the opened PR's number.
+  const [search, setSearch] = useUrlState("q", "")
+  const [state, setState] = useUrlState<PRState | "all">("state", "open")
+  const [activeNum, setActiveNum] = useUrlState<number | null>("pr", null, numberCodec)
+  const [field, setField] = useUrlState<string | null>("field", null)
+  const [stage, setStage] = useUrlState<string | null>("stage", null)
+  const [ball, setBall] = useUrlState<string | null>("ball", null)
+  const [author, setAuthor] = useUrlState<string | null>("author", null)
+  const [dri, setDri] = useUrlState<string | null>("dri", null)
+  const [ci, setCi] = useUrlState<string | null>("ci", null)
+  // The opened PR, resolved from its number in the URL (looked up in the full
+  // list so a deep link opens the panel regardless of the active filters).
+  const active = useMemo(
+    () => (activeNum == null ? null : (prs.find((p) => p.number === activeNum) ?? null)),
+    [prs, activeNum],
+  )
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
@@ -328,7 +337,7 @@ export function PRsTable({
             <div className="flex flex-col gap-1">
               <button
                 type="button"
-                onClick={() => setActive(row.original)}
+                onClick={() => setActiveNum(row.original.number)}
                 className="text-left font-medium hover:underline underline-offset-4"
               >
                 {row.original.title}
@@ -339,7 +348,7 @@ export function PRsTable({
                     <button
                       key={f.number}
                       type="button"
-                      onClick={() => setActive(row.original)}
+                      onClick={() => setActiveNum(row.original.number)}
                       className="self-start font-mono text-[10px] font-semibold uppercase tracking-wider text-blue-700 hover:underline underline-offset-2 dark:text-blue-400"
                       title={`#${f.number} (${f.state}) — ${f.title}`}
                     >
@@ -560,7 +569,7 @@ export function PRsTable({
     <PRSheet
       pr={active}
       open={active !== null}
-      onOpenChange={(v) => !v && setActive(null)}
+      onOpenChange={(v) => !v && setActiveNum(null)}
     />
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">

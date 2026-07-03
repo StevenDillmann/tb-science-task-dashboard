@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
 import { loadData, type Data } from "@/lib/data"
 import { TaxonomyProvider } from "@/lib/taxonomy"
+import { useUrlState } from "@/lib/useUrlState"
 
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const DISCORD_URL = "https://discord.gg/2Pe5uWGcV3"
@@ -38,7 +39,7 @@ function formatGeneratedAt(iso: string): string {
 export default function App() {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<string>("prs")
+  const [tab, setTab] = useUrlState<string>("tab", "prs")
   // When the user clicks a count in Stats, the relevant tab opens and these
   // forced filters get applied by the table (then cleared).
   const [forcedField, setForcedField] = useState<string | null>(null)
