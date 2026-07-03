@@ -1216,7 +1216,13 @@ def build_prs(
             "subfield": subfield,
             "field": raw_field,
             "review_stage": derive_review_stage(reviewers),
-            "ball_in_court": derive_ball_in_court(labels),
+            # Only open PRs are "waiting on" anyone. Merged/closed PRs often keep
+            # a stale `waiting on author` label, and leaving ball_in_court set
+            # (a) miscounts them in needs_author/needs_reviewer and (b) makes the
+            # Stage chip fall back to painting both parallel dots "changes
+            # requested" (reviewers is already [] for non-open PRs). Blank it,
+            # matching the dri/dris/reviewers treatment below.
+            "ball_in_court": derive_ball_in_court(labels) if state == "open" else None,
             "dri": dri if state == "open" else None,
             "dris": dris if state == "open" else [],
             "reviewers": reviewers,  # already [] for non-open PRs
