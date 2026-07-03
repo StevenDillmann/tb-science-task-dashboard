@@ -194,6 +194,57 @@ def derive_ball_in_court(labels: list[str]) -> str | None:
     return None
 
 
+# The CI dot mirrors the upstream checks-passed.yml gate: a PR's CI is "green"
+# when the two MECHANICAL checks pass. Both are deterministic GitHub Actions
+# jobs; the rubric review is an advisory LLM judgment (shown in its own column)
+# and NO LONGER gates, so it must not turn the dot red. Matched by name prefix
+# because execution-checks/rubric-review append the task path to the check name.
+CI_GATE_CHECKS = ("static-checks", "execution-checks")
+
+
+def _check_run_status(conclusion: str | None, status: str | None) -> str:
+    """pass / fail / pending for one check-run, matching checks-passed.yml:
+    incomplete → pending; success|skipped → pass; anything else → fail.
+    """
+    if (status or "").upper() != "COMPLETED":
+        return "pending"
+    if (conclusion or "").upper() in ("SUCCESS", "SKIPPED"):
+        return "pass"
+    return "fail"
+
+
+def derive_ci(rollup: dict[str, Any] | None) -> str | None:
+    """CI state for the dashboard dot, gating ONLY on the mechanical checks.
+
+    "failure" if any mechanical check failed, "pending" if one is still running
+    or hasn't started, "success" if every mechanical check that ran passed.
+    Returns None when the commit carries none of the gate checks (nothing to
+    show) — we deliberately do NOT fall back to the advisory-polluted rollup
+    state.
+    """
+    if not rollup:
+        return None
+    contexts = (rollup.get("contexts", {}) or {}).get("nodes", []) or []
+    # Latest run wins per gate (a re-run appends a newer CheckRun node), mirroring
+    # the `jq 'last'` in checks-passed.yml.
+    latest: dict[str, str] = {}
+    for ctx in contexts:
+        name = ctx.get("name")
+        if not name:
+            continue
+        for gate in CI_GATE_CHECKS:
+            if name.startswith(gate):
+                latest[gate] = _check_run_status(ctx.get("conclusion"), ctx.get("status"))
+    if not latest:
+        return None
+    statuses = latest.values()
+    if any(s == "fail" for s in statuses):
+        return "failure"
+    if any(s == "pending" for s in statuses):
+        return "pending"
+    return "success"
+
+
 def derive_type(labels: list[str]) -> str:
     for lab in ("task fix", "documentation", "new task"):
         if lab in labels:
@@ -539,11 +590,30 @@ query($owner:String!,$name:String!,$cursor:String){
         commits(last:1){
           nodes{
             commit{
-              statusCheckRollup{ state }
+              # We derive the CI dot from the individual mechanical checks
+              # (see derive_ci), NOT the rollup state — the rollup flips to
+              # FAILURE on any failing/cancelled context, including the advisory
+              # rubric-review and cancelled `ping` no-ops.
+              statusCheckRollup{
+                state
+                contexts(first:100){
+                  nodes{
+                    __typename
+                    ... on CheckRun { name conclusion status }
+                    ... on StatusContext { context state }
+                  }
+                }
+              }
             }
           }
         }
-        comments(last:15){
+        # Full comment timeline (paged past 100 by backfill_pr_comments). The
+        # result parsers scan newest-first for the latest /run trial/cheat/rubric
+        # comments, while the reviewer-slots marker is an EARLY comment — a fixed
+        # `last:N` / `first:N` window truncates one end or the other, so we take
+        # the whole list and never guess where the comment we need landed.
+        comments(first:100){
+          pageInfo{ hasNextPage endCursor }
           nodes{
             url
             author{ login }
@@ -556,6 +626,59 @@ query($owner:String!,$name:String!,$cursor:String){
   }
 }
 """
+
+
+# Page through a single PR's remaining comments when it has more than the 100
+# the PR_QUERY pulls in one shot. Keeps `comments.nodes` chronological.
+PR_COMMENTS_QUERY = """
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      comments(first:100,after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{
+          url
+          author{ login }
+          body
+          bodyText
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def backfill_pr_comments(nodes: list[dict[str, Any]]) -> None:
+    """Ensure every PR node carries its COMPLETE comment timeline.
+
+    PR_QUERY fetches the first 100 comments per PR. On the rare high-traffic PR
+    with more than that, page through the rest so the /run result parsers (which
+    scan newest-first) and the reviewer-slots marker (an early comment) both see
+    the full list rather than a truncated window. Mutates `nodes` in place.
+    """
+    backfilled = 0
+    for n in nodes:
+        conn = n.get("comments", {})
+        page = conn.get("pageInfo", {}) or {}
+        if not page.get("hasNextPage"):
+            continue
+        cursor = page.get("endCursor")
+        while cursor:
+            data = graphql(PR_COMMENTS_QUERY, {
+                "owner": UPSTREAM_OWNER,
+                "name": UPSTREAM_NAME,
+                "number": n["number"],
+                "cursor": cursor,
+            })
+            block = data["data"]["repository"]["pullRequest"]["comments"]
+            conn["nodes"].extend(block["nodes"])
+            if not block["pageInfo"]["hasNextPage"]:
+                break
+            cursor = block["pageInfo"]["endCursor"]
+        backfilled += 1
+    if backfilled:
+        sys.stderr.write(f"Backfilled comments for {backfilled} high-traffic PR(s).\n")
 
 
 TRIAL_HEADER = "Agent Trial Results"
@@ -789,15 +912,15 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             continue
         if TRIAL_HEADER not in body_text:
             continue
-        m = TRIAL_SUMMARY_RE.search(body_text)
-        if not m:
-            continue
-        passed, total = int(m.group(1)), int(m.group(2))
-        if total == 0:
-            continue
-
-        # Parse the first markdown table after the trial header.
+        # Parse the first markdown table after the trial header. We tally verdict
+        # cells (✅ pass / ❌ fail / ⚠️ errored) as we go so we can DERIVE the
+        # pass/total counts when the comment omits the "X of Y trials passed"
+        # summary line — single-trial and all-errored runs don't emit it, but the
+        # table is always present. Deriving keeps the latest /run visible instead
+        # of silently falling back to an older run that happened to have a summary.
         by_model: list[dict[str, Any]] = []
+        cell_pass = 0
+        cell_verdict = 0  # pass + fail + errored — the count of attempted trials
         header_idx = body_md.find("Agent Trial Results")
         if header_idx >= 0:
             tail = body_md[header_idx:]
@@ -814,7 +937,7 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         continue
                     if not header_seen:
                         continue
-                    cells = [c.strip() for c in line.strip("|").split("|")]
+                    cells = [x.strip() for x in line.strip("|").split("|")]
                     if len(cells) < 2:
                         continue
                     model_label = cells[0]
@@ -827,10 +950,19 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         c_clean = cell.strip()
                         if "✅" in c_clean:
                             results.append("pass")
+                            cell_pass += 1
+                            cell_verdict += 1
                         elif "❌" in c_clean:
                             results.append("fail")
-                        else:
+                            cell_verdict += 1
+                        elif "⚠" in c_clean:
+                            # Errored/incomplete trial. Rendered as a warning by
+                            # the UI (its "none" branch); still an attempt, so it
+                            # counts toward the derived total.
                             results.append("none")
+                            cell_verdict += 1
+                        else:
+                            results.append("none")  # blank placeholder cell
                     if results:
                         by_model.append({
                             "model": _classify_model(model_label),
@@ -840,6 +972,20 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                 elif in_table:
                     # First non-pipe line after entering the table = table end.
                     break
+
+        # The auto-posted summary line is authoritative when present; otherwise
+        # fall back to the counts derived from the table above.
+        m = TRIAL_SUMMARY_RE.search(body_text)
+        if m:
+            passed, total = int(m.group(1)), int(m.group(2))
+        else:
+            passed, total = cell_pass, cell_verdict
+        # total == 0 means no verdicts to show — most importantly this skips the
+        # "🧪 Agent Trial Results ⏳" sticky placeholder posted while a run is
+        # still in progress (header but empty table), so we keep showing the
+        # last COMPLETED run until the new one finishes and fills its table in.
+        if total == 0:
+            continue
 
         return {
             "passed": passed,
@@ -1023,15 +1169,16 @@ def build_prs(
                     seen.add(a["login"])
                     dris.append({"login": a["login"], "avatar_url": a.get("avatarUrl")})
         dri = dris[0] if dris else None
-        ci = None
         commits = n["commits"]["nodes"]
-        if commits and commits[0]["commit"]["statusCheckRollup"]:
-            ci = commits[0]["commit"]["statusCheckRollup"]["state"].lower()
+        rollup = commits[0]["commit"]["statusCheckRollup"] if commits else None
+        ci = derive_ci(rollup)
         author = n.get("author") or {}
         state = (n.get("state") or "OPEN").lower()  # "open" | "closed" | "merged"
         comments = n.get("comments", {}).get("nodes", []) or []
         # Per-reviewer status (approved / pending / changes), with role pulled
-        # from the hidden reviewer-slots marker where the PR has one.
+        # from the hidden reviewer-slots marker where the PR has one. `comments`
+        # is the complete timeline (see backfill_pr_comments), so the most-recent
+        # marker wins ("most recent wins") without any windowing games.
         reviewer_roles = parse_reviewer_slots(comments)
         # `reviewers` is the single source of truth for the Reviewer column,
         # the Stage dots, and ball-in-court. We only surface reviewers for open
@@ -1247,6 +1394,7 @@ def main() -> int:
     # × 50 = up to 400 most-recently-updated PRs covering every open one plus
     # plenty of recent merges/closes.
     pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=16)
+    backfill_pr_comments(pr_nodes)
     discussion_nodes = paged(DISCUSSION_QUERY, "discussions")
 
     # Build proposals first so we can backreference them when linking PRs.
