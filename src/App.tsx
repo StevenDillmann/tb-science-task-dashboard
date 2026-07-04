@@ -66,7 +66,14 @@ export default function App() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
+          {/* Logo/title links to the bare base URL — clicking it drops every
+              query param, resetting the tab and all filters to their defaults
+              ("back to the main dashboard"). */}
+          <a
+            href={import.meta.env.BASE_URL}
+            aria-label="Back to the main dashboard"
+            className="flex items-center gap-4 transition-opacity hover:opacity-80"
+          >
             {/* Render both logos and toggle visibility via Tailwind's
                 `dark:` variant (keyed off the <html class="dark"> set by
                 applyTheme). Switching `<img src>` on theme change can
@@ -91,7 +98,7 @@ export default function App() {
                 Task proposal and pull requests for Terminal-Bench Science.
               </p>
             </div>
-          </div>
+          </a>
           <div className="flex flex-wrap items-center gap-3">
             {data && (
               <span className="text-xs text-muted-foreground">
