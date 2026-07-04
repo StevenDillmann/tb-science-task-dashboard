@@ -263,7 +263,7 @@ export default function App() {
 
       <footer className="container mx-auto flex flex-col gap-1 px-6 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <div>
-          Rebuilds every 15 min from{" "}
+          Rebuilds hourly and on every upstream change from{" "}
           <a className="underline hover:text-foreground" href={`https://github.com/${UPSTREAM}`}>
             {UPSTREAM}
           </a>

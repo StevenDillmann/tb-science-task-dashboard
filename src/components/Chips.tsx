@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Circle,
   CircleDashed,
+  CircleDot,
   Clock,
   RotateCw,
   TriangleAlert,
@@ -384,7 +385,9 @@ export function CheatChip({
     ? `Cheat trials: ${succeeded} of ${total} succeeded — task is hackable`
     : `Cheat trials: all ${blocked} blocked`
 
-  // No model labels (cheat uses the same agents as trials, redundant).
+  // One row per model, labelled + laid out exactly like the Trials column
+  // (CLAUDE / GPT / GEMINI in a fixed-width tag) so the two columns line up
+  // row-for-row and each cheat row is clearly attributed to its agent.
   const inner = by_model.length === 0 ? (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
       {succeeded > 0 ? `${succeeded}/${total} hacked` : "safe"}
@@ -392,41 +395,42 @@ export function CheatChip({
   ) : (
     <span className="inline-flex flex-col gap-0.5">
       {by_model.map((m, i) => (
-        <span
-          key={i}
-          className="inline-flex items-center gap-px"
-          title={m.display}
-        >
-          {m.results.map((r, j) => {
-            // Mirror upstream literally: ✅ in the cheat table → green check,
-            // ❌ → red X. Reader applies cheat semantics (a ✓ here means the
-            // agent successfully cheated = task is hackable).
-            if (r === "succeeded") {
+        <span key={i} className="inline-flex items-center gap-1.5" title={m.display}>
+          <span className="w-12 text-[10px] font-medium tracking-wider text-muted-foreground">
+            {MODEL_LABEL[m.model] ?? "OTHER"}
+          </span>
+          <span className="inline-flex items-center gap-px">
+            {m.results.map((r, j) => {
+              // Mirror upstream literally: ✅ in the cheat table → green check,
+              // ❌ → red X. Reader applies cheat semantics (a ✓ here means the
+              // agent successfully cheated = task is hackable).
+              if (r === "succeeded") {
+                return (
+                  <Check
+                    key={j}
+                    className="h-3 w-3 text-green-700 dark:text-green-400"
+                    strokeWidth={3}
+                  />
+                )
+              }
+              if (r === "blocked") {
+                return (
+                  <XIcon
+                    key={j}
+                    className="h-3 w-3 text-red-700 dark:text-red-400"
+                    strokeWidth={3}
+                  />
+                )
+              }
               return (
-                <Check
+                <TriangleAlert
                   key={j}
-                  className="h-3 w-3 text-green-700 dark:text-green-400"
-                  strokeWidth={3}
+                  className="h-3 w-3 text-amber-600 dark:text-amber-400"
+                  strokeWidth={2}
                 />
               )
-            }
-            if (r === "blocked") {
-              return (
-                <XIcon
-                  key={j}
-                  className="h-3 w-3 text-red-700 dark:text-red-400"
-                  strokeWidth={3}
-                />
-              )
-            }
-            return (
-              <TriangleAlert
-                key={j}
-                className="h-3 w-3 text-amber-600 dark:text-amber-400"
-                strokeWidth={2}
-              />
-            )
-          })}
+            })}
+          </span>
         </span>
       ))}
     </span>
@@ -605,6 +609,14 @@ export function CIChip({ ci }: { ci: string | null }) {
       <XCircle
         className="h-4 w-4 text-red-700 dark:text-red-400"
         aria-label="CI failing"
+      />
+    )
+  }
+  if (ci === "pending") {
+    return (
+      <CircleDot
+        className="h-4 w-4 text-amber-600 dark:text-amber-400"
+        aria-label="CI pending — checks running or incomplete"
       />
     )
   }

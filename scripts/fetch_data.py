@@ -202,15 +202,28 @@ def derive_ball_in_court(labels: list[str]) -> str | None:
 CI_GATE_CHECKS = ("static-checks", "execution-checks")
 
 
+# Check-run conclusions that are genuine failures (red). Everything else that
+# isn't a pass — cancelled / stale / neutral / none — is treated as "pending"
+# (no verdict: aborted, superseded by a newer run, or n/a) rather than a
+# failure, so an interrupted/cancelled run doesn't read as CI *failing*.
+_CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE"}
+
+
 def _check_run_status(conclusion: str | None, status: str | None) -> str:
-    """pass / fail / pending for one check-run, matching checks-passed.yml:
-    incomplete → pending; success|skipped → pass; anything else → fail.
+    """pass / fail / pending for one check-run.
+
+    Incomplete → pending; success|skipped → pass; a genuine failure conclusion
+    → fail; cancelled / stale / neutral / none → pending (no real verdict, e.g.
+    a run cancelled by concurrency and never re-run to completion).
     """
     if (status or "").upper() != "COMPLETED":
         return "pending"
-    if (conclusion or "").upper() in ("SUCCESS", "SKIPPED"):
+    c = (conclusion or "").upper()
+    if c in ("SUCCESS", "SKIPPED"):
         return "pass"
-    return "fail"
+    if c in _CI_FAIL_CONCLUSIONS:
+        return "fail"
+    return "pending"
 
 
 def derive_ci(rollup: dict[str, Any] | None) -> str | None:
@@ -914,6 +927,11 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
         if author not in LLM_REVIEW_BOTS:
             continue
         if TRIAL_HEADER not in body_text:
+            continue
+        # The cheat comment's header ("Cheating Agent Trial Results") CONTAINS
+        # the trial header, so skip it here — otherwise the latest cheat run gets
+        # mistaken for the latest /run and the Trials column shows cheat data.
+        if CHEAT_HEADER in body_text:
             continue
         # Parse the first markdown table after the trial header. We tally verdict
         # cells (✅ pass / ❌ fail / ⚠️ errored) as we go so we can DERIVE the

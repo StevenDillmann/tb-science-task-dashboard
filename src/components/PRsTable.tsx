@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleDashed,
+  CircleDot,
   ExternalLink,
   XCircle,
 } from "lucide-react"
@@ -116,6 +117,11 @@ const CI_OPTIONS = [
     value: "failure",
     label: "failing",
     render: <XCircle className="h-4 w-4 text-red-700 dark:text-red-400" />,
+  },
+  {
+    value: "pending",
+    label: "pending",
+    render: <CircleDot className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
   },
 ]
 
