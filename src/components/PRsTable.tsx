@@ -343,13 +343,13 @@ export function PRsTable({
                 {row.original.title}
               </button>
               {fixes.length > 0 && (
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-0.5">
                   {fixes.map((f) => (
                     <button
                       key={f.number}
                       type="button"
                       onClick={() => setActiveNum(row.original.number)}
-                      className="self-start font-mono text-[10px] font-semibold uppercase tracking-wider text-blue-700 hover:underline underline-offset-2 dark:text-blue-400"
+                      className="font-mono text-[10px] font-semibold uppercase tracking-wider text-blue-700 hover:underline underline-offset-2 dark:text-blue-400"
                       title={`#${f.number} (${f.state}) — ${f.title}`}
                     >
                       fix #{f.number}
