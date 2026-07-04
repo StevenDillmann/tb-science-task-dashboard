@@ -883,10 +883,13 @@ def _classify_model(text: str) -> str:
     t = text.lower()
     if "claude" in t:
         return "claude"
-    if "gpt" in t or "openai" in t:
-        return "gpt"
+    # Check gemini before gpt/openai: Gemini is routed through the openai/
+    # provider (model id `openai/gemini-3.1-pro-preview`), so the label contains
+    # "openai" and would otherwise be misclassified as gpt.
     if "gemini" in t or "google" in t:
         return "gemini"
+    if "gpt" in t or "openai" in t:
+        return "gpt"
     return "other"
 
 
