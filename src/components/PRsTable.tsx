@@ -434,13 +434,34 @@ export function PRsTable({
       {
         accessorKey: "ball_in_court",
         size: 90,
-        header: () => (
-          <ColumnFilter
-            title="ACTION"
-            value={ball}
-            onChange={setBall}
-            options={BALL_OPTIONS}
-          />
+        // Sort by how long the PR has waited in its current state (longest
+        // first), so a follow-up queue is one click away. PRs not waiting on
+        // anyone (null) sort last.
+        sortDescFirst: true,
+        sortingFn: (a, b) =>
+          (a.original.ball_days ?? -1) - (b.original.ball_days ?? -1),
+        header: ({ column }) => (
+          <span className="inline-flex items-center gap-1">
+            <ColumnFilter
+              title="ACTION"
+              value={ball}
+              onChange={setBall}
+              options={BALL_OPTIONS}
+            />
+            <button
+              type="button"
+              onClick={column.getToggleSortingHandler()}
+              title="Sort by time in current state"
+              className={cn(
+                "rounded p-0.5 hover:bg-accent",
+                column.getIsSorted()
+                  ? "text-foreground"
+                  : "text-muted-foreground/50",
+              )}
+            >
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+          </span>
         ),
         cell: ({ row }) => (
           <BallChip

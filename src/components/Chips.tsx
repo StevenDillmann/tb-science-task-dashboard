@@ -204,7 +204,7 @@ export function BallChip({
   if (ball === "reviewer") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="inline-flex items-baseline gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+        <span className="inline-flex flex-col items-start text-xs font-medium text-amber-700 dark:text-amber-400">
           reviewer
           {typeof days === "number" && <BallAge days={days} />}
         </span>
@@ -214,7 +214,7 @@ export function BallChip({
   if (ball === "author") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="inline-flex items-baseline gap-1 text-xs font-medium text-red-700 dark:text-red-400">
+        <span className="inline-flex flex-col items-start text-xs font-medium text-red-700 dark:text-red-400">
           author
           {typeof days === "number" && <BallAge days={days} />}
         </span>
