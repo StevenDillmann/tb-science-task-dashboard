@@ -160,14 +160,36 @@ export function TypeText({
   )
 }
 
+// Days a PR has sat in its current waiting state. Reads muted normally, but
+// once it crosses the stale threshold it bolds up so slow hand-offs jump out.
+const BALL_STALE_DAYS = 7
+
+function BallAge({ days }: { days: number }) {
+  const stale = days >= BALL_STALE_DAYS
+  const text = days <= 0 ? "today" : `${days}d`
+  const label =
+    days <= 0 ? "less than a day" : `${days} day${days === 1 ? "" : "s"}`
+  return (
+    <span
+      className={cn("text-[10px] tabular-nums", stale ? "font-bold" : "font-normal opacity-70")}
+      title={`Waiting in this state for ${label}`}
+    >
+      {text}
+    </span>
+  )
+}
+
 export function BallChip({
   ball,
+  days,
   stage,
   state,
   onClick,
   active,
 }: {
   ball: "reviewer" | "author" | null
+  /** Days spent in the current waiting state; shown next to the label. */
+  days?: number | null
   /** If the PR has all reviews complete (final approved) and is still open,
    *  surface that the only thing left is the merge. Stage and state are
    *  optional — pass them to enable the "ready" affordance. */
@@ -182,8 +204,9 @@ export function BallChip({
   if (ball === "reviewer") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+        <span className="inline-flex items-baseline gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
           reviewer
+          {typeof days === "number" && <BallAge days={days} />}
         </span>
       </Clickable>
     )
@@ -191,8 +214,9 @@ export function BallChip({
   if (ball === "author") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="text-xs font-medium text-red-700 dark:text-red-400">
+        <span className="inline-flex items-baseline gap-1 text-xs font-medium text-red-700 dark:text-red-400">
           author
+          {typeof days === "number" && <BallAge days={days} />}
         </span>
       </Clickable>
     )

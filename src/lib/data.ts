@@ -35,6 +35,10 @@ export type PR = {
   field: string | null
   review_stage: "1st" | "2nd" | "3rd" | "none"
   ball_in_court: "reviewer" | "author" | null
+  /** When the PR last entered its current waiting state (ISO), and how many
+   *  days ago — used to flag stale hand-offs in the Action column. */
+  ball_since: string | null
+  ball_days: number | null
   /** First active reviewer (back-compat); prefer `reviewers` for display. */
   dri: User | null
   /** Assigned reviewers (back-compat); prefer `reviewers` for display. */

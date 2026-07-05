@@ -194,6 +194,34 @@ def derive_ball_in_court(labels: list[str]) -> str | None:
     return None
 
 
+# Map ball-in-court → the GitHub label whose most-recent application marks when
+# the PR entered that state.
+_BALL_LABEL = {"author": "waiting on author", "reviewer": "waiting on reviewer"}
+
+
+def ball_since(node: dict[str, Any], ball: str | None) -> str | None:
+    """When the PR last entered its current waiting-on state.
+
+    Returns the ISO timestamp of the MOST RECENT `labeled` event for the ball's
+    label (the labels toggle back and forth as the PR bounces between author and
+    reviewer, so we want the latest application, not the first). None if the ball
+    is unset or no matching label event is found.
+    """
+    label_name = _BALL_LABEL.get(ball or "")
+    if not label_name:
+        return None
+    latest: str | None = None
+    for it in (node.get("timelineItems", {}).get("nodes", []) or []):
+        if it.get("__typename") != "LabeledEvent":
+            continue
+        if (it.get("label") or {}).get("name") != label_name:
+            continue
+        ts = it.get("createdAt")
+        if ts and (latest is None or ts > latest):
+            latest = ts
+    return latest
+
+
 # The CI dot mirrors the upstream checks-passed.yml gate: a PR's CI is "green"
 # when the two MECHANICAL checks pass. Both are deterministic GitHub Actions
 # jobs; the rubric review is an advisory LLM judgment (shown in its own column)
@@ -580,6 +608,15 @@ query($owner:String!,$name:String!,$cursor:String){
         bodyText body headRefOid
         author{ login ... on User { avatarUrl } }
         labels(first:30){ nodes{ name color } }
+        # Label-add history, newest last. Used to measure how long a PR has sat
+        # in its current `waiting on author` / `waiting on reviewer` state (the
+        # most recent time that label was applied), so stale hand-offs surface.
+        timelineItems(last:60, itemTypes:[LABELED_EVENT]){
+          nodes{
+            __typename
+            ... on LabeledEvent { createdAt label{ name } }
+          }
+        }
         reviewRequests(first:10){
           nodes{
             requestedReviewer{
@@ -1223,6 +1260,9 @@ def build_prs(
             if linked
             else None
         )
+        # Whose court + how long it's been there (only meaningful for open PRs).
+        ball = derive_ball_in_court(labels) if state == "open" else None
+        ball_at = ball_since(n, ball)
         rows.append({
             "number": n["number"],
             "title": n["title"],
@@ -1243,7 +1283,11 @@ def build_prs(
             # Stage chip fall back to painting both parallel dots "changes
             # requested" (reviewers is already [] for non-open PRs). Blank it,
             # matching the dri/dris/reviewers treatment below.
-            "ball_in_court": derive_ball_in_court(labels) if state == "open" else None,
+            "ball_in_court": ball,
+            # When the PR last entered its current waiting state, and how many
+            # days ago — so reviewers/authors can be nudged on stale hand-offs.
+            "ball_since": ball_at,
+            "ball_days": age_days(ball_at, now) if ball_at else None,
             "dri": dri if state == "open" else None,
             "dris": dris if state == "open" else [],
             "reviewers": reviewers,  # already [] for non-open PRs

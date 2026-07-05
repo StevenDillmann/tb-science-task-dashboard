@@ -445,6 +445,7 @@ export function PRsTable({
         cell: ({ row }) => (
           <BallChip
             ball={row.original.ball_in_court}
+            days={row.original.ball_days}
             stage={row.original.review_stage}
             state={row.original.state}
           />
