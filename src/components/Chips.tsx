@@ -6,7 +6,9 @@ import {
   CircleDashed,
   CircleDot,
   Clock,
+  Pen,
   RotateCw,
+  Search,
   TriangleAlert,
   X as XIcon,
   XCircle,
@@ -160,18 +162,23 @@ export function TypeText({
   )
 }
 
-// Days a PR has sat in its current waiting state. Reads muted normally, but
-// once it crosses the stale threshold it bolds up so slow hand-offs jump out.
-const BALL_STALE_DAYS = 7
-
+// Days a PR has sat in its current waiting state. Colour encodes urgency (the
+// actionable signal); the reviewer/author label itself stays uncoloured so
+// there's a single, unambiguous colour story. Ramp: green ≤2d (fresh),
+// amber 3–7d (getting stale), red >7d (overdue — follow up).
 function BallAge({ days }: { days: number }) {
-  const stale = days >= BALL_STALE_DAYS
+  const tone =
+    days <= 2
+      ? "text-green-700 dark:text-green-400"
+      : days <= 7
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-red-700 dark:text-red-400"
   const text = days <= 0 ? "today" : `${days}d`
   const label =
     days <= 0 ? "less than a day" : `${days} day${days === 1 ? "" : "s"}`
   return (
     <span
-      className={cn("text-[10px] tabular-nums", stale ? "font-bold" : "font-normal opacity-70")}
+      className={cn("text-[10px] font-medium tabular-nums", tone)}
       title={`Waiting in this state for ${label}`}
     >
       {text}
@@ -198,14 +205,18 @@ export function BallChip({
   onClick?: () => void
   active?: boolean
 }) {
-  // Matches the Stage column's palette: amber when waiting on reviewer (= the
-  // amber pending circle), red when waiting on author (= the red iteration
-  // arrow). Consistent "where is action needed" colour story.
+  // The reviewer/author label is neutral text + a muted role icon (Gavel =
+  // reviewer delivers the verdict, SquarePen = author revises). Colour is
+  // reserved for the wait-time age below (urgency) — one clear colour signal;
+  // whose court it is reads from the icon + word.
   if (ball === "reviewer") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="inline-flex flex-col items-start text-xs font-medium text-amber-700 dark:text-amber-400">
-          reviewer
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+            <Search className="h-3 w-3" />
+            reviewer
+          </span>
           {typeof days === "number" && <BallAge days={days} />}
         </span>
       </Clickable>
@@ -214,8 +225,11 @@ export function BallChip({
   if (ball === "author") {
     return (
       <Clickable onClick={onClick} active={active}>
-        <span className="inline-flex flex-col items-start text-xs font-medium text-red-700 dark:text-red-400">
-          author
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+            <Pen className="h-3 w-3" />
+            author
+          </span>
           {typeof days === "number" && <BallAge days={days} />}
         </span>
       </Clickable>

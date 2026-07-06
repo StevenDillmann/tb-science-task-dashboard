@@ -17,6 +17,8 @@ import {
   CircleDashed,
   CircleDot,
   ExternalLink,
+  Pen,
+  Search,
   XCircle,
 } from "lucide-react"
 
@@ -88,19 +90,28 @@ const STAGE_OPTIONS = [
   { value: "3rd", label: "3 approvals", render: <StageMini filled={3} /> },
 ]
 
+// Match the Action cell: muted uppercase role tag + icon (Gavel = reviewer,
+// SquarePen = author).
+const BALL_TAG = "inline-flex items-center gap-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase"
 const BALL_OPTIONS = [
   {
     value: "reviewer",
     label: "reviewer",
     render: (
-      <span className="font-medium text-amber-700 dark:text-amber-400">reviewer</span>
+      <span className={BALL_TAG}>
+        <Search className="h-3 w-3" />
+        reviewer
+      </span>
     ),
   },
   {
     value: "author",
     label: "author",
     render: (
-      <span className="font-medium text-red-700 dark:text-red-400">author</span>
+      <span className={BALL_TAG}>
+        <Pen className="h-3 w-3" />
+        author
+      </span>
     ),
   },
 ]
@@ -433,7 +444,9 @@ export function PRsTable({
       },
       {
         accessorKey: "ball_in_court",
-        size: 90,
+        // Header carries the filter + sort toggle; the cell is a small icon +
+        // word + wait-time. ~95 keeps an even gap to the next column.
+        size: 95,
         // Sort by how long the PR has waited in its current state (longest
         // first), so a follow-up queue is one click away. PRs not waiting on
         // anyone (null) sort last.
@@ -474,7 +487,8 @@ export function PRsTable({
       },
       {
         accessorKey: "ci",
-        size: 60,
+        // Just a single status icon under a short "CI" header — keep it tight.
+        size: 50,
         header: () => (
           <ColumnFilter title="CI" value={ci} onChange={setCi} options={CI_OPTIONS} />
         ),
