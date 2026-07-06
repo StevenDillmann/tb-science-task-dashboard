@@ -17,6 +17,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -93,12 +94,33 @@ def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def gh(args: list[str]) -> str:
-    res = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
-    if res.returncode != 0:
+def gh(args: list[str], *, retries: int = 5) -> str:
+    """Run a `gh` command, retrying transient API failures with backoff.
+
+    The GitHub API intermittently returns a truncated/empty body (`gh` then
+    exits non-zero with "unexpected end of JSON input") or drops the connection.
+    A single such blip used to abort the whole fetch — and with ~40 calls per
+    run, the hourly rebuild failed most of the time. Every call here expects a
+    non-empty JSON body, so treat a non-zero exit OR empty stdout as transient
+    and retry; only give up (and fail the run) after `retries` attempts.
+    """
+    delay = 2.0
+    for attempt in range(retries + 1):
+        res = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout
+        if attempt < retries:
+            sys.stderr.write(
+                f"gh call failed (attempt {attempt + 1}/{retries + 1}, "
+                f"rc={res.returncode}): {res.stderr.strip()[:200] or 'empty body'} "
+                f"— retrying in {delay:.0f}s\n"
+            )
+            time.sleep(delay)
+            delay = min(delay * 2, 30)
+            continue
         sys.stderr.write(res.stderr)
-        raise SystemExit(res.returncode)
-    return res.stdout
+        raise SystemExit(res.returncode or 1)
+    raise SystemExit(1)  # unreachable
 
 
 def graphql(query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
