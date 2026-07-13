@@ -1261,11 +1261,13 @@ def build_prs(
         # marker wins ("most recent wins") without any windowing games.
         reviewer_roles = parse_reviewer_slots(comments)
         # `reviewers` is the single source of truth for the Reviewer column,
-        # the Stage dots, and ball-in-court. We only surface reviewers for open
-        # PRs (closed/merged history isn't actionable), so blank it once here —
-        # stage/ball then derive from the SAME list the column shows, and can
-        # never disagree with it.
-        reviewers = build_reviewers(n, reviewer_roles) if state == "open" else []
+        # the Stage dots, and ball-in-court. We surface reviewers for open AND
+        # merged PRs — a merged PR's approvals are worth showing (the Stage dots
+        # light up green for the reviews that carried it in). Only `closed`
+        # (abandoned) PRs are blanked, since their review history isn't
+        # meaningful. Stage/ball then derive from the SAME list the column
+        # shows, and can never disagree with it.
+        reviewers = build_reviewers(n, reviewer_roles) if state != "closed" else []
         trials = parse_trial_results(comments)
         rubric = parse_rubric_review(comments)
         cheat = parse_cheat_results(comments)
