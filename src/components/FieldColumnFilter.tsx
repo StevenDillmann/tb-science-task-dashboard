@@ -3,13 +3,13 @@ import { ChevronDown, Filter, X } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { DOMAIN_LABELS, type Domain } from "@/lib/data"
+import { DOMAIN_LABELS, DOMAIN_TEXT_COLORS, type Domain } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 
 const KNOWN_ORDER: Domain[] = [
-  "earth-sciences",
   "life-sciences",
   "physical-sciences",
+  "earth-sciences",
   "mathematical-sciences",
   "engineering-sciences",
 ]
@@ -123,7 +123,7 @@ export function FieldColumnFilter({
             }
             return (
               <div key={domain}>
-                <div className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <div className={cn("px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide", DOMAIN_TEXT_COLORS[domain] ?? "text-muted-foreground")}>
                   {DOMAIN_LABELS[domain] ?? domain}
                 </div>
                 {subs.map((sub) => {

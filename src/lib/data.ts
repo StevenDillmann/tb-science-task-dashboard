@@ -189,7 +189,17 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   "life-sciences": "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100",
   "physical-sciences": "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100",
   "mathematical-sciences": "bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-100",
-  "engineering-sciences": "bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100",
+  "engineering-sciences": "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+}
+
+// Text-only domain colours, for labels/headers where a full badge would be too
+// heavy (filter group headers, stats domain rows).
+export const DOMAIN_TEXT_COLORS: Record<Domain, string> = {
+  "earth-sciences": "text-blue-600 dark:text-blue-400",
+  "life-sciences": "text-green-600 dark:text-green-400",
+  "physical-sciences": "text-red-600 dark:text-red-400",
+  "mathematical-sciences": "text-amber-600 dark:text-amber-400",
+  "engineering-sciences": "text-zinc-500 dark:text-zinc-400",
 }
 
 // Field labels and field→domain mapping are now provided by the data payload

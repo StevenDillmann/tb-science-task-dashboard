@@ -9,7 +9,7 @@ const DOMAIN_TEXT: Record<Domain, string> = {
   "life-sciences": "text-green-600 dark:text-green-400",
   "physical-sciences": "text-red-600 dark:text-red-400",
   "mathematical-sciences": "text-amber-600 dark:text-amber-400",
-  "engineering-sciences": "text-purple-600 dark:text-purple-400",
+  "engineering-sciences": "text-zinc-500 dark:text-zinc-400",
 }
 
 const DOMAIN_BG: Record<Domain, string> = {
@@ -17,7 +17,7 @@ const DOMAIN_BG: Record<Domain, string> = {
   "life-sciences": "bg-green-50 dark:bg-green-950/30",
   "physical-sciences": "bg-red-50 dark:bg-red-950/30",
   "mathematical-sciences": "bg-amber-50 dark:bg-amber-950/30",
-  "engineering-sciences": "bg-purple-50 dark:bg-purple-950/30",
+  "engineering-sciences": "bg-zinc-100 dark:bg-zinc-800/40",
 }
 import { useTaxonomy } from "@/lib/taxonomy"
 import {
@@ -30,9 +30,9 @@ import {
 } from "@/components/ui/table"
 
 const KNOWN_ORDER: Domain[] = [
-  "earth-sciences",
   "life-sciences",
   "physical-sciences",
+  "earth-sciences",
   "mathematical-sciences",
   "engineering-sciences",
 ]

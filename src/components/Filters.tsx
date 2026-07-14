@@ -67,10 +67,11 @@ export function FieldFilter({
   )
   // Stable order: known domain order first, then any extras.
   const KNOWN_ORDER: Domain[] = [
-    "earth-sciences",
     "life-sciences",
     "physical-sciences",
+    "earth-sciences",
     "mathematical-sciences",
+    "engineering-sciences",
   ]
   const sortedDomains = [
     ...KNOWN_ORDER.filter((d) => domains.includes(d)),
