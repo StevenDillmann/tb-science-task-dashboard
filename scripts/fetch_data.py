@@ -545,19 +545,18 @@ LEGACY_SUBFIELD_ALIASES: dict[tuple[str, str], tuple[str, str]] = {
     ("mathematical-sciences", "autoformalization"): ("mathematical-sciences", "formal-mathematics"),
 }
 
-# Per-proposal taxonomy fixups for the 2026 "Other Sciences" → engineering-sciences
+# Fallback per-proposal routing for the 2026 "Other Sciences" → engineering-sciences
 # migration. The old Engineering / Interdisciplinary / Miscellaneous Sciences
-# fields have no 1:1 successor, so each stranded proposal is routed to its new
-# home by topic (see the taxonomy change in the upstream repo). Keyed by GitHub
-# discussion number. Wins over the parsed/aliased field.
+# fields have no 1:1 successor. These entries only kick in when a proposal's body
+# still carries the legacy text (see build_proposals) — once it's re-tagged to a
+# live field upstream, the repo wins and the entry goes inert. Keyed by GitHub
+# discussion number; drop an entry once its proposal is re-tagged upstream.
 PROPOSAL_FIELD_OVERRIDES: dict[int, tuple[str, str]] = {
     # Other Sciences > Engineering Sciences — routed to a new engineering field
     520: ("engineering-sciences", "mechanical-engineering"),  # Robotics
-    514: ("engineering-sciences", "mechanical-engineering"),  # Robotics
     519: ("engineering-sciences", "mechanical-engineering"),  # Robotics
     518: ("engineering-sciences", "mechanical-engineering"),  # Robotics
     517: ("engineering-sciences", "mechanical-engineering"),  # Robot manipulation
-    380: ("engineering-sciences", "mechanical-engineering"),  # Aerospace / hydrodynamic stability
     561: ("engineering-sciences", "electrical-engineering"),  # Wireless communications
     336: ("engineering-sciences", "electrical-engineering"),  # Power systems
     484: ("engineering-sciences", "electrical-engineering"),  # Renewable energy systems
@@ -1408,13 +1407,15 @@ def build_proposals(
             d2, s2, r2 = field_from_title_fallback(clean_title or n["title"], field_to_domain)
             if s2:
                 domain, subfield, raw_field = d2, s2, r2
-        # Manual per-proposal routing for legacy fields with no automatic
-        # successor (Other-Sciences → engineering-sciences migration). Wins over
-        # whatever the body/title produced.
-        override = PROPOSAL_FIELD_OVERRIDES.get(n["number"])
-        if override:
-            domain, subfield = override
-            raw_field = humanize(subfield)
+        # Fallback routing for proposals still carrying a legacy field with no
+        # automatic successor (Other-Sciences → engineering-sciences migration).
+        # Only applies when the body/title didn't resolve to a live field, so a
+        # re-tag upstream always wins over the hardcoded guess.
+        if not subfield:
+            override = PROPOSAL_FIELD_OVERRIDES.get(n["number"])
+            if override:
+                domain, subfield = override
+                raw_field = humanize(subfield)
 
         gh_author = n.get("author") or {}
         author_login: str = gh_author.get("login", "ghost")
