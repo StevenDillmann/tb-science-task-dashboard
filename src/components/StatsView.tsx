@@ -9,7 +9,7 @@ const DOMAIN_TEXT: Record<Domain, string> = {
   "life-sciences": "text-green-600 dark:text-green-400",
   "physical-sciences": "text-red-600 dark:text-red-400",
   "mathematical-sciences": "text-amber-600 dark:text-amber-400",
-  "other-sciences": "text-zinc-500",
+  "engineering-sciences": "text-purple-600 dark:text-purple-400",
 }
 
 const DOMAIN_BG: Record<Domain, string> = {
@@ -17,7 +17,7 @@ const DOMAIN_BG: Record<Domain, string> = {
   "life-sciences": "bg-green-50 dark:bg-green-950/30",
   "physical-sciences": "bg-red-50 dark:bg-red-950/30",
   "mathematical-sciences": "bg-amber-50 dark:bg-amber-950/30",
-  "other-sciences": "bg-zinc-100 dark:bg-zinc-800/40",
+  "engineering-sciences": "bg-purple-50 dark:bg-purple-950/30",
 }
 import { useTaxonomy } from "@/lib/taxonomy"
 import {
@@ -34,7 +34,7 @@ const KNOWN_ORDER: Domain[] = [
   "life-sciences",
   "physical-sciences",
   "mathematical-sciences",
-  "other-sciences",
+  "engineering-sciences",
 ]
 
 export type PickKind =
@@ -106,7 +106,10 @@ export function StatsView({
     const uncatPRs = prs.filter((p) => !p.subfield)
     if (uncatProps.length > 0 || uncatPRs.length > 0) {
       out.push({
-        domain: "other-sciences",
+        // Domain is unused for the uncategorized bucket (grouped under the
+        // "__unknown" key and rendered with neutral styling); any valid Domain
+        // satisfies the type.
+        domain: "engineering-sciences",
         fieldSlug: "__unknown",
         fieldLabel: "(uncategorized)",
         proposals: uncatProps.length,

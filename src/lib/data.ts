@@ -19,7 +19,7 @@ export type Domain =
   | "life-sciences"
   | "physical-sciences"
   | "mathematical-sciences"
-  | "other-sciences"
+  | "engineering-sciences"
 
 export type PRState = "open" | "closed" | "merged"
 
@@ -181,7 +181,7 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   "life-sciences": "Life Sciences",
   "physical-sciences": "Physical Sciences",
   "mathematical-sciences": "Mathematical Sciences",
-  "other-sciences": "Other Sciences",
+  "engineering-sciences": "Engineering Sciences",
 }
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
@@ -189,7 +189,7 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   "life-sciences": "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100",
   "physical-sciences": "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100",
   "mathematical-sciences": "bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-100",
-  "other-sciences": "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100",
+  "engineering-sciences": "bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100",
 }
 
 // Field labels and field→domain mapping are now provided by the data payload

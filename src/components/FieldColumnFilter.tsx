@@ -11,7 +11,7 @@ const KNOWN_ORDER: Domain[] = [
   "life-sciences",
   "physical-sciences",
   "mathematical-sciences",
-  "other-sciences",
+  "engineering-sciences",
 ]
 
 const DOMAIN_SENTINEL_PREFIX = "__domain:"
