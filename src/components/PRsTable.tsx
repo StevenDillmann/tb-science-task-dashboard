@@ -35,6 +35,7 @@ import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import {
+  AuthorFitChip,
   BallChip,
   CheatChip,
   CIChip,
@@ -219,23 +220,42 @@ const PROPOSAL_STATUS_OPTIONS = [
   },
 ]
 
+// Author-Fit column filter: the fit verdicts plus a "COI disclosed" option
+// (the column also surfaces the blue COI badge).
+const FIT_FILTER_OPTIONS = [
+  { value: "direct", label: "direct", render: <span className="font-medium text-green-700 dark:text-green-400">direct</span> },
+  { value: "adjacent", label: "adjacent", render: <span className="font-medium text-amber-700 dark:text-amber-400">adjacent</span> },
+  { value: "unrelated", label: "unrelated", render: <span className="font-medium text-red-700 dark:text-red-400">unrelated</span> },
+  { value: "coi", label: "COI disclosed", render: <span className="font-medium text-blue-700 dark:text-blue-400">COI disclosed</span> },
+]
+
 const CI_OPTIONS = [
   {
     value: "success",
     label: "passing",
     render: (
-      <CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-400" />
+      <span className="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400">
+        <CheckCircle2 className="h-4 w-4" /> passing
+      </span>
     ),
   },
   {
     value: "failure",
     label: "failing",
-    render: <XCircle className="h-4 w-4 text-red-700 dark:text-red-400" />,
+    render: (
+      <span className="inline-flex items-center gap-1.5 text-red-700 dark:text-red-400">
+        <XCircle className="h-4 w-4" /> failing
+      </span>
+    ),
   },
   {
     value: "pending",
     label: "pending",
-    render: <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
+    render: (
+      <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+        <Clock className="h-4 w-4" /> pending
+      </span>
+    ),
   },
 ]
 
@@ -365,6 +385,8 @@ export function PRsTable({
   const [ci, setCi] = useUrlState<string[]>("ci", [], stringArrayCodec)
   // Filter by the linked proposal's review status (or "none" = no linked proposal).
   const [propStatus, setPropStatus] = useUrlState<string[]>("prop_status", [], stringArrayCodec)
+  // Author-fit filter: fit verdicts + "coi" (COI disclosed).
+  const [fit, setFit] = useUrlState<string[]>("fit", [], stringArrayCodec)
   // The opened PR, resolved from its number in the URL (looked up in the full
   // list so a deep link opens the panel regardless of the active filters).
   const active = useMemo(
@@ -396,6 +418,10 @@ export function PRsTable({
         const ok = propStatus.some((s) => (s === "none" ? !lp : lp?.status === s))
         if (!ok) return false
       }
+      if (fit.length) {
+        const ok = fit.some((f) => (f === "coi" ? !!p.coi : p.author_fit === f))
+        if (!ok) return false
+      }
       if (needle) {
         const hay =
           `${p.number} ${p.title} ${p.author.login} ${p.reviewers.map((d) => d.login).join(" ")} ${p.field ?? ""}`.toLowerCase()
@@ -403,7 +429,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit])
 
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
@@ -535,12 +561,7 @@ export function PRsTable({
             {...openProps("author")}
           />
         ),
-        cell: ({ row }) => (
-          <div className="flex flex-col items-start gap-1">
-            <UserCell user={row.original.author} />
-            {row.original.coi && <CoiBadge coi={row.original.coi} fromProposal />}
-          </div>
-        ),
+        cell: ({ row }) => <UserCell user={row.original.author} />,
       },
       {
         accessorKey: "dri",
@@ -760,6 +781,32 @@ export function PRsTable({
         },
       },
       {
+        id: "author_fit",
+        size: 150,
+        header: () => (
+          <ColumnFilter
+            title="AUTHOR FIT"
+            selected={fit}
+            onToggle={(v) => setFit(toggleVal(fit, v))}
+            onClearAll={() => setFit([])}
+            options={FIT_FILTER_OPTIONS}
+            {...openProps("fit")}
+          />
+        ),
+        cell: ({ row }) => {
+          const p = row.original
+          if (!p.author_fit && !p.coi) {
+            return <span className="text-xs text-muted-foreground">—</span>
+          }
+          return (
+            <div className="flex flex-col items-start gap-1">
+              <AuthorFitChip fit={p.author_fit} url={p.linked_proposal?.url ?? null} />
+              {p.coi && <CoiBadge coi={p.coi} fromProposal />}
+            </div>
+          )
+        },
+      },
+      {
         accessorKey: "linked_proposal",
         size: 130,
         header: () => (
@@ -833,7 +880,7 @@ export function PRsTable({
         ),
       },
     ],
-    [field, stage, ball, dri, author, ci, propStatus, fieldCounts, driOptions, authorOptions, trialMetric, cheatMetric, sorting, openCol],
+    [field, stage, ball, dri, author, ci, propStatus, fit, fieldCounts, driOptions, authorOptions, trialMetric, cheatMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -853,7 +900,8 @@ export function PRsTable({
     dri.length ||
     author.length ||
     ci.length ||
-    propStatus.length
+    propStatus.length ||
+    fit.length
   )
   const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = prSortText(
     sorting,
@@ -961,6 +1009,15 @@ export function PRsTable({
                   onClear={() => setPropStatus([])}
                 />
               )}
+              {fit.length > 0 && (
+                <FilterChip
+                  label="Author fit"
+                  value={fit
+                    .map((f) => FIT_FILTER_OPTIONS.find((o) => o.value === f)?.label ?? f)
+                    .join(", ")}
+                  onClear={() => setFit([])}
+                />
+              )}
               <button
                 type="button"
                 className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
@@ -972,6 +1029,7 @@ export function PRsTable({
                   setDri([])
                   setCi([])
                   setPropStatus([])
+                  setFit([])
                 }}
               >
                 Clear all filters
