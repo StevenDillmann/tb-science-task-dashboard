@@ -3,8 +3,10 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleDashed,
+  CircleHelp,
   Clock,
   Info,
+  Lock,
   Pen,
   RotateCw,
   Search,
@@ -26,29 +28,8 @@ import {
 } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 
-/** Lucide doesn't ship a plain `?` icon (only CircleHelp), so render one
- * via a typographic span styled like the other status icons. Accepts the
- * same props shape as a lucide icon (className, strokeWidth ignored). */
-function QuestionGlyph({
-  className,
-}: {
-  className?: string
-  strokeWidth?: number
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none",
-        className,
-      )}
-      aria-hidden
-    >
-      ?
-    </span>
-  )
-}
-
-/** "≈" glyph — a partial/approximate match (used for author-fit "adjacent"). */
+/** "≈" glyph (author-fit "adjacent") — a partial/approximate match. Same props
+ *  shape as a lucide icon so it drops into the icon slot. */
 function ApproxGlyph({ className }: { className?: string; strokeWidth?: number }) {
   return (
     <span
@@ -686,7 +667,7 @@ export function HumanReviewChip({
   type Cfg = { Icon: typeof Check; label: string; text: string; title: string }
   const map: Record<string, Cfg> = {
     approved: {
-      Icon: Check,
+      Icon: CheckCircle2,
       label: "approved",
       text: "text-green-700 dark:text-green-400",
       title: "Maintainer review: approved",
@@ -698,7 +679,7 @@ export function HumanReviewChip({
       title: "Maintainer review: pending",
     },
     rejected: {
-      Icon: XIcon,
+      Icon: XCircle,
       label: "declined",
       text: "text-red-700 dark:text-red-400",
       title: "Maintainer review: declined",
@@ -710,7 +691,7 @@ export function HumanReviewChip({
       title={cfg.title}
       className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}
     >
-      <cfg.Icon className="h-3 w-3" strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2} />
+      <cfg.Icon className="h-3 w-3" strokeWidth={2} />
       {!compact && cfg.label}
     </span>
   )
@@ -719,54 +700,48 @@ export function HumanReviewChip({
 export function LLMReviewChip({
   recommendation,
   url,
-  compact,
+  showIcon,
 }: {
   recommendation: "accept" | "uncertain" | "reject" | "unknown" | null
   url: string | null
-  /** When true, show only the icon (no label text). */
-  compact?: boolean
+  /** Show the circle glyph before the word (side panel); tables use word only. */
+  showIcon?: boolean
 }) {
   if (!recommendation) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
   type IconC = ComponentType<{ className?: string; strokeWidth?: number }>
-  type Cfg = { Icon: IconC | null; label: string; text: string; title: string }
-  const map: Record<string, Cfg> = {
+  const map: Record<string, { label: string; text: string; title: string; Icon: IconC | null }> = {
     accept: {
-      Icon: Check as IconC,
       label: "accept",
       text: "text-green-700 dark:text-green-400",
       title: "LLM rubric review · accept",
+      Icon: CheckCircle2 as IconC,
     },
     uncertain: {
-      Icon: QuestionGlyph,
       label: "uncertain",
       text: "text-amber-700 dark:text-amber-400",
       title: "LLM rubric review · uncertain",
+      Icon: CircleHelp as IconC,
     },
     reject: {
-      Icon: XIcon as IconC,
       label: "reject",
       text: "text-red-700 dark:text-red-400",
       title: "LLM rubric review · reject",
+      Icon: XCircle as IconC,
     },
     unknown: {
-      Icon: null,
       label: "posted",
       text: "text-muted-foreground",
       title: "LLM rubric review present (no parseable recommendation)",
+      Icon: null,
     },
   }
   const cfg = map[recommendation] ?? map.unknown
   const inner = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
-      {cfg.Icon && (
-        <cfg.Icon
-          className="h-3 w-3"
-          strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2}
-        />
-      )}
-      {!compact && cfg.label}
+      {showIcon && cfg.Icon && <cfg.Icon className="h-3 w-3" strokeWidth={2} />}
+      {cfg.label}
     </span>
   )
   if (url) {
@@ -789,48 +764,31 @@ export function LLMReviewChip({
 export function AuthorFitChip({
   fit,
   url,
-  compact,
+  showIcon,
 }: {
   fit: "direct" | "adjacent" | "unrelated" | null
   url: string | null
-  /** When true, show only the icon (no label text). */
-  compact?: boolean
+  /** Show the ✓/≈/✗ glyph before the word (side panel); tables use word only. */
+  showIcon?: boolean
 }) {
   if (!fit) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
-  // ✓ direct / ≈ adjacent / ✗ unrelated — matches the LLM Review vocabulary
-  // for the extremes; ≈ reads as "approximately in this field" (a partial
-  // match), not the uncertainty that "?" would imply.
   type IconC = ComponentType<{ className?: string; strokeWidth?: number }>
-  type Cfg = { Icon: IconC; label: string; text: string }
-  const map: Record<string, Cfg> = {
-    direct: {
-      Icon: Check as IconC,
-      label: "direct",
-      text: "text-green-700 dark:text-green-400",
-    },
-    adjacent: {
-      Icon: ApproxGlyph,
-      label: "adjacent",
-      text: "text-amber-700 dark:text-amber-400",
-    },
-    unrelated: {
-      Icon: XIcon as IconC,
-      label: "unrelated",
-      text: "text-red-700 dark:text-red-400",
-    },
+  const map: Record<string, { label: string; text: string; Icon: IconC }> = {
+    direct: { label: "direct", text: "text-green-700 dark:text-green-400", Icon: Check as IconC },
+    adjacent: { label: "adjacent", text: "text-amber-700 dark:text-amber-400", Icon: ApproxGlyph },
+    unrelated: { label: "unrelated", text: "text-red-700 dark:text-red-400", Icon: XIcon as IconC },
   }
   const cfg = map[fit]
   // Advisory signal: author's stated relevance to the field, not verified expertise.
   const title = `Author–task fit · ${cfg.label} (advisory — stated relevance, not verified)`
   const inner = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
-      <cfg.Icon
-        className="h-3 w-3"
-        strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2}
-      />
-      {!compact && cfg.label}
+      {showIcon && (
+        <cfg.Icon className="h-3 w-3" strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2} />
+      )}
+      {cfg.label}
     </span>
   )
   if (url) {
@@ -860,6 +818,69 @@ export function CoiBadge({ coi, fromProposal }: { coi: string; fromProposal?: bo
     >
       <Info className="h-3 w-3" />
       COI disclosed
+    </span>
+  )
+}
+
+/** Blended trial roll-up shown under the trial dots: an optional pass/cheat
+ *  rate, then average runtime · cost (fixed units — minutes & dollars — matching
+ *  the /run comment). Each metric carries its own denominator in the tooltip. */
+export function CostTimeChip({
+  costUsd,
+  runtimeSecs,
+  costTrials,
+  runtimeTrials,
+  ratePct,
+  rateTone,
+  rateTitle,
+}: {
+  costUsd: number | null
+  runtimeSecs: number | null
+  costTrials?: number
+  runtimeTrials?: number
+  /** Pass rate (trials) or cheat-success rate (cheat), as a whole percent. */
+  ratePct?: number | null
+  rateTone?: "pass" | "cheat"
+  rateTitle?: string
+}) {
+  const hasRate = ratePct != null
+  if (!hasRate && costUsd == null && runtimeSecs == null) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const time = runtimeSecs == null ? null : `${(runtimeSecs / 60).toFixed(1)}m`
+  const cost = costUsd == null ? null : `$${costUsd.toFixed(2)}`
+  const hasRun = time != null || cost != null
+  const title = [
+    rateTitle ?? null,
+    runtimeSecs != null ? `avg runtime ${time} over ${runtimeTrials ?? 0} trial(s)` : null,
+    costUsd != null ? `avg cost ${cost} over ${costTrials ?? 0} trial(s)` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  return (
+    <span
+      title={title}
+      className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-medium text-blue-700 dark:text-blue-400"
+    >
+      {hasRate && (
+        <span className="inline-flex items-center gap-0.5">
+          {rateTone === "cheat" ? (
+            <Lock className="h-3 w-3 shrink-0" strokeWidth={2} />
+          ) : (
+            <Check className="h-3 w-3 shrink-0" strokeWidth={3} />
+          )}
+          {ratePct}%
+        </span>
+      )}
+      {hasRate && hasRun && <span className="opacity-40">·</span>}
+      {hasRun && (
+        <>
+          <Clock className="h-3 w-3 shrink-0" />
+          {time ?? "—"}
+          <span className="opacity-40">·</span>
+          {cost ?? "—"}
+        </>
+      )}
     </span>
   )
 }
@@ -966,7 +987,7 @@ export function UserCell({
       ) : (
         <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
       )}
-      <span className="min-w-0 truncate text-sm">{user.login}</span>
+      <span className="min-w-0 truncate text-sm group-hover:underline">{user.login}</span>
       {status && <ReviewStatusIcon status={status} />}
     </span>
   )
@@ -998,7 +1019,7 @@ export function UserCell({
       target="_blank"
       rel="noreferrer"
       title={status ? REVIEW_STATUS_LABEL[status] : undefined}
-      className="flex w-full max-w-full min-w-0 items-center pr-2 hover:underline"
+      className="group flex w-full max-w-full min-w-0 items-center pr-2"
     >
       {inner}
     </a>
