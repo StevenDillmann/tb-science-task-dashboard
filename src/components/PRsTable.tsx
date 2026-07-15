@@ -22,7 +22,6 @@ import {
   XCircle,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -34,12 +33,13 @@ import {
 import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
-import { numberCodec, useUrlState } from "@/lib/useUrlState"
+import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import {
   BallChip,
   CheatChip,
   CIChip,
   CoiBadge,
+  CostTimeChip,
   FieldChip,
   HumanReviewChip,
   RubricChip,
@@ -115,6 +115,107 @@ const BALL_OPTIONS = [
         author
       </span>
     ),
+  },
+]
+
+// Sort choices for the Frontier Trials column (pass rate / avg cost / runtime).
+const TRIAL_SORT_OPTIONS = [
+  { value: "pass:desc", label: "pass rate (high → low)" },
+  { value: "pass:asc", label: "pass rate (low → high)" },
+  { value: "time:desc", label: "runtime (high → low)" },
+  { value: "time:asc", label: "runtime (low → high)" },
+  { value: "cost:desc", label: "cost (high → low)" },
+  { value: "cost:asc", label: "cost (low → high)" },
+]
+
+// Sort choices for the Cheat Trials column (success rate / avg cost / runtime).
+const CHEAT_SORT_OPTIONS = [
+  { value: "success:desc", label: "cheat rate (high → low)" },
+  { value: "success:asc", label: "cheat rate (low → high)" },
+  { value: "time:desc", label: "runtime (high → low)" },
+  { value: "time:asc", label: "runtime (low → high)" },
+  { value: "cost:desc", label: "cost (high → low)" },
+  { value: "cost:asc", label: "cost (low → high)" },
+]
+
+// Toggle a value in/out of a multi-select filter array.
+const toggleVal = (arr: string[], v: string) =>
+  arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]
+
+// Active sort as a column label + direction detail (for the "Sorted by" chip,
+// styled like the filter chips: "Column: detail").
+function prSortText(
+  sorting: SortingState,
+  trialMetric: string | null,
+  cheatMetric: string | null,
+): { label: string; detail: string; isDefault: boolean } {
+  const s = sorting[0]
+  const isDefault = !s || (s.id === "number" && s.desc === true)
+  if (!s) return { label: "Order", detail: "newest", isDefault: true }
+  const dir = s.desc ? "high→low" : "low→high"
+  const metricWord = (m: string | null) =>
+    m === "pass"
+      ? "pass rate"
+      : m === "success"
+        ? "cheat rate"
+        : m === "time"
+          ? "runtime"
+          : m === "cost"
+            ? "cost"
+            : "trials"
+  let label: string
+  let detail: string
+  switch (s.id) {
+    case "number": label = "Order"; detail = s.desc ? "newest" : "oldest"; break
+    case "age_days": label = "Posted"; detail = s.desc ? "oldest" : "newest"; break
+    case "updated_days": label = "Updated"; detail = s.desc ? "least recent" : "most recent"; break
+    case "ball_in_court": label = "Action"; detail = s.desc ? "longest waiting" : "shortest waiting"; break
+    case "trials": label = "Frontier trials"; detail = `${metricWord(trialMetric)} (${dir})`; break
+    case "cheat": label = "Cheat trials"; detail = `${metricWord(cheatMetric)} (${dir})`; break
+    default: label = s.id; detail = dir
+  }
+  return { label, detail, isDefault }
+}
+
+// Sort choices for the Action column (how long it's waited in its state).
+const ACTION_SORT_OPTIONS = [
+  { value: "wait:desc", label: "longest waiting first" },
+  { value: "wait:asc", label: "shortest waiting first" },
+]
+
+// Filter the PROPOSAL column by the linked proposal's review status.
+const PROPOSAL_STATUS_OPTIONS = [
+  {
+    value: "approved",
+    label: "approved",
+    render: (
+      <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
+        <Check className="h-3 w-3" strokeWidth={3} /> approved
+      </span>
+    ),
+  },
+  {
+    value: "pending",
+    label: "pending",
+    render: (
+      <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+        <Clock className="h-3 w-3" /> pending
+      </span>
+    ),
+  },
+  {
+    value: "rejected",
+    label: "declined",
+    render: (
+      <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-400">
+        <XCircle className="h-3 w-3" /> declined
+      </span>
+    ),
+  },
+  {
+    value: "none",
+    label: "no proposal",
+    render: <span className="text-muted-foreground">no proposal</span>,
   },
 ]
 
@@ -237,17 +338,33 @@ export function PRsTable({
     // created on the same day that age_days can't distinguish.
     { id: "number", desc: true },
   ])
+  // Which trial metric the Frontier Trials column sorts by (cost or runtime);
+  // null = not sorting on trials. Direction lives in `sorting` (id "trials").
+  const [trialMetric, setTrialMetric] = useState<"cost" | "time" | "pass" | null>(null)
+  // Same, for the Cheat Trials column (success rate / cost / runtime).
+  const [cheatMetric, setCheatMetric] = useState<"cost" | "time" | "success" | null>(null)
+  // Which column's filter popover is open — lifted here so it survives the
+  // header re-render that each multi-select toggle triggers (otherwise the
+  // popover would snap shut after every pick).
+  const [openCol, setOpenCol] = useState<string | null>(null)
+  const openProps = (id: string) => ({
+    open: openCol === id,
+    onOpenChange: (v: boolean) => setOpenCol(v ? id : null),
+  })
   // Filters are bound to URL query params so a filtered view is shareable and
   // survives reload / back-forward. `pr` holds the opened PR's number.
   const [search, setSearch] = useUrlState("q", "")
   const [state, setState] = useUrlState<PRState | "all">("state", "open")
   const [activeNum, setActiveNum] = useUrlState<number | null>("pr", null, numberCodec)
-  const [field, setField] = useUrlState<string | null>("field", null)
-  const [stage, setStage] = useUrlState<string | null>("stage", null)
+  // Multi-select filters (OR within a column); `ball` (Action) stays single.
+  const [field, setField] = useUrlState<string[]>("field", [], stringArrayCodec)
+  const [stage, setStage] = useUrlState<string[]>("stage", [], stringArrayCodec)
   const [ball, setBall] = useUrlState<string | null>("ball", null)
-  const [author, setAuthor] = useUrlState<string | null>("author", null)
-  const [dri, setDri] = useUrlState<string | null>("dri", null)
-  const [ci, setCi] = useUrlState<string | null>("ci", null)
+  const [author, setAuthor] = useUrlState<string[]>("author", [], stringArrayCodec)
+  const [dri, setDri] = useUrlState<string[]>("dri", [], stringArrayCodec)
+  const [ci, setCi] = useUrlState<string[]>("ci", [], stringArrayCodec)
+  // Filter by the linked proposal's review status (or "none" = no linked proposal).
+  const [propStatus, setPropStatus] = useUrlState<string[]>("prop_status", [], stringArrayCodec)
   // The opened PR, resolved from its number in the URL (looked up in the full
   // list so a deep link opens the panel regardless of the active filters).
   const active = useMemo(
@@ -259,18 +376,26 @@ export function PRsTable({
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
       if (state !== "all" && p.state !== state) return false
-      if (field) {
-        // `__domain:<slug>` means "items in this domain with no subfield" (e.g.
-        // anything filed under tasks/other/). Plain slug matches by subfield.
-        if (field.startsWith("__domain:")) {
-          if (p.domain !== field.slice("__domain:".length)) return false
-        } else if (p.subfield !== field) return false
+      if (field.length) {
+        // `__domain:<slug>` matches any item in that domain; a plain slug
+        // matches by subfield. A PR passes if it matches ANY selected entry.
+        const ok = field.some((f) =>
+          f.startsWith("__domain:")
+            ? p.domain === f.slice("__domain:".length)
+            : p.subfield === f,
+        )
+        if (!ok) return false
       }
-      if (stage && p.review_stage !== stage) return false
+      if (stage.length && !stage.includes(p.review_stage)) return false
       if (ball && p.ball_in_court !== ball) return false
-      if (author && p.author.login !== author) return false
-      if (dri && !p.reviewers.some((d) => d.login === dri)) return false
-      if (ci && (p.ci ?? "") !== ci) return false
+      if (author.length && !author.includes(p.author.login)) return false
+      if (dri.length && !p.reviewers.some((d) => dri.includes(d.login))) return false
+      if (ci.length && !ci.includes(p.ci ?? "")) return false
+      if (propStatus.length) {
+        const lp = p.linked_proposal
+        const ok = propStatus.some((s) => (s === "none" ? !lp : lp?.status === s))
+        if (!ok) return false
+      }
       if (needle) {
         const hay =
           `${p.number} ${p.title} ${p.author.login} ${p.reviewers.map((d) => d.login).join(" ")} ${p.field ?? ""}`.toLowerCase()
@@ -278,7 +403,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus])
 
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
@@ -384,7 +509,13 @@ export function PRsTable({
         accessorKey: "subfield",
         size: 185,
         header: () => (
-          <FieldColumnFilter value={field} onChange={setField} counts={fieldCounts} />
+          <FieldColumnFilter
+            selected={field}
+            onToggle={(v) => setField(toggleVal(field, v))}
+            onClearAll={() => setField([])}
+            counts={fieldCounts}
+            {...openProps("field")}
+          />
         ),
         cell: ({ row }) => (
           <FieldChip subfield={row.original.subfield} fallback={row.original.field} />
@@ -397,9 +528,11 @@ export function PRsTable({
         header: () => (
           <ColumnFilter
             title="AUTHOR"
-            value={author}
-            onChange={setAuthor}
+            selected={author}
+            onToggle={(v) => setAuthor(toggleVal(author, v))}
+            onClearAll={() => setAuthor([])}
             options={authorOptions}
+            {...openProps("author")}
           />
         ),
         cell: ({ row }) => (
@@ -413,21 +546,21 @@ export function PRsTable({
         accessorKey: "dri",
         // Fits the longest handle (AllenGrahamHart) after the role label +
         // avatar; longer names truncate with an ellipsis (min-w-0 truncate).
-        size: 290,
+        size: 280,
         header: () => (
           <ColumnFilter
             title="REVIEWER"
-            value={dri}
-            onChange={setDri}
+            selected={dri}
+            onToggle={(v) => setDri(toggleVal(dri, v))}
+            onClearAll={() => setDri([])}
             options={driOptions}
+            {...openProps("dri")}
           />
         ),
         cell: ({ row }) => (
-          <ReviewersCell
-            reviewers={row.original.reviewers}
-            onClick={(login) => setDri(dri === login ? null : login)}
-            activeLogin={dri}
-          />
+          // Reviewers link to their GitHub; filtering by reviewer is via the
+          // column-header dropdown only (not by clicking a row entry).
+          <ReviewersCell reviewers={row.original.reviewers} />
         ),
       },
       {
@@ -436,9 +569,11 @@ export function PRsTable({
         header: () => (
           <ColumnFilter
             title="STAGE"
-            value={stage}
-            onChange={setStage}
+            selected={stage}
+            onToggle={(v) => setStage(toggleVal(stage, v))}
+            onClearAll={() => setStage([])}
             options={STAGE_OPTIONS}
+            {...openProps("stage")}
           />
         ),
         cell: ({ row }) => (
@@ -460,29 +595,23 @@ export function PRsTable({
         sortDescFirst: true,
         sortingFn: (a, b) =>
           (a.original.ball_days ?? -1) - (b.original.ball_days ?? -1),
-        header: ({ column }) => (
-          <span className="inline-flex items-center gap-1">
+        header: ({ column }) => {
+          const s = column.getIsSorted()
+          return (
             <ColumnFilter
               title="ACTION"
               value={ball}
               onChange={setBall}
               options={BALL_OPTIONS}
+              sortOptions={ACTION_SORT_OPTIONS}
+              sortValue={s ? (s === "desc" ? "wait:desc" : "wait:asc") : null}
+              onSortChange={(v) => {
+                if (!v) setSorting([{ id: "number", desc: true }])
+                else column.toggleSorting(v === "wait:desc")
+              }}
             />
-            <button
-              type="button"
-              onClick={column.getToggleSortingHandler()}
-              title="Sort by time in current state"
-              className={cn(
-                "rounded p-0.5 hover:bg-accent",
-                column.getIsSorted()
-                  ? "text-foreground"
-                  : "text-muted-foreground/50",
-              )}
-            >
-              <ArrowUpDown className="h-3 w-3" />
-            </button>
-          </span>
-        ),
+          )
+        },
         cell: ({ row }) => (
           <BallChip
             ball={row.original.ball_in_court}
@@ -497,7 +626,14 @@ export function PRsTable({
         // Just a single status icon under a short "CI" header — keep it tight.
         size: 50,
         header: () => (
-          <ColumnFilter title="CI" value={ci} onChange={setCi} options={CI_OPTIONS} />
+          <ColumnFilter
+            title="CI"
+            selected={ci}
+            onToggle={(v) => setCi(toggleVal(ci, v))}
+            onClearAll={() => setCi([])}
+            options={CI_OPTIONS}
+            {...openProps("ci")}
+          />
         ),
         cell: ({ row }) => <CIChip ci={row.original.ci} />,
       },
@@ -509,20 +645,133 @@ export function PRsTable({
       },
       {
         accessorKey: "trials",
-        size: 170,
-        header: () => <span className="whitespace-nowrap">FRONTIER TRIALS</span>,
-        cell: ({ row }) => <TrialsChip trials={row.original.trials} />,
+        size: 210,
+        // Sort the column by average trial cost or runtime (the ⏱/$ toggles).
+        // Rows with no reported value for the active metric sort last.
+        sortingFn: (a, b) => {
+          const pick = (r: typeof a) => {
+            const t = r.original.trials
+            if (trialMetric === "cost") return t?.avg_cost_usd ?? -1
+            if (trialMetric === "time") return t?.avg_runtime_secs ?? -1
+            // pass rate: passed / total; no trials sorts last
+            return t && t.total ? t.passed / t.total : -1
+          }
+          return pick(a) - pick(b)
+        },
+        header: () => {
+          const cur = sorting[0]?.id === "trials" ? sorting[0] : null
+          const sortValue = trialMetric && cur ? `${trialMetric}:${cur.desc ? "desc" : "asc"}` : null
+          return (
+            <ColumnFilter
+              title="FRONTIER TRIALS"
+              value={null}
+              onChange={() => {}}
+              options={[]}
+              sortOptions={TRIAL_SORT_OPTIONS}
+              sortValue={sortValue}
+              onSortChange={(v) => {
+                if (!v) {
+                  setTrialMetric(null)
+                  setSorting([{ id: "number", desc: true }])
+                  return
+                }
+                const [metric, dir] = v.split(":")
+                setTrialMetric(metric as "cost" | "time" | "pass")
+                setSorting([{ id: "trials", desc: dir === "desc" }])
+              }}
+            />
+          )
+        },
+        cell: ({ row }) => {
+          const t = row.original.trials
+          return (
+            <div className="flex flex-col gap-1">
+              {t && t.total > 0 && (
+                <CostTimeChip
+                  ratePct={Math.round((t.passed / t.total) * 100)}
+                  rateTone="pass"
+                  rateTitle={`${t.passed}/${t.total} passed`}
+                  costUsd={t.avg_cost_usd}
+                  runtimeSecs={t.avg_runtime_secs}
+                  costTrials={t.cost_trials}
+                  runtimeTrials={t.runtime_trials}
+                />
+              )}
+              <TrialsChip trials={t} />
+            </div>
+          )
+        },
       },
       {
         accessorKey: "cheat",
-        size: 140,
-        header: () => <span className="whitespace-nowrap">CHEAT TRIALS</span>,
-        cell: ({ row }) => <CheatChip cheat={row.original.cheat} />,
+        size: 180,
+        sortingFn: (a, b) => {
+          const pick = (r: typeof a) => {
+            const c = r.original.cheat
+            if (cheatMetric === "cost") return c?.avg_cost_usd ?? -1
+            if (cheatMetric === "time") return c?.avg_runtime_secs ?? -1
+            // success rate = succeeded / total; no cheat trials sorts last
+            return c && c.total ? c.succeeded / c.total : -1
+          }
+          return pick(a) - pick(b)
+        },
+        header: () => {
+          const cur = sorting[0]?.id === "cheat" ? sorting[0] : null
+          const sortValue = cheatMetric && cur ? `${cheatMetric}:${cur.desc ? "desc" : "asc"}` : null
+          return (
+            <ColumnFilter
+              title="CHEAT TRIALS"
+              value={null}
+              onChange={() => {}}
+              options={[]}
+              sortOptions={CHEAT_SORT_OPTIONS}
+              sortValue={sortValue}
+              onSortChange={(v) => {
+                if (!v) {
+                  setCheatMetric(null)
+                  setSorting([{ id: "number", desc: true }])
+                  return
+                }
+                const [metric, dir] = v.split(":")
+                setCheatMetric(metric as "cost" | "time" | "success")
+                setSorting([{ id: "cheat", desc: dir === "desc" }])
+              }}
+            />
+          )
+        },
+        cell: ({ row }) => {
+          const c = row.original.cheat
+          return (
+            <div className="flex flex-col gap-1">
+              {c && c.total > 0 && (
+                <CostTimeChip
+                  ratePct={Math.round((c.succeeded / c.total) * 100)}
+                  rateTone="cheat"
+                  rateTitle={`${c.succeeded}/${c.total} cheats succeeded`}
+                  costUsd={c.avg_cost_usd}
+                  runtimeSecs={c.avg_runtime_secs}
+                  costTrials={c.cost_trials}
+                  runtimeTrials={c.runtime_trials}
+                />
+              )}
+              <CheatChip cheat={c} />
+            </div>
+          )
+        },
       },
       {
         accessorKey: "linked_proposal",
         size: 130,
-        header: "PROPOSAL",
+        header: () => (
+          <ColumnFilter
+            title="PROPOSAL"
+            selected={propStatus}
+            onToggle={(v) => setPropStatus(toggleVal(propStatus, v))}
+            onClearAll={() => setPropStatus([])}
+            options={PROPOSAL_STATUS_OPTIONS}
+            {...openProps("propStatus")}
+          />
+        ),
         cell: ({ row }) => {
           const lp = row.original.linked_proposal
           if (!lp) return <span className="text-xs text-muted-foreground">—</span>
@@ -584,7 +833,7 @@ export function PRsTable({
         ),
       },
     ],
-    [field, stage, ball, dri, author, ci, fieldCounts, driOptions, authorOptions],
+    [field, stage, ball, dri, author, ci, propStatus, fieldCounts, driOptions, authorOptions, trialMetric, cheatMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -597,7 +846,20 @@ export function PRsTable({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyFilter = !!(search || field || stage || ball || dri || author || ci)
+  const anyChip = !!(
+    field.length ||
+    stage.length ||
+    ball ||
+    dri.length ||
+    author.length ||
+    ci.length ||
+    propStatus.length
+  )
+  const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = prSortText(
+    sorting,
+    trialMetric,
+    cheatMetric,
+  )
 
   // Per-state totals (ignoring other filters) drive the toggle counts so the
   // numbers stay stable as you select inside a state.
@@ -610,7 +872,7 @@ export function PRsTable({
   // Receive filters from Stats and apply them.
   useEffect(() => {
     if (externalField || externalState) {
-      if (externalField) setField(externalField)
+      if (externalField) setField([externalField])
       setState(externalState ?? "all")
       onExternalFieldConsumed?.()
     }
@@ -632,56 +894,6 @@ export function PRsTable({
           className="max-w-sm"
         />
         <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} />
-        {anyFilter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => {
-              setSearch("")
-              setField(null)
-              setStage(null)
-              setBall(null)
-              setAuthor(null)
-              setDri(null)
-              setCi(null)
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-        {field && (
-          <FilterChip
-            label="Field"
-            value={
-              field.startsWith("__domain:")
-                ? `${DOMAIN_LABELS[field.slice("__domain:".length) as Domain] ?? field.slice("__domain:".length)} (other)`
-                : (field_labels[field] ?? field)
-            }
-            onClear={() => setField(null)}
-          />
-        )}
-        {stage && (
-          <FilterChip
-            label="Stage"
-            value={STAGE_OPTIONS.find((o) => o.value === stage)?.label ?? stage}
-            onClear={() => setStage(null)}
-          />
-        )}
-        {ball && (
-          <FilterChip label="Action" value={ball} onClear={() => setBall(null)} />
-        )}
-        {dri && <FilterChip label="Reviewer" value={dri} onClear={() => setDri(null)} />}
-        {author && (
-          <FilterChip label="Author" value={author} onClear={() => setAuthor(null)} />
-        )}
-        {ci && (
-          <FilterChip
-            label="CI"
-            value={CI_OPTIONS.find((o) => o.value === ci)?.label ?? ci}
-            onClear={() => setCi(null)}
-          />
-        )}
         <span className="text-xs text-muted-foreground">
           {filtered.length} {filtered.length === 1 ? "row" : "rows"}
         </span>
@@ -694,6 +906,104 @@ export function PRsTable({
           <BookOpen className="h-3.5 w-3.5" />
           Contributing guide
         </a>
+      </div>
+
+      {/* Active filters + sort — always rendered so activating/clearing one
+          doesn't shift the table below (fixed two-row bar). */}
+      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+        <div className="flex items-start gap-2">
+          <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Filters:</span>
+          <div className="flex flex-wrap items-center gap-2">
+          {anyChip ? (
+            <>
+              {field.length > 0 && (
+                <FilterChip
+                  label="Field"
+                  value={field
+                    .map((f) =>
+                      f.startsWith("__domain:")
+                        ? `${DOMAIN_LABELS[f.slice("__domain:".length) as Domain] ?? f.slice("__domain:".length)} (other)`
+                        : (field_labels[f] ?? f),
+                    )
+                    .join(", ")}
+                  onClear={() => setField([])}
+                />
+              )}
+              {stage.length > 0 && (
+                <FilterChip
+                  label="Stage"
+                  value={stage.map((s) => STAGE_OPTIONS.find((o) => o.value === s)?.label ?? s).join(", ")}
+                  onClear={() => setStage([])}
+                />
+              )}
+              {ball && (
+                <FilterChip label="Action" value={ball} onClear={() => setBall(null)} />
+              )}
+              {dri.length > 0 && (
+                <FilterChip label="Reviewer" value={dri.join(", ")} onClear={() => setDri([])} />
+              )}
+              {author.length > 0 && (
+                <FilterChip label="Author" value={author.join(", ")} onClear={() => setAuthor([])} />
+              )}
+              {ci.length > 0 && (
+                <FilterChip
+                  label="CI"
+                  value={ci.map((c) => CI_OPTIONS.find((o) => o.value === c)?.label ?? c).join(", ")}
+                  onClear={() => setCi([])}
+                />
+              )}
+              {propStatus.length > 0 && (
+                <FilterChip
+                  label="Proposal"
+                  value={propStatus
+                    .map((s) => PROPOSAL_STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s)
+                    .join(", ")}
+                  onClear={() => setPropStatus([])}
+                />
+              )}
+              <button
+                type="button"
+                className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
+                onClick={() => {
+                  setField([])
+                  setStage([])
+                  setBall(null)
+                  setAuthor([])
+                  setDri([])
+                  setCi([])
+                  setPropStatus([])
+                }}
+              >
+                Clear all filters
+              </button>
+            </>
+          ) : (
+            <span className="inline-flex shrink-0 items-center rounded-full border bg-background px-2 py-0.5 text-xs text-muted-foreground">
+              none
+            </span>
+          )}
+          </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Sorted by:</span>
+          <div className="flex flex-wrap items-center gap-2">
+          {isDefaultSort ? (
+            <span className="inline-flex shrink-0 items-center rounded-full border bg-background px-2 py-0.5 text-xs text-muted-foreground">
+              newest
+            </span>
+          ) : (
+            <FilterChip
+              label={sortLabel}
+              value={sortDetail}
+              onClear={() => {
+                setSorting([{ id: "number", desc: true }])
+                setTrialMetric(null)
+                setCheatMetric(null)
+              }}
+            />
+          )}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border">

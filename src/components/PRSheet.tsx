@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import type { PR } from "@/lib/data"
 import {
   CIChip,
+  CostTimeChip,
   FieldChip,
   RubricChip,
   StageChip,
@@ -149,6 +150,19 @@ function Body({ pr }: { pr: PR }) {
             <RubricChip rubric={pr.rubric} />
           </LabeledChip>
           <TrialsChip trials={pr.trials} />
+          {pr.trials && pr.trials.total > 0 && (
+            <LabeledChip label="Avg run">
+              <CostTimeChip
+                ratePct={Math.round((pr.trials.passed / pr.trials.total) * 100)}
+                rateTone="pass"
+                rateTitle={`${pr.trials.passed}/${pr.trials.total} passed`}
+                costUsd={pr.trials.avg_cost_usd}
+                runtimeSecs={pr.trials.avg_runtime_secs}
+                costTrials={pr.trials.cost_trials}
+                runtimeTrials={pr.trials.runtime_trials}
+              />
+            </LabeledChip>
+          )}
           <a
             href={pr.url}
             target="_blank"
