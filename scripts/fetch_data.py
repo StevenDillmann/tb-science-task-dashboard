@@ -1279,6 +1279,12 @@ LLM_AUTHOR_FIT_RE = re.compile(
     r"Author.?Task\s+Fit\s*:\s*(?P<emoji>🟢|🟡|🔴|⚪)",
     re.IGNORECASE,
 )
+# "Conflict of interest: ✅ None — …" (no conflict) vs a disclosed verdict
+# (⚠️/🔴 + text). Skip the leading badge emoji, then read the verdict word/detail.
+LLM_COI_RE = re.compile(
+    r"Conflict of interest\s*:\s*(?:[^\w\s]+\s*)?(?P<rest>.+)",
+    re.IGNORECASE,
+)
 LLM_REVIEW_MARKERS = ("Task Proposal Rubric Review", "Rubric Review")
 LLM_REVIEW_BOTS = {"github-actions", "github-actions[bot]"}
 
@@ -1297,12 +1303,24 @@ def parse_llm_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
             {"🟢": "direct", "🟡": "adjacent", "🔴": "unrelated"}.get(fit_m.group("emoji"))
             if fit_m else None
         )
+        # Structured "Conflict of interest" line → disclosure detail, or None when
+        # the verdict is "None". `coi_seen` lets the caller fall back to scraping
+        # the discussion body only when this line is absent (older reviews).
+        coi_m = LLM_COI_RE.search(body)
+        coi_seen = coi_m is not None
+        coi: str | None = None
+        if coi_m:
+            rest = " ".join(coi_m.group("rest").split()).strip(" .—-")
+            if rest and not rest.lower().startswith("none"):
+                coi = rest
         m = LLM_RECOMMENDATION_RE.search(body)
         if not m:
-            return {"recommendation": "unknown", "author_fit": author_fit, "url": c.get("url")}
+            return {"recommendation": "unknown", "author_fit": author_fit,
+                    "coi": coi, "coi_seen": coi_seen, "url": c.get("url")}
         emoji = m.group("emoji")
         rec = {"🟢": "accept", "🟡": "uncertain", "🔴": "reject"}.get(emoji, "unknown")
-        return {"recommendation": rec, "author_fit": author_fit, "url": c.get("url")}
+        return {"recommendation": rec, "author_fit": author_fit,
+                "coi": coi, "coi_seen": coi_seen, "url": c.get("url")}
     return None
 
 
@@ -1612,7 +1630,12 @@ def build_proposals(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
-            "coi": parse_coi(n.get("body") or ""),
+            # COI from the structured rubric-review line when present (upstream
+            # source of truth); scrape the discussion body only as a fallback.
+            "coi": (
+                llm_review["coi"] if llm_review and llm_review.get("coi_seen")
+                else parse_coi(n.get("body") or "")
+            ),
             "status": status,
             "state": state,
             "closed": bool(n.get("closed")),
