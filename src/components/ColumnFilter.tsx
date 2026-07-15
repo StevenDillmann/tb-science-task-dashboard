@@ -60,7 +60,7 @@ export function ColumnFilter({
             active && "text-foreground",
           )}
         >
-          <span className="font-medium">{title}</span>
+          <span className="whitespace-nowrap font-medium">{title}</span>
           {active ? (
             <Filter className="h-3 w-3 fill-current" />
           ) : (

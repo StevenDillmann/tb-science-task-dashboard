@@ -1107,6 +1107,13 @@ LLM_RECOMMENDATION_RE = re.compile(
     r"Recommendation\s*:\s*(?P<emoji>🟢|🟡|🔴)\s*(?P<word>\w+)",
     re.IGNORECASE,
 )
+# Advisory author–task fit line from the separate author-aware pass. The label
+# uses an en-dash ("Author–Task Fit"); `.?` tolerates that / a hyphen / nothing.
+# ⚪ is the fail-soft/N-A badge → treated as no verdict (None).
+LLM_AUTHOR_FIT_RE = re.compile(
+    r"Author.?Task\s+Fit\s*:\s*(?P<emoji>🟢|🟡|🔴|⚪)",
+    re.IGNORECASE,
+)
 LLM_REVIEW_MARKERS = ("Task Proposal Rubric Review", "Rubric Review")
 LLM_REVIEW_BOTS = {"github-actions", "github-actions[bot]"}
 
@@ -1120,12 +1127,17 @@ def parse_llm_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
             continue
         if not any(m in body for m in LLM_REVIEW_MARKERS):
             continue
+        fit_m = LLM_AUTHOR_FIT_RE.search(body)
+        author_fit = (
+            {"🟢": "direct", "🟡": "adjacent", "🔴": "unrelated"}.get(fit_m.group("emoji"))
+            if fit_m else None
+        )
         m = LLM_RECOMMENDATION_RE.search(body)
         if not m:
-            return {"recommendation": "unknown", "url": c.get("url")}
+            return {"recommendation": "unknown", "author_fit": author_fit, "url": c.get("url")}
         emoji = m.group("emoji")
         rec = {"🟢": "accept", "🟡": "uncertain", "🔴": "reject"}.get(emoji, "unknown")
-        return {"recommendation": rec, "url": c.get("url")}
+        return {"recommendation": rec, "author_fit": author_fit, "url": c.get("url")}
     return None
 
 

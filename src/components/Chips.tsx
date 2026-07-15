@@ -772,6 +772,62 @@ export function LLMReviewChip({
   return <span title={cfg.title}>{inner}</span>
 }
 
+export function AuthorFitChip({
+  fit,
+  url,
+  compact,
+}: {
+  fit: "direct" | "adjacent" | "unrelated" | null
+  url: string | null
+  /** When true, show only the dot (no label text). */
+  compact?: boolean
+}) {
+  if (!fit) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const map: Record<string, { label: string; dot: string; text: string }> = {
+    direct: {
+      label: "direct",
+      dot: "bg-green-600 dark:bg-green-400",
+      text: "text-green-700 dark:text-green-400",
+    },
+    adjacent: {
+      label: "adjacent",
+      dot: "bg-amber-500 dark:bg-amber-400",
+      text: "text-amber-700 dark:text-amber-400",
+    },
+    unrelated: {
+      label: "unrelated",
+      dot: "bg-red-600 dark:bg-red-400",
+      text: "text-red-700 dark:text-red-400",
+    },
+  }
+  const cfg = map[fit]
+  // Advisory signal: author's stated relevance to the field, not verified expertise.
+  const title = `Author–task fit · ${cfg.label} (advisory — stated relevance, not verified)`
+  const inner = (
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
+      <span className={cn("h-2 w-2 shrink-0 rounded-full", cfg.dot)} />
+      {!compact && cfg.label}
+    </span>
+  )
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={title}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:underline underline-offset-4"
+      >
+        {inner}
+      </a>
+    )
+  }
+  return <span title={title}>{inner}</span>
+}
+
 export function StatusChip({
   status,
   onClick,

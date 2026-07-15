@@ -22,7 +22,7 @@ import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, useUrlState } from "@/lib/useUrlState"
-import { FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
+import { AuthorFitChip, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
@@ -85,6 +85,33 @@ const HUMAN_OPTIONS = [
     value: "rejected",
     label: "declined",
     render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="declined" />,
+  },
+]
+
+function DotLabel({ dot, text, label }: { dot: string; text: string; label: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 font-medium", text)}>
+      <span className={cn("h-2 w-2 rounded-full", dot)} />
+      {label}
+    </span>
+  )
+}
+
+const FIT_OPTIONS = [
+  {
+    value: "direct",
+    label: "direct",
+    render: <DotLabel dot="bg-green-600 dark:bg-green-400" text="text-green-700 dark:text-green-400" label="direct" />,
+  },
+  {
+    value: "adjacent",
+    label: "adjacent",
+    render: <DotLabel dot="bg-amber-500 dark:bg-amber-400" text="text-amber-700 dark:text-amber-400" label="adjacent" />,
+  },
+  {
+    value: "unrelated",
+    label: "unrelated",
+    render: <DotLabel dot="bg-red-600 dark:bg-red-400" text="text-red-700 dark:text-red-400" label="unrelated" />,
   },
 ]
 
@@ -201,6 +228,7 @@ export function ProposalsTable({
   const [field, setField] = useUrlState<string | null>("pfield", null)
   const [author, setAuthor] = useUrlState<string | null>("pauthor", null)
   const [llm, setLlm] = useUrlState<string | null>("llm", null)
+  const [fit, setFit] = useUrlState<string | null>("fit", null)
   const [human, setHuman] = useUrlState<string | null>("human", null)
   const active = useMemo(
     () => (activeNum == null ? null : (proposals.find((p) => p.number === activeNum) ?? null)),
@@ -247,6 +275,10 @@ export function ProposalsTable({
         const rec = p.llm_review?.recommendation ?? null
         if (llm === "none" ? rec !== null : rec !== llm) return false
       }
+      if (fit) {
+        const f = p.llm_review?.author_fit ?? null
+        if (fit === "none" ? f !== null : f !== fit) return false
+      }
       if (human && p.status !== human) return false
       if (needle) {
         const hay =
@@ -255,7 +287,7 @@ export function ProposalsTable({
       }
       return true
     })
-  }, [proposals, search, state, field, author, llm, human])
+  }, [proposals, search, state, field, author, llm, fit, human])
 
   const stateFiltered = useMemo(
     () =>
@@ -340,7 +372,8 @@ export function ProposalsTable({
       },
       {
         accessorKey: "author",
-        size: 180,
+        // Match the PRs table's author column width.
+        size: 195,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -365,6 +398,24 @@ export function ProposalsTable({
         cell: ({ row }) => (
           <LLMReviewChip
             recommendation={row.original.llm_review?.recommendation ?? null}
+            url={row.original.llm_review?.url ?? null}
+          />
+        ),
+      },
+      {
+        id: "author_fit",
+        size: 150,
+        header: () => (
+          <ColumnFilter
+            title="AUTHOR FIT"
+            value={fit}
+            onChange={setFit}
+            options={FIT_OPTIONS}
+          />
+        ),
+        cell: ({ row }) => (
+          <AuthorFitChip
+            fit={row.original.llm_review?.author_fit ?? null}
             url={row.original.llm_review?.url ?? null}
           />
         ),
@@ -423,7 +474,7 @@ export function ProposalsTable({
         ),
       },
     ],
-    [field, author, llm, human, fieldCounts, authorOptions],
+    [field, author, llm, fit, human, fieldCounts, authorOptions],
   )
 
   const table = useReactTable({
@@ -435,7 +486,7 @@ export function ProposalsTable({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyFilter = !!(search || field || author || llm || human)
+  const anyFilter = !!(search || field || author || llm || fit || human)
 
   return (
     <>
@@ -463,6 +514,7 @@ export function ProposalsTable({
               setField(null)
               setAuthor(null)
               setLlm(null)
+              setFit(null)
               setHuman(null)
             }}
           >
@@ -488,6 +540,13 @@ export function ProposalsTable({
             label="LLM review"
             value={llm}
             onClear={() => setLlm(null)}
+          />
+        )}
+        {fit && (
+          <FilterChip
+            label="Author fit"
+            value={fit}
+            onClear={() => setFit(null)}
           />
         )}
         {human && (

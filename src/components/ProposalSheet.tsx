@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import type { Proposal } from "@/lib/data"
-import { FieldChip, HumanReviewChip, LLMReviewChip, UserCell } from "./Chips"
+import { AuthorFitChip, FieldChip, HumanReviewChip, LLMReviewChip, UserCell } from "./Chips"
 
 const BOT_LOGINS = new Set(["github-actions", "github-actions[bot]"])
 
@@ -73,6 +73,17 @@ export function ProposalSheet({
                     compact
                   />
                 </span>
+                {proposal.llm_review?.author_fit && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Author fit
+                    </span>
+                    <AuthorFitChip
+                      fit={proposal.llm_review.author_fit}
+                      url={proposal.llm_review.url ?? null}
+                    />
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1.5">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                     Human review
