@@ -149,7 +149,6 @@ function Body({ pr }: { pr: PR }) {
           <LabeledChip label="Rubric">
             <RubricChip rubric={pr.rubric} />
           </LabeledChip>
-          <TrialsChip trials={pr.trials} />
           {pr.trials && pr.trials.total > 0 && (
             <LabeledChip label="Avg run">
               <CostTimeChip
@@ -163,6 +162,7 @@ function Body({ pr }: { pr: PR }) {
               />
             </LabeledChip>
           )}
+          <TrialsChip trials={pr.trials} />
           <a
             href={pr.url}
             target="_blank"
