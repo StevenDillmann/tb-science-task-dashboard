@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-15T19:01:05.066724+00:00",
+  "generated_at": "2026-07-15T19:56:50.975414+00:00",
   "upstream": "harbor-framework/terminal-bench-science",
   "taxonomy": {
     "earth-sciences": {
@@ -101,12 +101,18 @@
       "dris": [],
       "reviewers": [],
       "age_days": 1,
-      "updated_days": -1,
+      "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
       "ci": "failure",
       "trials": null,
-      "rubric": null,
+      "rubric": {
+        "passed": 29,
+        "failed": 2,
+        "warning": 0,
+        "total": 31,
+        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/568#issuecomment-4964554194"
+      },
       "cheat": null,
       "linked_proposal": {
         "proposal_number": 283,
@@ -138,11 +144,171 @@
         "tests/test_state.R"
       ],
       "created_at": "2026-07-14T01:35:43Z",
-      "updated_at": "2026-07-15T19:02:38Z",
+      "updated_at": "2026-07-15T19:11:23Z",
       "merged_at": null,
       "closed_at": null,
       "labels": [
-        "new task"
+        "new task",
+        "author-fit: direct"
+      ],
+      "fixes": []
+    },
+    {
+      "number": 269,
+      "title": "[TASK: Medicine] Closed-loop insulin controller for an artificial pancreas",
+      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269",
+      "is_draft": false,
+      "state": "open",
+      "author": {
+        "login": "sankalpjajee",
+        "avatar_url": "https://avatars.githubusercontent.com/u/211570531?u=87d8a80d44af3cf0043c033045198aa991ee9714&v=4"
+      },
+      "domain": "life-sciences",
+      "subfield": "medicine",
+      "field": null,
+      "coi": null,
+      "author_fit": null,
+      "review_stage": "1st",
+      "ball_in_court": "reviewer",
+      "ball_since": "2026-07-15T08:19:14Z",
+      "ball_days": 0,
+      "dri": {
+        "login": "aganezov",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4"
+      },
+      "dris": [
+        {
+          "login": "aganezov",
+          "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4"
+        }
+      ],
+      "reviewers": [
+        {
+          "login": "aganezov",
+          "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4",
+          "status": "pending",
+          "role": "domain"
+        },
+        {
+          "login": "AllenGrahamHart",
+          "avatar_url": "https://avatars.githubusercontent.com/u/216503854?u=9e25e50782731d755d762fce91407f6173e9ef3c&v=4",
+          "status": "approved",
+          "role": "technical"
+        }
+      ],
+      "age_days": 37,
+      "updated_days": 0,
+      "merged_days": null,
+      "closed_days": null,
+      "ci": "success",
+      "trials": {
+        "passed": 2,
+        "total": 6,
+        "by_model": [
+          {
+            "model": "claude",
+            "display": "anthropic/claude-opus-4-8 (claude-code)",
+            "results": [
+              "fail",
+              "fail",
+              "fail"
+            ]
+          },
+          {
+            "model": "gpt",
+            "display": "openai/gpt-5.5 (codex)",
+            "results": [
+              "pass",
+              "pass",
+              "fail"
+            ]
+          }
+        ],
+        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4668044700",
+        "has_rollup": false,
+        "avg_cost_usd": null,
+        "cost_trials": 0,
+        "avg_runtime_secs": null,
+        "runtime_trials": 0
+      },
+      "rubric": {
+        "passed": 31,
+        "failed": 0,
+        "warning": 0,
+        "total": 31,
+        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4651309592"
+      },
+      "cheat": {
+        "succeeded": 0,
+        "blocked": 3,
+        "total": 3,
+        "by_model": [
+          {
+            "model": "claude",
+            "display": "anthropic/claude-opus-4-8 (claude-code) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
+            "results": [
+              "blocked"
+            ]
+          },
+          {
+            "model": "gpt",
+            "display": "openai/gpt-5.5 (terminus-2) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
+            "results": [
+              "blocked"
+            ]
+          },
+          {
+            "model": "gemini",
+            "display": "openai/gemini-3.1-pro-preview (terminus-2) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
+            "results": [
+              "blocked"
+            ]
+          }
+        ],
+        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4936274359",
+        "has_rollup": false,
+        "avg_cost_usd": null,
+        "cost_trials": 0,
+        "avg_runtime_secs": null,
+        "runtime_trials": 0
+      },
+      "linked_proposal": {
+        "proposal_number": 133,
+        "discussion_number": 244,
+        "title": "Closed-loop insulin controller for an artificial pancreas",
+        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/244",
+        "status": "approved"
+      },
+      "body": "## Task Proposal\r\nApproved proposal: <https://github.com/harbor-framework/terminal-bench-science/discussions/244>  \r\n\r\n## Summary\r\nAdds `tasks/life-sciences/medicine/glucose-controller/` \u2014 the first task in *medicine*.\r\nThe agent implements a **fully closed-loop insulin controller (artificial pancreas)** for type 1\r\ndiabetes. Every 3 simulated minutes the controller receives a noisy CGM reading and the patient's\r\npump settings and must output an insulin infusion rate; **meals are unannounced**, so it must reject\r\nthem as unmeasured disturbances. Graded on a hidden cohort of perturbed UVA/Padova virtual patients\r\n(FDA-accepted `simglucose` simulator) using the international Time-in-Range metrics.\r\n\r\n## Why it's hard\r\nA constrained, delayed disturbance-rejection problem with asymmetric cost: insulin acts with a\r\n30\u201390 min delay and can't be retracted, meals are unmeasured, hypoglycemia is acutely dangerous,\r\nand insulin sensitivity varies ~6\u00d7 across the cohort. Aggressive control overshoots into dangerous\r\nlows; gentle control leaves patients hyperglycemic. The reference reaches ~73% mean time-in-range \u2014\r\nthe level of FDA-approved commercial closed-loop devices \u2014 and the safety-vs-TIR frontier was\r\nconfirmed from three independent directions, giving a real difficulty wall plus headroom for\r\nsophistication (personalization / adaptation / MPC).\r\n\r\n## Verifier\r\nRuns the submitted `Controller` in closed loop against 10 hidden \u00b18%-perturbed virtual patients\r\n(seeds only in the verifier; each with its own measured settings) over 7 days of randomized meals,\r\nmeals withheld. Two-sided gate: cohort-mean time-in-range \u2265 60% (reference ~73%, naive ~22%); and\r\nper patient severe-low (<54) \u2264 1%, severe-high (>250) \u2264 15%, time-in-range \u2265 30%. Deterministic;\r\nthresholds calibrated against the oracle. Validated in harbor: `oracle` \u2192 reward 1.0, `nop` \u2192 0.0.\r\n\r\n## Anti-cheat\r\n- Hidden grading patients have seeds present only in `tests/`; the agent develops on different,\r\n  visible practice patients and can't memorize the graded cohort.\r\n- Meals are withheld from the controller (it cannot read the disturbance).\r\n- Separate verifier container; answer key and hidden cohort never in the agent environment.\r\n\r\n## Checklist\r\n- [x] All behavior checked in tests is described in the instruction.\r\n- [x] All behavior in the instruction is checked in tests.\r\n- [x] Tests have informative docstrings.\r\n- [x] Hard to cheat (hidden seeds, withheld meals, separate verifier).\r\n- [x] instruction.md written by a human.\r\n- [x] solve.sh written by a human.\r\n- [x] Structured output schema documented (Controller interface in instruction.md).\r\n- [x] Dependency versions pinned.\r\n- [ ] Frontier-agent failure analysis \u2014 Not run locally (no personal API key). Requesting maintainer run on this PR.\r\n\r\n## Agent Run Analysis\r\nPending \u2014 will add from the reviewer `/run` trial (or a local run). Expected failure modes: the\r\ncontroller causes hypoglycemia on the insulin-resistant patients (overshoot), or runs hyperglycemic\r\n(too conservative) \u2014 i.e., it fails to hold the safety-vs-time-in-range frontier across the\r\nheterogeneous cohort, which is the difficulty crux, not a misspecification.\r\n",
+      "head_sha": "70b138019c79c2e8c6e3e47070c3b1a92141f7d5",
+      "task_dir": "tasks/life-sciences/medicine/glucose-controller",
+      "task_files": [
+        ".gitignore",
+        "README.md",
+        "environment/Dockerfile",
+        "environment/evaluate.py",
+        "environment/example_controller.py",
+        "environment/glucose_harness.py",
+        "environment/requirements.txt",
+        "instruction.md",
+        "solution/controller.py",
+        "solution/solve.sh",
+        "task.toml",
+        "tests/Dockerfile",
+        "tests/glucose_harness.py",
+        "tests/requirements.txt",
+        "tests/test.sh",
+        "tests/test_outputs.py"
+      ],
+      "created_at": "2026-06-08T16:50:02Z",
+      "updated_at": "2026-07-15T19:06:17Z",
+      "merged_at": null,
+      "closed_at": null,
+      "labels": [
+        "new task",
+        "waiting on reviewer",
+        "technical review \u2705",
+        "author-fit: direct"
       ],
       "fixes": []
     },
@@ -218,6 +384,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/550#issuecomment-4980694524",
+        "has_rollup": true,
         "avg_cost_usd": 20.75,
         "cost_trials": 6,
         "avg_runtime_secs": 5244,
@@ -258,6 +425,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/550#issuecomment-4962570274",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -397,6 +565,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/469#issuecomment-4951058076",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -525,6 +694,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/146#issuecomment-4937722820",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -665,6 +835,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/282#issuecomment-4950795613",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -705,6 +876,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/282#issuecomment-4934026837",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -841,6 +1013,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/168#issuecomment-4937729741",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -881,6 +1054,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/168#issuecomment-4937770680",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -990,6 +1164,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/264#issuecomment-4980031795",
+        "has_rollup": true,
         "avg_cost_usd": 13.98,
         "cost_trials": 2,
         "avg_runtime_secs": 4440,
@@ -1138,6 +1313,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/575#issuecomment-4972052213",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1178,6 +1354,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/575#issuecomment-4968673329",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1454,6 +1631,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/588#issuecomment-4980163045",
+        "has_rollup": true,
         "avg_cost_usd": 1.27,
         "cost_trials": 2,
         "avg_runtime_secs": 360,
@@ -1591,6 +1769,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/511#issuecomment-4934015102",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1631,6 +1810,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/511#issuecomment-4934016153",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1757,6 +1937,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/525#issuecomment-4962593575",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1797,6 +1978,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/525#issuecomment-4959713718",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1882,7 +2064,7 @@
       "review_stage": "2nd",
       "ball_in_court": "reviewer",
       "ball_since": "2026-06-30T19:27:07Z",
-      "ball_days": 14,
+      "ball_days": 15,
       "dri": {
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
@@ -1951,6 +2133,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/347#issuecomment-4969059954",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -1991,6 +2174,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/347#issuecomment-4980711576",
+        "has_rollup": true,
         "avg_cost_usd": 1.08,
         "cost_trials": 2,
         "avg_runtime_secs": 354,
@@ -2126,6 +2310,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/385#issuecomment-4959208649",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -2297,6 +2482,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/531#issuecomment-4935298003",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -2443,6 +2629,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/445#issuecomment-4951089481",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -2480,163 +2667,6 @@
       "labels": [
         "new task",
         "waiting on reviewer"
-      ],
-      "fixes": []
-    },
-    {
-      "number": 269,
-      "title": "[TASK: Medicine] Closed-loop insulin controller for an artificial pancreas",
-      "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269",
-      "is_draft": false,
-      "state": "open",
-      "author": {
-        "login": "sankalpjajee",
-        "avatar_url": "https://avatars.githubusercontent.com/u/211570531?u=87d8a80d44af3cf0043c033045198aa991ee9714&v=4"
-      },
-      "domain": "life-sciences",
-      "subfield": "medicine",
-      "field": null,
-      "coi": null,
-      "author_fit": null,
-      "review_stage": "1st",
-      "ball_in_court": "reviewer",
-      "ball_since": "2026-07-15T08:19:14Z",
-      "ball_days": 0,
-      "dri": {
-        "login": "aganezov",
-        "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4"
-      },
-      "dris": [
-        {
-          "login": "aganezov",
-          "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4"
-        }
-      ],
-      "reviewers": [
-        {
-          "login": "aganezov",
-          "avatar_url": "https://avatars.githubusercontent.com/u/1204593?v=4",
-          "status": "pending",
-          "role": "domain"
-        },
-        {
-          "login": "AllenGrahamHart",
-          "avatar_url": "https://avatars.githubusercontent.com/u/216503854?u=9e25e50782731d755d762fce91407f6173e9ef3c&v=4",
-          "status": "approved",
-          "role": "technical"
-        }
-      ],
-      "age_days": 37,
-      "updated_days": 0,
-      "merged_days": null,
-      "closed_days": null,
-      "ci": "success",
-      "trials": {
-        "passed": 2,
-        "total": 6,
-        "by_model": [
-          {
-            "model": "claude",
-            "display": "anthropic/claude-opus-4-8 (claude-code)",
-            "results": [
-              "fail",
-              "fail",
-              "fail"
-            ]
-          },
-          {
-            "model": "gpt",
-            "display": "openai/gpt-5.5 (codex)",
-            "results": [
-              "pass",
-              "pass",
-              "fail"
-            ]
-          }
-        ],
-        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4668044700",
-        "avg_cost_usd": null,
-        "cost_trials": 0,
-        "avg_runtime_secs": null,
-        "runtime_trials": 0
-      },
-      "rubric": {
-        "passed": 31,
-        "failed": 0,
-        "warning": 0,
-        "total": 31,
-        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4651309592"
-      },
-      "cheat": {
-        "succeeded": 0,
-        "blocked": 3,
-        "total": 3,
-        "by_model": [
-          {
-            "model": "claude",
-            "display": "anthropic/claude-opus-4-8 (claude-code) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
-            "results": [
-              "blocked"
-            ]
-          },
-          {
-            "model": "gpt",
-            "display": "openai/gpt-5.5 (terminus-2) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
-            "results": [
-              "blocked"
-            ]
-          },
-          {
-            "model": "gemini",
-            "display": "openai/gemini-3.1-pro-preview (terminus-2) + [cheating prompt](https://github.com/harbor-framework/terminal-bench-science/blob/main/.github/hack-trial-prompt.md)",
-            "results": [
-              "blocked"
-            ]
-          }
-        ],
-        "url": "https://github.com/harbor-framework/terminal-bench-science/pull/269#issuecomment-4936274359",
-        "avg_cost_usd": null,
-        "cost_trials": 0,
-        "avg_runtime_secs": null,
-        "runtime_trials": 0
-      },
-      "linked_proposal": {
-        "proposal_number": 133,
-        "discussion_number": 244,
-        "title": "Closed-loop insulin controller for an artificial pancreas",
-        "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/244",
-        "status": "approved"
-      },
-      "body": "## Task Proposal\r\nApproved proposal: <https://github.com/harbor-framework/terminal-bench-science/discussions/244>  \r\n\r\n## Summary\r\nAdds `tasks/life-sciences/medicine/glucose-controller/` \u2014 the first task in *medicine*.\r\nThe agent implements a **fully closed-loop insulin controller (artificial pancreas)** for type 1\r\ndiabetes. Every 3 simulated minutes the controller receives a noisy CGM reading and the patient's\r\npump settings and must output an insulin infusion rate; **meals are unannounced**, so it must reject\r\nthem as unmeasured disturbances. Graded on a hidden cohort of perturbed UVA/Padova virtual patients\r\n(FDA-accepted `simglucose` simulator) using the international Time-in-Range metrics.\r\n\r\n## Why it's hard\r\nA constrained, delayed disturbance-rejection problem with asymmetric cost: insulin acts with a\r\n30\u201390 min delay and can't be retracted, meals are unmeasured, hypoglycemia is acutely dangerous,\r\nand insulin sensitivity varies ~6\u00d7 across the cohort. Aggressive control overshoots into dangerous\r\nlows; gentle control leaves patients hyperglycemic. The reference reaches ~73% mean time-in-range \u2014\r\nthe level of FDA-approved commercial closed-loop devices \u2014 and the safety-vs-TIR frontier was\r\nconfirmed from three independent directions, giving a real difficulty wall plus headroom for\r\nsophistication (personalization / adaptation / MPC).\r\n\r\n## Verifier\r\nRuns the submitted `Controller` in closed loop against 10 hidden \u00b18%-perturbed virtual patients\r\n(seeds only in the verifier; each with its own measured settings) over 7 days of randomized meals,\r\nmeals withheld. Two-sided gate: cohort-mean time-in-range \u2265 60% (reference ~73%, naive ~22%); and\r\nper patient severe-low (<54) \u2264 1%, severe-high (>250) \u2264 15%, time-in-range \u2265 30%. Deterministic;\r\nthresholds calibrated against the oracle. Validated in harbor: `oracle` \u2192 reward 1.0, `nop` \u2192 0.0.\r\n\r\n## Anti-cheat\r\n- Hidden grading patients have seeds present only in `tests/`; the agent develops on different,\r\n  visible practice patients and can't memorize the graded cohort.\r\n- Meals are withheld from the controller (it cannot read the disturbance).\r\n- Separate verifier container; answer key and hidden cohort never in the agent environment.\r\n\r\n## Checklist\r\n- [x] All behavior checked in tests is described in the instruction.\r\n- [x] All behavior in the instruction is checked in tests.\r\n- [x] Tests have informative docstrings.\r\n- [x] Hard to cheat (hidden seeds, withheld meals, separate verifier).\r\n- [x] instruction.md written by a human.\r\n- [x] solve.sh written by a human.\r\n- [x] Structured output schema documented (Controller interface in instruction.md).\r\n- [x] Dependency versions pinned.\r\n- [ ] Frontier-agent failure analysis \u2014 Not run locally (no personal API key). Requesting maintainer run on this PR.\r\n\r\n## Agent Run Analysis\r\nPending \u2014 will add from the reviewer `/run` trial (or a local run). Expected failure modes: the\r\ncontroller causes hypoglycemia on the insulin-resistant patients (overshoot), or runs hyperglycemic\r\n(too conservative) \u2014 i.e., it fails to hold the safety-vs-time-in-range frontier across the\r\nheterogeneous cohort, which is the difficulty crux, not a misspecification.\r\n",
-      "head_sha": "70b138019c79c2e8c6e3e47070c3b1a92141f7d5",
-      "task_dir": "tasks/life-sciences/medicine/glucose-controller",
-      "task_files": [
-        ".gitignore",
-        "README.md",
-        "environment/Dockerfile",
-        "environment/evaluate.py",
-        "environment/example_controller.py",
-        "environment/glucose_harness.py",
-        "environment/requirements.txt",
-        "instruction.md",
-        "solution/controller.py",
-        "solution/solve.sh",
-        "task.toml",
-        "tests/Dockerfile",
-        "tests/glucose_harness.py",
-        "tests/requirements.txt",
-        "tests/test.sh",
-        "tests/test_outputs.py"
-      ],
-      "created_at": "2026-06-08T16:50:02Z",
-      "updated_at": "2026-07-15T16:29:13Z",
-      "merged_at": null,
-      "closed_at": null,
-      "labels": [
-        "new task",
-        "waiting on reviewer",
-        "technical review \u2705",
-        "author-fit: direct"
       ],
       "fixes": []
     },
@@ -2844,6 +2874,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/100#issuecomment-4937609618",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -2884,6 +2915,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/100#issuecomment-4937610608",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3002,6 +3034,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/582#issuecomment-4981476786",
+        "has_rollup": true,
         "avg_cost_usd": 4.16,
         "cost_trials": 6,
         "avg_runtime_secs": 1110,
@@ -3142,6 +3175,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/567#issuecomment-4975413826",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3269,6 +3303,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/459#issuecomment-4980074347",
+        "has_rollup": true,
         "avg_cost_usd": 18.82,
         "cost_trials": 2,
         "avg_runtime_secs": 11712,
@@ -3353,7 +3388,7 @@
       "review_stage": "none",
       "ball_in_court": "reviewer",
       "ball_since": "2026-07-09T19:35:16Z",
-      "ball_days": 5,
+      "ball_days": 6,
       "dri": {
         "login": "AllenGrahamHart",
         "avatar_url": "https://avatars.githubusercontent.com/u/216503854?u=9e25e50782731d755d762fce91407f6173e9ef3c&v=4"
@@ -3382,7 +3417,7 @@
           "role": "technical"
         }
       ],
-      "age_days": 5,
+      "age_days": 6,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
@@ -3420,6 +3455,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/536#issuecomment-4935926539",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3556,6 +3592,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/534#issuecomment-4944331856",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3690,6 +3727,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/450#issuecomment-4919544345",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3730,6 +3768,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/450#issuecomment-4930272562",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -3807,7 +3846,7 @@
       "dri": null,
       "dris": [],
       "reviewers": [],
-      "age_days": 1,
+      "age_days": 2,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
@@ -3930,6 +3969,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/262#issuecomment-4979911058",
+        "has_rollup": true,
         "avg_cost_usd": 3.46,
         "cost_trials": 2,
         "avg_runtime_secs": 1458,
@@ -3970,6 +4010,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/262#issuecomment-4979912929",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4102,6 +4143,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/539#issuecomment-4968121371",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4286,6 +4328,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/255#issuecomment-4975462909",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4326,6 +4369,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/255#issuecomment-4934068304",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4475,6 +4519,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/93#issuecomment-4873023838",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4502,6 +4547,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/93#issuecomment-4227094206",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4625,6 +4671,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/344#issuecomment-4881790285",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4665,6 +4712,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/344#issuecomment-4930377495",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4791,6 +4839,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/245#issuecomment-4936979890",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4831,6 +4880,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/245#issuecomment-4936982227",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -4975,6 +5025,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/219#issuecomment-4944431027",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5095,6 +5146,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/586#issuecomment-4980167016",
+        "has_rollup": true,
         "avg_cost_usd": 4.32,
         "cost_trials": 2,
         "avg_runtime_secs": 2070,
@@ -5236,6 +5288,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/587#issuecomment-4980038537",
+        "has_rollup": true,
         "avg_cost_usd": 4.15,
         "cost_trials": 2,
         "avg_runtime_secs": 996,
@@ -5330,7 +5383,7 @@
           "role": "technical"
         }
       ],
-      "age_days": 137,
+      "age_days": 138,
       "updated_days": 0,
       "merged_days": null,
       "closed_days": null,
@@ -5371,6 +5424,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/16#issuecomment-4934598759",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5411,6 +5465,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/16#issuecomment-4934599211",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5593,6 +5648,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/109#issuecomment-4934055066",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5633,6 +5689,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/109#issuecomment-4934055022",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5750,6 +5807,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/573#issuecomment-4974366766",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -5873,6 +5931,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/437#issuecomment-4980133809",
+        "has_rollup": true,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6046,6 +6105,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/62#issuecomment-4937567294",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6079,6 +6139,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/62#issuecomment-4149315894",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6214,6 +6275,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/67#issuecomment-4937574252",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6349,6 +6411,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/105#issuecomment-4880969974",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6382,6 +6445,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/105#issuecomment-4241199529",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6514,6 +6578,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/107#issuecomment-4937709384",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6647,6 +6712,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/142#issuecomment-4937714993",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6769,6 +6835,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/169#issuecomment-4771623701",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6909,6 +6976,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/170#issuecomment-4937796093",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -6949,6 +7017,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/170#issuecomment-4937831763",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7122,6 +7191,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/184#issuecomment-4937917039",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7261,6 +7331,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/211#issuecomment-4879332730",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7398,6 +7469,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/217#issuecomment-4879392692",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7431,6 +7503,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/217#issuecomment-4550211613",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7583,6 +7656,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/253#issuecomment-4938019538",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7617,6 +7691,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/253#issuecomment-4938019842",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7753,6 +7828,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/268#issuecomment-4936482005",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7793,6 +7869,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/268#issuecomment-4938026097",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -7935,6 +8012,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/277#issuecomment-4934442847",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8074,6 +8152,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/287#issuecomment-4879167263",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8212,6 +8291,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/302#issuecomment-4887344382",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8252,6 +8332,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/302#issuecomment-4934034823",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8400,6 +8481,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/325#issuecomment-4934383208",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8440,6 +8522,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/325#issuecomment-4934383380",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8551,6 +8634,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/332#issuecomment-4887346714",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8678,6 +8762,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/368#issuecomment-4790266167",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8749,7 +8834,7 @@
       "review_stage": "2nd",
       "ball_in_court": "reviewer",
       "ball_since": "2026-06-30T19:23:24Z",
-      "ball_days": 14,
+      "ball_days": 15,
       "dri": {
         "login": "StevenDillmann",
         "avatar_url": "https://avatars.githubusercontent.com/u/168044879?u=043018429f079135df493e2cdacc19c7a6bddbdf&v=4"
@@ -8818,6 +8903,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/374#issuecomment-4879171238",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8858,6 +8944,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/374#issuecomment-4930360860",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -8988,6 +9075,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/376#issuecomment-4827039921",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9129,6 +9217,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/379#issuecomment-4956915040",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9169,6 +9258,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/379#issuecomment-4930356149",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9312,6 +9402,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/387#issuecomment-4938073704",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9454,6 +9545,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/395#issuecomment-4834017545",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9494,6 +9586,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/395#issuecomment-4930275235",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9614,6 +9707,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/400#issuecomment-4938117006",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9742,6 +9836,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/453#issuecomment-4880973647",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9836,6 +9931,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/488#issuecomment-4979917589",
+        "has_rollup": true,
         "avg_cost_usd": 4.3,
         "cost_trials": 2,
         "avg_runtime_secs": 1494,
@@ -9876,6 +9972,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/488#issuecomment-4938192047",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -9999,6 +10096,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/492#issuecomment-4951067995",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10129,6 +10227,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/497#issuecomment-4928231769",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10259,6 +10358,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/499#issuecomment-4890693701",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10387,6 +10487,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/502#issuecomment-4944201471",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10520,6 +10621,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/513#issuecomment-4899784468",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10654,6 +10756,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/521#issuecomment-4944394720",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10789,6 +10892,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/527#issuecomment-4944377934",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -10943,6 +11047,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/528#issuecomment-4968869222",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11070,6 +11175,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/532#issuecomment-4934299722",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11207,6 +11313,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/543#issuecomment-4952873599",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11337,6 +11444,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/553#issuecomment-4973792305",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11527,6 +11635,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/556#issuecomment-4959226718",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11662,6 +11771,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/557#issuecomment-4967471013",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -11791,6 +11901,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/569#issuecomment-4967061177",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12005,6 +12116,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/570#issuecomment-4967056983",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12151,6 +12263,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/361#issuecomment-4938049171",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12191,6 +12304,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/361#issuecomment-4938048559",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12301,6 +12415,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/508#issuecomment-4967076431",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12341,6 +12456,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/508#issuecomment-4910500218",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12413,7 +12529,7 @@
       "dri": null,
       "dris": [],
       "reviewers": [],
-      "age_days": 12,
+      "age_days": 13,
       "updated_days": 1,
       "merged_days": null,
       "closed_days": 5,
@@ -12468,6 +12584,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/466#issuecomment-4870724872",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12566,6 +12683,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/41#issuecomment-4161373397",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12599,6 +12717,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/41#issuecomment-4161178239",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12726,7 +12845,7 @@
       "dri": null,
       "dris": [],
       "reviewers": [],
-      "age_days": 13,
+      "age_days": 14,
       "updated_days": 1,
       "merged_days": null,
       "closed_days": 9,
@@ -12767,6 +12886,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/448#issuecomment-4863109359",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12871,6 +12991,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/548#issuecomment-4944305710",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -12996,6 +13117,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/378#issuecomment-4961278921",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13036,6 +13158,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/378#issuecomment-4930358152",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13180,6 +13303,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/439#issuecomment-4938137479",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13297,6 +13421,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/529#issuecomment-4944314560",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13442,6 +13567,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/84#issuecomment-4920742074",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13482,6 +13608,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/84#issuecomment-4937589428",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13565,6 +13692,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/296#issuecomment-4826254685",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13708,6 +13836,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/393#issuecomment-4936535637",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13748,6 +13877,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/393#issuecomment-4930353332",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13850,6 +13980,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/462#issuecomment-4866851855",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -13949,6 +14080,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/326#issuecomment-4745973481",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14042,6 +14174,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/203#issuecomment-4796413749",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14132,6 +14265,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/176#issuecomment-4513341517",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14227,6 +14361,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/97#issuecomment-4648130245",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14330,6 +14465,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/75#issuecomment-4755514550",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14363,6 +14499,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/75#issuecomment-4187929679",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14456,6 +14593,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/8#issuecomment-4887332912",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14541,6 +14679,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/384#issuecomment-4818899401",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14639,6 +14778,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/383#issuecomment-4818397318",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14733,6 +14873,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/297#issuecomment-4817560608",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14851,6 +14992,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/246#issuecomment-4801142616",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -14891,6 +15033,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/246#issuecomment-4936286350",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15066,6 +15209,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/79#issuecomment-4936144777",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15106,6 +15250,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/79#issuecomment-4899062517",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15178,7 +15323,7 @@
       "age_days": 15,
       "updated_days": 5,
       "merged_days": null,
-      "closed_days": 8,
+      "closed_days": 9,
       "ci": "success",
       "trials": {
         "passed": 4,
@@ -15213,6 +15358,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/438#issuecomment-4890723886",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15290,7 +15436,7 @@
       "age_days": 35,
       "updated_days": 7,
       "merged_days": null,
-      "closed_days": 9,
+      "closed_days": 10,
       "ci": "success",
       "trials": {
         "passed": 8,
@@ -15325,6 +15471,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/278#issuecomment-4883180215",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15438,6 +15585,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/263#issuecomment-4830034569",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15532,6 +15680,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/258#issuecomment-4826245377",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15607,7 +15756,7 @@
       "dri": null,
       "dris": [],
       "reviewers": [],
-      "age_days": 44,
+      "age_days": 45,
       "updated_days": 8,
       "merged_days": null,
       "closed_days": 8,
@@ -15632,6 +15781,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/249#issuecomment-4826596054",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15710,9 +15860,9 @@
       "dris": [],
       "reviewers": [],
       "age_days": 104,
-      "updated_days": 9,
+      "updated_days": 10,
       "merged_days": null,
-      "closed_days": 9,
+      "closed_days": 10,
       "ci": "failure",
       "trials": {
         "passed": 4,
@@ -15738,6 +15888,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/77#issuecomment-4771485164",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15911,6 +16062,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/285#issuecomment-4837580779",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -15944,6 +16096,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/285#issuecomment-4695608347",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16033,6 +16186,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/181#issuecomment-4552612474",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16167,6 +16321,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/463#issuecomment-4871874195",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16433,6 +16588,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/446#issuecomment-4856281816",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16519,6 +16675,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/364#issuecomment-4787806348",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16625,6 +16782,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/197#issuecomment-4545220862",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16711,6 +16869,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/199#issuecomment-4545230732",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16798,6 +16957,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/200#issuecomment-4659726388",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16890,6 +17050,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/182#issuecomment-4575315201",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -16985,6 +17146,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/183#issuecomment-4575311083",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -17081,6 +17243,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/19#issuecomment-4065843619",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -17760,9 +17923,9 @@
       "dris": [],
       "reviewers": [],
       "age_days": 49,
-      "updated_days": 47,
+      "updated_days": 48,
       "merged_days": null,
-      "closed_days": 47,
+      "closed_days": 48,
       "ci": "success",
       "trials": null,
       "rubric": {
@@ -18169,6 +18332,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/64#issuecomment-4426036617",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18202,6 +18366,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/64#issuecomment-4256420903",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18395,6 +18560,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/33#issuecomment-4247534783",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18428,6 +18594,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/33#issuecomment-4233501287",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18543,6 +18710,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/9#issuecomment-4151076803",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18576,6 +18744,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/9#issuecomment-4151073595",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18751,6 +18920,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/54#issuecomment-4195927683",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18784,6 +18954,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/54#issuecomment-4174256169",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18879,6 +19050,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/5#issuecomment-4149418011",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18913,6 +19085,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/5#issuecomment-4148818529",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -18966,7 +19139,7 @@
       "dri": null,
       "dris": [],
       "reviewers": [],
-      "age_days": 117,
+      "age_days": 118,
       "updated_days": 117,
       "merged_days": null,
       "closed_days": 117,
@@ -19050,9 +19223,9 @@
       "dris": [],
       "reviewers": [],
       "age_days": 133,
-      "updated_days": 117,
+      "updated_days": 118,
       "merged_days": null,
-      "closed_days": 117,
+      "closed_days": 118,
       "ci": null,
       "trials": null,
       "rubric": null,
@@ -19304,6 +19477,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/17#issuecomment-4059324314",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19389,6 +19563,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/21#issuecomment-4059983222",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19476,6 +19651,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/13#issuecomment-4065528616",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19620,6 +19796,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/12#issuecomment-4065574453",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19705,6 +19882,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/22#issuecomment-4065769270",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19791,6 +19969,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/23#issuecomment-4058873385",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -19880,6 +20059,7 @@
           }
         ],
         "url": "https://github.com/harbor-framework/terminal-bench-science/pull/4#issuecomment-4063753849",
+        "has_rollup": false,
         "avg_cost_usd": null,
         "cost_trials": 0,
         "avg_runtime_secs": null,
@@ -21096,7 +21276,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/482#discussioncomment-17520751"
       },
       "age_days": 12,
-      "updated_days": 0,
+      "updated_days": 1,
       "has_pr": false,
       "created_at": "2026-07-03T08:06:41Z",
       "updated_at": "2026-07-14T19:25:18Z",
@@ -21158,7 +21338,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/275#discussioncomment-17243177"
       },
       "age_days": 35,
-      "updated_days": 0,
+      "updated_days": 1,
       "has_pr": false,
       "created_at": "2026-06-09T22:24:31Z",
       "updated_at": "2026-07-14T19:20:54Z",
@@ -21830,7 +22010,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/355#discussioncomment-17384123"
       },
-      "age_days": 23,
+      "age_days": 24,
       "updated_days": 1,
       "has_pr": false,
       "created_at": "2026-06-21T19:40:46Z",
@@ -24997,7 +25177,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/509#discussioncomment-17546643"
       },
       "age_days": 9,
-      "updated_days": 8,
+      "updated_days": 9,
       "has_pr": false,
       "created_at": "2026-07-06T11:03:36Z",
       "updated_at": "2026-07-06T19:46:36Z",
@@ -25356,7 +25536,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/354#discussioncomment-17384007"
       },
-      "age_days": 23,
+      "age_days": 24,
       "updated_days": 9,
       "has_pr": false,
       "created_at": "2026-06-21T19:27:21Z",
@@ -26351,7 +26531,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/76#discussioncomment-16413537"
       },
-      "age_days": 104,
+      "age_days": 105,
       "updated_days": 11,
       "has_pr": false,
       "created_at": "2026-04-01T19:19:15Z",
@@ -26746,7 +26926,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/465#discussioncomment-17514718"
       },
       "age_days": 13,
-      "updated_days": 12,
+      "updated_days": 13,
       "has_pr": false,
       "created_at": "2026-07-02T18:38:16Z",
       "updated_at": "2026-07-02T19:42:58Z",
@@ -28391,7 +28571,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/398#discussioncomment-17463840"
       },
-      "age_days": 16,
+      "age_days": 17,
       "updated_days": 16,
       "has_pr": false,
       "created_at": "2026-06-28T19:55:25Z",
@@ -28454,7 +28634,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/390#discussioncomment-17458345"
       },
       "age_days": 17,
-      "updated_days": 16,
+      "updated_days": 17,
       "has_pr": false,
       "created_at": "2026-06-28T02:02:19Z",
       "updated_at": "2026-06-28T19:45:48Z",
@@ -28524,8 +28704,8 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/397#discussioncomment-17463670"
       },
-      "age_days": 16,
-      "updated_days": 16,
+      "age_days": 17,
+      "updated_days": 17,
       "has_pr": false,
       "created_at": "2026-06-28T19:28:26Z",
       "updated_at": "2026-06-28T19:42:05Z",
@@ -28595,8 +28775,8 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/396#discussioncomment-17463606"
       },
-      "age_days": 16,
-      "updated_days": 16,
+      "age_days": 17,
+      "updated_days": 17,
       "has_pr": false,
       "created_at": "2026-06-28T19:12:54Z",
       "updated_at": "2026-06-28T19:39:09Z",
@@ -29935,7 +30115,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/330#discussioncomment-17354421"
       },
       "age_days": 27,
-      "updated_days": 26,
+      "updated_days": 27,
       "has_pr": false,
       "created_at": "2026-06-18T16:27:11Z",
       "updated_at": "2026-06-18T19:04:09Z",
@@ -29986,7 +30166,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/329#discussioncomment-17354395"
       },
       "age_days": 27,
-      "updated_days": 26,
+      "updated_days": 27,
       "has_pr": false,
       "created_at": "2026-06-18T16:24:08Z",
       "updated_at": "2026-06-18T19:03:56Z",
@@ -30037,7 +30217,7 @@
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/328#discussioncomment-17354343"
       },
       "age_days": 27,
-      "updated_days": 26,
+      "updated_days": 27,
       "has_pr": false,
       "created_at": "2026-06-18T16:19:47Z",
       "updated_at": "2026-06-18T19:03:41Z",
@@ -30841,7 +31021,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/210#discussioncomment-17053531"
       },
-      "age_days": 50,
+      "age_days": 51,
       "updated_days": 28,
       "has_pr": false,
       "created_at": "2026-05-25T19:32:33Z",
@@ -31328,7 +31508,7 @@
         "author_fit": null,
         "url": "https://github.com/harbor-framework/terminal-bench-science/discussions/55#discussioncomment-16261529"
       },
-      "age_days": 114,
+      "age_days": 115,
       "updated_days": 28,
       "has_pr": false,
       "created_at": "2026-03-22T19:12:13Z",
