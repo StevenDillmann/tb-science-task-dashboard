@@ -188,10 +188,11 @@ export function ColumnFilter({
         )}
         {/* Sort section (below filter) */}
         {hasSort && (
-          <div className={cn("py-1", hasFilter && "border-t")}>
-            <div className="px-3 pt-1 pb-0.5 text-xs font-medium text-muted-foreground">
+          <div className={cn(hasFilter && "border-t")}>
+            <div className="border-b p-2 text-xs font-medium text-muted-foreground">
               {sortHeading}
             </div>
+            <div className="py-1">
             {sortOptions!.map((opt) => (
               <button
                 key={opt.value}
@@ -208,6 +209,7 @@ export function ColumnFilter({
                 {opt.render ?? opt.label}
               </button>
             ))}
+            </div>
           </div>
         )}
       </PopoverContent>
