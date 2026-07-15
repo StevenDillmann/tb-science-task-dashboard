@@ -70,7 +70,7 @@ export function ProposalSheet({
                   <LLMReviewChip
                     recommendation={proposal.llm_review?.recommendation ?? null}
                     url={proposal.llm_review?.url ?? null}
-                    compact
+                    showIcon
                   />
                 </span>
                 {proposal.llm_review?.author_fit && (
@@ -81,6 +81,7 @@ export function ProposalSheet({
                     <AuthorFitChip
                       fit={proposal.llm_review.author_fit}
                       url={proposal.llm_review.url ?? null}
+                      showIcon
                     />
                   </span>
                 )}

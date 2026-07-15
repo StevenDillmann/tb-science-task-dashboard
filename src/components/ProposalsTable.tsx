@@ -56,17 +56,17 @@ const LLM_OPTIONS = [
   {
     value: "accept",
     label: "accept",
-    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="accept" />,
+    render: <span className="font-medium text-green-700 dark:text-green-400">accept</span>,
   },
   {
     value: "uncertain",
     label: "uncertain",
-    render: <IconLabel icon="question" text="text-amber-700 dark:text-amber-400" label="uncertain" />,
+    render: <span className="font-medium text-amber-700 dark:text-amber-400">uncertain</span>,
   },
   {
     value: "reject",
     label: "reject",
-    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="reject" />,
+    render: <span className="font-medium text-red-700 dark:text-red-400">reject</span>,
   },
 ]
 
@@ -92,17 +92,17 @@ const FIT_OPTIONS = [
   {
     value: "direct",
     label: "direct",
-    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="direct" />,
+    render: <span className="font-medium text-green-700 dark:text-green-400">direct</span>,
   },
   {
     value: "adjacent",
     label: "adjacent",
-    render: <IconLabel icon="approx" text="text-amber-700 dark:text-amber-400" label="adjacent" />,
+    render: <span className="font-medium text-amber-700 dark:text-amber-400">adjacent</span>,
   },
   {
     value: "unrelated",
     label: "unrelated",
-    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="unrelated" />,
+    render: <span className="font-medium text-red-700 dark:text-red-400">unrelated</span>,
   },
 ]
 
