@@ -149,7 +149,7 @@ function Body({ pr }: { pr: PR }) {
           <LabeledChip label="Rubric">
             <RubricChip rubric={pr.rubric} />
           </LabeledChip>
-          {pr.trials && pr.trials.total > 0 && (
+          {pr.trials && pr.trials.has_rollup && pr.trials.total > 0 && (
             <LabeledChip label="Avg run">
               <CostTimeChip
                 ratePct={Math.round((pr.trials.passed / pr.trials.total) * 100)}

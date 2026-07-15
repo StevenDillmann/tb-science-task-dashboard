@@ -65,6 +65,10 @@ export type PR = {
       results: Array<"pass" | "fail" | "none">
     }>
     url: string | null
+    /** True only when the comment carried the pass-rate roll-up line. The
+     *  rate·cost·time summary is shown only then, so the displayed % is always
+     *  the authoritative roll-up and never a cell-derived guess. */
+    has_rollup: boolean
     /** Blended average cost (USD) / runtime (seconds) across trials with a
      *  reported value, each over its own denominator. Null when not reported. */
     avg_cost_usd: number | null
@@ -89,6 +93,8 @@ export type PR = {
       results: Array<"succeeded" | "blocked" | "none">
     }>
     url: string | null
+    /** True only when the "Successful cheats: X/Y" roll-up line was present. */
+    has_rollup: boolean
     avg_cost_usd: number | null
     cost_trials: number
     avg_runtime_secs: number | null

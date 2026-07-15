@@ -707,7 +707,7 @@ export function PRsTable({
           const t = row.original.trials
           return (
             <div className="flex flex-col gap-1">
-              {t && t.total > 0 && (
+              {t && t.has_rollup && t.total > 0 && (
                 <CostTimeChip
                   ratePct={Math.round((t.passed / t.total) * 100)}
                   rateTone="pass"
@@ -764,7 +764,7 @@ export function PRsTable({
           const c = row.original.cheat
           return (
             <div className="flex flex-col gap-1">
-              {c && c.total > 0 && (
+              {c && c.has_rollup && c.total > 0 && (
                 <CostTimeChip
                   ratePct={Math.round((c.succeeded / c.total) * 100)}
                   rateTone="cheat"

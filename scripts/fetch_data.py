@@ -1059,6 +1059,9 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             "total": total,
             "by_model": by_model,
             "url": c.get("url"),
+            # True only when the "Successful cheats: X/Y" roll-up line was present
+            # (mirrors trials — gate the summary on the authoritative roll-up).
+            "has_rollup": succ_m is not None,
             "avg_cost_usd": avg_cost,
             "cost_trials": int(cost_m.group(2)) if cost_m else 0,
             "avg_runtime_secs": avg_runtime,
@@ -1205,6 +1208,11 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             "total": total,
             "by_model": by_model,
             "url": c.get("url"),
+            # True only when the comment carried the pass-rate roll-up line. The
+            # summary (rate · cost · time) is shown only in that case, so the
+            # displayed % is always the authoritative roll-up value and never a
+            # cell-derived guess that can disagree with the trial dots.
+            "has_rollup": pr_m is not None,
             "avg_cost_usd": avg_cost,
             "cost_trials": int(cost_m.group(2)) if cost_m else 0,
             "avg_runtime_secs": avg_runtime,
