@@ -738,10 +738,14 @@ export function LLMReviewChip({
     },
   }
   const cfg = map[recommendation] ?? map.unknown
+  // Panel shows just the icon (showIcon); tables show the word.
   const inner = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
-      {showIcon && cfg.Icon && <cfg.Icon className="h-3 w-3" strokeWidth={2} />}
-      {cfg.label}
+      {showIcon && cfg.Icon ? (
+        <cfg.Icon className="h-3.5 w-3.5" strokeWidth={2} />
+      ) : (
+        cfg.label
+      )}
     </span>
   )
   if (url) {
@@ -783,12 +787,14 @@ export function AuthorFitChip({
   const cfg = map[fit]
   // Advisory signal: author's stated relevance to the field, not verified expertise.
   const title = `Author–task fit · ${cfg.label} (advisory — stated relevance, not verified)`
+  // Panel shows just the ✓/≈/✗ glyph (showIcon); tables show the word.
   const inner = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
-      {showIcon && (
-        <cfg.Icon className="h-3 w-3" strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2} />
+      {showIcon ? (
+        <cfg.Icon className="h-3.5 w-3.5" strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2} />
+      ) : (
+        cfg.label
       )}
-      {cfg.label}
     </span>
   )
   if (url) {
