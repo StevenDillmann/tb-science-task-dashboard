@@ -63,16 +63,6 @@ export function ProposalSheet({
                   <UserCell user={proposal.author} />
                   <FieldChip subfield={proposal.subfield} fallback={proposal.field} />
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    LLM review
-                  </span>
-                  <LLMReviewChip
-                    recommendation={proposal.llm_review?.recommendation ?? null}
-                    url={proposal.llm_review?.url ?? null}
-                    showIcon
-                  />
-                </span>
                 {proposal.llm_review?.author_fit && (
                   <span className="inline-flex items-center gap-1.5">
                     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -85,6 +75,16 @@ export function ProposalSheet({
                     />
                   </span>
                 )}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    LLM review
+                  </span>
+                  <LLMReviewChip
+                    recommendation={proposal.llm_review?.recommendation ?? null}
+                    url={proposal.llm_review?.url ?? null}
+                    showIcon
+                  />
+                </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                     Human review
