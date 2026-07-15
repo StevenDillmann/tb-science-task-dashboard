@@ -1444,9 +1444,10 @@ def build_prs(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
-            # Conflict-of-interest is disclosed on the proposal; inherit it onto
-            # the PR that implements that proposal so it surfaces here too.
+            # Conflict-of-interest and author–task fit are assessed on the
+            # proposal; inherit both onto the PR that implements it.
             "coi": linked["coi"] if linked else None,
+            "author_fit": (linked.get("llm_review") or {}).get("author_fit") if linked else None,
             "review_stage": derive_review_stage(reviewers),
             # Only open PRs are "waiting on" anyone. Merged/closed PRs often keep
             # a stale `waiting on author` label, and leaving ball_in_court set
