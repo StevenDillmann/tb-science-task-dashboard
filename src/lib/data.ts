@@ -63,6 +63,12 @@ export type PR = {
       results: Array<"pass" | "fail" | "none">
     }>
     url: string | null
+    /** Blended average cost (USD) / runtime (seconds) across trials with a
+     *  reported value, each over its own denominator. Null when not reported. */
+    avg_cost_usd: number | null
+    cost_trials: number
+    avg_runtime_secs: number | null
+    runtime_trials: number
   } | null
   rubric: {
     passed: number
@@ -81,6 +87,10 @@ export type PR = {
       results: Array<"succeeded" | "blocked" | "none">
     }>
     url: string | null
+    avg_cost_usd: number | null
+    cost_trials: number
+    avg_runtime_secs: number | null
+    runtime_trials: number
   } | null
   linked_proposal: {
     proposal_number: number | null
