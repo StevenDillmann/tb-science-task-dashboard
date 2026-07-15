@@ -146,9 +146,8 @@ export function StatsView({
       })
     }
     const ordered: { domain: Domain; subtotals: { proposals: number; approved: number; prs: number; merged: number }; children: Row[] }[] = []
-    for (const d of KNOWN_ORDER) {
-      const children = byDomain.get(d) ?? []
-      if (children.length === 0) continue
+    for (const [key, children] of byDomain) {
+      if (key === "__unknown" || children.length === 0) continue
       const subtotals = children.reduce(
         (acc, r) => ({
           proposals: acc.proposals + r.proposals,
@@ -158,8 +157,21 @@ export function StatsView({
         }),
         { proposals: 0, approved: 0, prs: 0, merged: 0 },
       )
-      ordered.push({ domain: d, subtotals, children })
+      ordered.push({ domain: key, subtotals, children })
     }
+    // Order the domain groups by the same activity cascade as the rows
+    // (merged → prs → approved → proposals), honouring the sort direction;
+    // fall back to KNOWN_ORDER for a stable tiebreak.
+    const numericOrder = order.filter(
+      (k): k is Exclude<SortKey, "field"> => k !== "field",
+    )
+    ordered.sort((a, b) => {
+      for (const k of numericOrder) {
+        const cmp = a.subtotals[k] - b.subtotals[k]
+        if (cmp !== 0) return sort.desc ? -cmp : cmp
+      }
+      return KNOWN_ORDER.indexOf(a.domain) - KNOWN_ORDER.indexOf(b.domain)
+    })
     return { groups: ordered, uncategorized: byDomain.get("__unknown") ?? [] }
   }, [rows, sort])
 
