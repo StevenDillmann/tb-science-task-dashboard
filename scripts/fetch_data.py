@@ -244,6 +244,27 @@ def derive_ball_in_court(labels: list[str]) -> str | None:
     return None
 
 
+# Author–task fit is tagged directly on the PR with an `author-fit: <level>`
+# label (the team's source of truth). "coi disclosed" is one of those levels; we
+# surface it separately as the COI signal rather than as a fit level.
+_FIT_LEVELS = ("direct", "adjacent", "unrelated")
+
+
+def derive_author_fit(labels: list[str]) -> tuple[str | None, bool]:
+    """Return (fit_level, coi_disclosed) from the PR's `author-fit: …` labels."""
+    fit: str | None = None
+    coi = False
+    for lab in labels:
+        if not lab.lower().startswith("author-fit:"):
+            continue
+        val = lab.split(":", 1)[1].strip().lower()
+        if val == "coi disclosed":
+            coi = True
+        elif val in _FIT_LEVELS:
+            fit = val
+    return fit, coi
+
+
 # Map ball-in-court → the GitHub label whose most-recent application marks when
 # the PR entered that state.
 _BALL_LABEL = {"author": "waiting on author", "reviewer": "waiting on reviewer"}
@@ -1444,6 +1465,8 @@ def build_prs(
             if linked
             else None
         )
+        # Author–task fit + COI straight from the PR's own `author-fit:` labels.
+        pr_fit, pr_coi = derive_author_fit(labels)
         # Whose court + how long it's been there (only meaningful for open PRs).
         ball = derive_ball_in_court(labels) if state == "open" else None
         ball_at = ball_since(n, ball)
@@ -1460,10 +1483,19 @@ def build_prs(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
-            # Conflict-of-interest and author–task fit are assessed on the
-            # proposal; inherit both onto the PR that implements it.
-            "coi": linked["coi"] if linked else None,
-            "author_fit": (linked.get("llm_review") or {}).get("author_fit") if linked else None,
+            # Author–task fit and COI come straight from the PR's own
+            # `author-fit: …` labels (team's source of truth). Fall back to the
+            # linked proposal's assessment only when the PR carries no such label.
+            "coi": (
+                (linked["coi"] if linked and linked.get("coi") else "disclosed")
+                if pr_coi
+                else (linked["coi"] if linked else None)
+            ),
+            "author_fit": (
+                pr_fit
+                if (pr_fit or pr_coi)
+                else ((linked.get("llm_review") or {}).get("author_fit") if linked else None)
+            ),
             "review_stage": derive_review_stage(reviewers),
             # Only open PRs are "waiting on" anyone. Merged/closed PRs often keep
             # a stale `waiting on author` label, and leaving ball_in_court set
