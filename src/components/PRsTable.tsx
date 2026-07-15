@@ -63,7 +63,7 @@ function StageMini({ filled }: { filled: 0 | 1 | 2 | 3 }) {
   const finalDone = filled >= 3
   const dot = (on: boolean, dim = false) =>
     on ? (
-      <Check className="h-3 w-3 text-green-700 dark:text-green-400" strokeWidth={3} />
+      <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-400" strokeWidth={2} />
     ) : (
       <CircleDashed
         className={cn("h-3 w-3", dim ? "text-muted-foreground/50" : "text-muted-foreground")}

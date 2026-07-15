@@ -267,7 +267,7 @@ export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
 // when it isn't reachable yet.
 function stageGlyph(status: ReviewState | "empty" | "locked"): ReactNode {
   if (status === "approved")
-    return <Check className="h-3.5 w-3.5 text-green-700 dark:text-green-400" strokeWidth={3} />
+    return <CheckCircle2 className="h-3.5 w-3.5 text-green-700 dark:text-green-400" strokeWidth={2} />
   if (status === "changes_requested")
     return <RotateCw className="h-3 w-3 text-red-700 dark:text-red-400" strokeWidth={2.5} />
   if (status === "pending")
@@ -928,9 +928,9 @@ export function StatusChip({
 function ReviewStatusIcon({ status }: { status: ReviewState }) {
   if (status === "approved")
     return (
-      <Check
+      <CheckCircle2
         className="h-3.5 w-3.5 shrink-0 text-green-700 dark:text-green-400"
-        strokeWidth={3}
+        strokeWidth={2}
       />
     )
   if (status === "changes_requested")
