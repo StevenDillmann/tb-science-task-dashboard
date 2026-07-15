@@ -71,6 +71,12 @@ const stringCodec: Codec<string | null> = {
   decode: (s) => s,
 }
 
+// For multi-select filters: a comma-separated list. Empty list → dropped.
+export const stringArrayCodec: Codec<string[]> = {
+  encode: (v) => (v.length ? v.join(",") : null),
+  decode: (s) => (s ? s.split(",").filter(Boolean) : []),
+}
+
 // For numeric state (e.g. an opened PR / proposal number).
 export const numberCodec: Codec<number | null> = {
   encode: (v) => (v == null ? null : String(v)),
