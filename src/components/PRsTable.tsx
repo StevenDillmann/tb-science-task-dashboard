@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleDashed,
-  CircleDot,
+  Clock,
   ExternalLink,
   Pen,
   Search,
@@ -132,7 +132,7 @@ const CI_OPTIONS = [
   {
     value: "pending",
     label: "pending",
-    render: <CircleDot className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
+    render: <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
   },
 ]
 

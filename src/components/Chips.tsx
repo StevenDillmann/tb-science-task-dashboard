@@ -2,10 +2,9 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
-  Circle,
   CircleDashed,
-  CircleDot,
   Clock,
+  Info,
   Pen,
   RotateCw,
   Search,
@@ -276,7 +275,7 @@ function stageGlyph(status: ReviewState | "empty" | "locked"): ReactNode {
   if (status === "changes_requested")
     return <RotateCw className="h-3 w-3 text-red-700 dark:text-red-400" strokeWidth={2.5} />
   if (status === "pending")
-    return <Circle className="h-3 w-3 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
+    return <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
   if (status === "locked")
     return <CircleDashed className="h-3 w-3 text-muted-foreground/50" strokeWidth={2} />
   return <CircleDashed className="h-3 w-3 text-muted-foreground" strokeWidth={2} />
@@ -652,7 +651,7 @@ export function CIChip({ ci }: { ci: string | null }) {
   }
   if (ci === "pending") {
     return (
-      <CircleDot
+      <Clock
         className="h-4 w-4 text-amber-600 dark:text-amber-400"
         aria-label="CI pending — checks running or incomplete"
       />
@@ -878,7 +877,7 @@ function ReviewStatusIcon({ status }: { status: ReviewState }) {
       />
     )
   return (
-    <Circle
+    <Clock
       className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400"
       strokeWidth={2.5}
     />
