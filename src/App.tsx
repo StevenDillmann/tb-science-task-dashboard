@@ -92,7 +92,7 @@ export default function App() {
             />
             <div className="font-prose">
               <h1 className="text-xl font-semibold uppercase tracking-wider">
-                Terminal-Bench Science · Task Dashboard
+                Terminal-Bench Science · Task Submission Dashboard
               </h1>
               <p className="text-sm text-muted-foreground">
                 Task proposal and pull requests for Terminal-Bench Science.
