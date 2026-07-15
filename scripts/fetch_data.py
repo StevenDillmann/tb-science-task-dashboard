@@ -1006,6 +1006,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             tail = body_md[header_idx:]
             in_table = False
             header_seen = False
+            drop_last = False
             for line in tail.splitlines():
                 if line.startswith("|"):
                     in_table = True
@@ -1013,6 +1014,8 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         header_seen = True
                         continue
                     if not header_seen:
+                        header_cells = [c.strip() for c in line.strip("|").split("|")]
+                        drop_last = len(header_cells) > 2 and "average" in header_cells[-1].lower()
                         continue
                     cells = [c.strip() for c in line.strip("|").split("|")]
                     if len(cells) < 2:
@@ -1020,7 +1023,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                     model_label = cells[0]
                     display = re.sub(r"`", "", model_label).split("<br>")[0].strip()
                     results: list[str] = []
-                    for cell in cells[1:]:
+                    for cell in (cells[1:-1] if drop_last else cells[1:]):
                         c_clean = cell.strip()
                         if "✅" in c_clean:
                             results.append("succeeded")
@@ -1121,6 +1124,9 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             # Split on lines, pick the first `|...|` block.
             in_table = False
             header_seen = False
+            # A trailing per-model "Average" column is a summary, not a trial —
+            # drop it so it isn't counted as an extra (errored) trial cell.
+            drop_last = False
             for line in tail.splitlines():
                 if line.startswith("|"):
                     if not in_table:
@@ -1129,6 +1135,8 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         header_seen = True
                         continue
                     if not header_seen:
+                        header_cells = [x.strip() for x in line.strip("|").split("|")]
+                        drop_last = len(header_cells) > 2 and "average" in header_cells[-1].lower()
                         continue
                     cells = [x.strip() for x in line.strip("|").split("|")]
                     if len(cells) < 2:
@@ -1139,7 +1147,7 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                     display = re.sub(r"`", "", model_label)
                     display = display.split("<br>")[0].strip()
                     results: list[str] = []
-                    for cell in cells[1:]:
+                    for cell in (cells[1:-1] if drop_last else cells[1:]):
                         c_clean = cell.strip()
                         if "✅" in c_clean:
                             results.append("pass")
