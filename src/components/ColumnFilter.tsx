@@ -169,23 +169,17 @@ export function ColumnFilter({
                       isSelected(opt.value) && "bg-accent font-medium",
                     )}
                   >
-                    <span className="inline-flex min-w-0 items-center gap-1.5">
-                      {multiple && (
-                        <Check
-                          className={cn(
-                            "h-3 w-3 shrink-0",
-                            isSelected(opt.value) ? "opacity-100" : "opacity-0",
-                          )}
-                          strokeWidth={3}
-                        />
+                    <span className="truncate">{opt.render ?? opt.label}</span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {opt.count !== undefined && (
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {opt.count}
+                        </span>
                       )}
-                      <span className="truncate">{opt.render ?? opt.label}</span>
+                      {multiple && isSelected(opt.value) && (
+                        <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
+                      )}
                     </span>
-                    {opt.count !== undefined && (
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {opt.count}
-                      </span>
-                    )}
                   </button>
                 ))
               )}

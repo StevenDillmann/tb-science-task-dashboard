@@ -136,17 +136,17 @@ export function FieldColumnFilter({
                       isSel(sentinel) && "bg-accent font-medium not-italic text-foreground",
                     )}
                   >
-                    <span className="inline-flex min-w-0 items-center gap-1.5">
-                      {multiple && (
-                        <Check className={cn("h-3 w-3 shrink-0", isSel(sentinel) ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+                    <span className="truncate">(uncategorized)</span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {n !== undefined && (
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {n}
+                        </span>
                       )}
-                      <span className="truncate">(uncategorized)</span>
+                      {multiple && isSel(sentinel) && (
+                        <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
+                      )}
                     </span>
-                    {n !== undefined && (
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {n}
-                      </span>
-                    )}
                   </button>
                 </div>
               )
@@ -168,17 +168,17 @@ export function FieldColumnFilter({
                         isSel(sub) && "bg-accent font-medium",
                       )}
                     >
-                      <span className="inline-flex min-w-0 items-center gap-1.5">
-                        {multiple && (
-                          <Check className={cn("h-3 w-3 shrink-0", isSel(sub) ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+                      <span className="truncate">{field_labels[sub] ?? sub}</span>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {n !== undefined && (
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {n}
+                          </span>
                         )}
-                        <span className="truncate">{field_labels[sub] ?? sub}</span>
+                        {multiple && isSel(sub) && (
+                          <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
+                        )}
                       </span>
-                      {n !== undefined && (
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {n}
-                        </span>
-                      )}
                     </button>
                   )
                 })}
