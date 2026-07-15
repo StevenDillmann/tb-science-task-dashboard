@@ -267,14 +267,14 @@ export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
 // when it isn't reachable yet.
 function stageGlyph(status: ReviewState | "empty" | "locked"): ReactNode {
   if (status === "approved")
-    return <CheckCircle2 className="h-3.5 w-3.5 text-green-700 dark:text-green-400" strokeWidth={2} />
+    return <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-400" strokeWidth={2} />
   if (status === "changes_requested")
-    return <RotateCw className="h-3.5 w-3.5 text-red-700 dark:text-red-400" strokeWidth={2.5} />
+    return <RotateCw className="h-3 w-3 text-red-700 dark:text-red-400" strokeWidth={2.5} />
   if (status === "pending")
-    return <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
+    return <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
   if (status === "locked")
-    return <CircleDashed className="h-3.5 w-3.5 text-muted-foreground/50" strokeWidth={2} />
-  return <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={2} />
+    return <CircleDashed className="h-3 w-3 text-muted-foreground/50" strokeWidth={2} />
+  return <CircleDashed className="h-3 w-3 text-muted-foreground" strokeWidth={2} />
 }
 
 const STAGE_STATUS_WORD: Record<ReviewState, string> = {
@@ -929,20 +929,20 @@ function ReviewStatusIcon({ status }: { status: ReviewState }) {
   if (status === "approved")
     return (
       <CheckCircle2
-        className="h-3.5 w-3.5 shrink-0 text-green-700 dark:text-green-400"
+        className="h-3 w-3 shrink-0 text-green-700 dark:text-green-400"
         strokeWidth={2}
       />
     )
   if (status === "changes_requested")
     return (
       <RotateCw
-        className="h-3.5 w-3.5 shrink-0 text-red-700 dark:text-red-400"
+        className="h-3 w-3 shrink-0 text-red-700 dark:text-red-400"
         strokeWidth={2.5}
       />
     )
   return (
     <Clock
-      className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+      className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400"
       strokeWidth={2.5}
     />
   )
