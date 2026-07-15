@@ -35,6 +35,8 @@ export type PR = {
   field: string | null
   /** Conflict of interest inherited from the linked proposal, or null. */
   coi: string | null
+  /** Author–task fit inherited from the linked proposal, or null. */
+  author_fit: "direct" | "adjacent" | "unrelated" | null
   review_stage: "1st" | "2nd" | "3rd" | "none"
   ball_in_court: "reviewer" | "author" | null
   /** When the PR last entered its current waiting state (ISO), and how many
