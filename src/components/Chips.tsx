@@ -850,6 +850,20 @@ export function AuthorFitChip({
   return <span title={title}>{inner}</span>
 }
 
+/** Amber "COI disclosed" badge — a proposal's (or its PR's) declared conflict of
+ *  interest. `fromProposal` notes when a PR inherited it from the linked proposal. */
+export function CoiBadge({ coi, fromProposal }: { coi: string; fromProposal?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+      title={`Declared conflict of interest${fromProposal ? " (from linked proposal)" : ""}: ${coi}`}
+    >
+      <Info className="h-3 w-3" />
+      COI disclosed
+    </span>
+  )
+}
+
 export function StatusChip({
   status,
   onClick,

@@ -72,6 +72,31 @@ AUTHOR_GITHUB_RE = re.compile(
 _GITHUB_PLACEHOLDERS = {"none", "n-a", "na"}
 AUTHOR_NAME_RE = re.compile(r"^Author\s*:\s*(.+?)$", re.IGNORECASE | re.MULTILINE)
 
+# Conflict-of-interest disclosure from the proposal form ("Commercial Affiliation
+# & Conflicts of Interest:"). Capture the value up to the next blank line, the
+# `---` form footer, or end of body.
+COI_RE = re.compile(
+    r"(?:Commercial\s+Affiliation\s*&?\s*)?Conflicts?\s+of\s+Interest\s*:?[ \t]*\n?"
+    r"(?P<coi>.*?)(?:\n\s*\n|\n\s*---|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+# Values that mean "no conflict declared" → treated as no disclosure (None).
+_COI_NONE = {"", "none", "n-a", "na", "n/a", "no", "n.a."}
+
+
+def parse_coi(body: str) -> str | None:
+    """The proposal's declared conflict of interest, or None when not disclosed.
+
+    Returns the disclosure text only when a real conflict is stated; empty /
+    "None" / "N/A" answers collapse to None so the dashboard can flag only the
+    proposals that actually declare something.
+    """
+    m = COI_RE.search((body or "").replace("**", ""))
+    if not m:
+        return None
+    val = " ".join(m.group("coi").split()).strip(" .")
+    return None if val.lower() in _COI_NONE else val
+
 
 def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
     """Return (login, display_name) for the original proposal submitter.
@@ -81,7 +106,9 @@ def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
     `## Author Information`. `display_name` is the human name from the
     `Author:` field when present.
     """
-    body = body or ""
+    # Strip markdown bold so bolded form labels (**Author:**, **GitHub:**) still
+    # match the plain-label regexes.
+    body = (body or "").replace("**", "")
     m = PROPOSED_BY_RE.search(body)
     if m:
         return m.group(1), None
@@ -603,10 +630,11 @@ def field_from_proposal_body(
     second-level segment ("Biology") so we can still show something useful when
     the segment isn't in the discovered taxonomy.
     """
-    m = SCIENTIFIC_DOMAIN_RE.search(body or "")
+    # Strip markdown bold so a bolded heading / breadcrumb still parses.
+    m = SCIENTIFIC_DOMAIN_RE.search((body or "").replace("**", ""))
     if not m:
         return None, None, None
-    parts = [s.strip() for s in m.group(1).split(">")]
+    parts = [s.strip(" *") for s in m.group(1).split(">")]
     if len(parts) < 2:
         return None, None, None
     domain_slug = slugify(parts[0])
@@ -1313,6 +1341,9 @@ def build_prs(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
+            # Conflict-of-interest is disclosed on the proposal; inherit it onto
+            # the PR that implements that proposal so it surfaces here too.
+            "coi": linked["coi"] if linked else None,
             "review_stage": derive_review_stage(reviewers),
             # Only open PRs are "waiting on" anyone. Merged/closed PRs often keep
             # a stale `waiting on author` label, and leaving ball_in_court set
@@ -1429,6 +1460,7 @@ def build_proposals(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
+            "coi": parse_coi(n.get("body") or ""),
             "status": status,
             "state": state,
             "closed": bool(n.get("closed")),

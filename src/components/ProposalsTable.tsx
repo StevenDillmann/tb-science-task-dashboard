@@ -22,7 +22,7 @@ import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, useUrlState } from "@/lib/useUrlState"
-import { AuthorFitChip, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
+import { AuthorFitChip, CoiBadge, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
@@ -373,7 +373,12 @@ export function ProposalsTable({
             options={authorOptions}
           />
         ),
-        cell: ({ row }) => <UserCell user={row.original.author} />,
+        cell: ({ row }) => (
+          <div className="flex flex-col items-start gap-1">
+            <UserCell user={row.original.author} />
+            {row.original.coi && <CoiBadge coi={row.original.coi} />}
+          </div>
+        ),
       },
       {
         accessorKey: "llm_review",

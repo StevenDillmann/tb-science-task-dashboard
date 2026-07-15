@@ -33,6 +33,8 @@ export type PR = {
   domain: Domain | null
   subfield: string | null
   field: string | null
+  /** Conflict of interest inherited from the linked proposal, or null. */
+  coi: string | null
   review_stage: "1st" | "2nd" | "3rd" | "none"
   ball_in_court: "reviewer" | "author" | null
   /** When the PR last entered its current waiting state (ISO), and how many
@@ -126,6 +128,8 @@ export type Proposal = {
   domain: Domain | null
   subfield: string | null
   field: string | null
+  /** Declared conflict-of-interest text, or null when none was disclosed. */
+  coi: string | null
   status: "approved" | "rejected" | "pending"
   state: ProposalState
   closed: boolean

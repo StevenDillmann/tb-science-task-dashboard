@@ -39,7 +39,9 @@ import {
   BallChip,
   CheatChip,
   CIChip,
+  CoiBadge,
   FieldChip,
+  HumanReviewChip,
   RubricChip,
   StageChip,
   StatePill,
@@ -400,7 +402,12 @@ export function PRsTable({
             options={authorOptions}
           />
         ),
-        cell: ({ row }) => <UserCell user={row.original.author} />,
+        cell: ({ row }) => (
+          <div className="flex flex-col items-start gap-1">
+            <UserCell user={row.original.author} />
+            {row.original.coi && <CoiBadge coi={row.original.coi} fromProposal />}
+          </div>
+        ),
       },
       {
         accessorKey: "dri",
