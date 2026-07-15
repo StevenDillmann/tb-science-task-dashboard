@@ -7,9 +7,8 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Check, Clock, ExternalLink, Plus, X as XIcon } from "lucide-react"
+import { ArrowUpDown, CheckCircle2, Clock, ExternalLink, Plus, XCircle } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -21,36 +20,16 @@ import {
 import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
-import { numberCodec, useUrlState } from "@/lib/useUrlState"
+import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import { AuthorFitChip, CoiBadge, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
 import { ProposalSheet } from "./ProposalSheet"
 
-function IconLabel({
-  icon,
-  text,
-  label,
-}: {
-  icon: "check" | "question" | "x" | "clock" | "approx"
-  text: string
-  label: string
-}) {
-  return (
-    <span className={cn("inline-flex items-center gap-1 font-medium", text)}>
-      {icon === "check" && <Check className="h-3 w-3" strokeWidth={3} />}
-      {icon === "x" && <XIcon className="h-3 w-3" strokeWidth={3} />}
-      {icon === "clock" && <Clock className="h-3 w-3" strokeWidth={2} />}
-      {(icon === "question" || icon === "approx") && (
-        <span className="inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none">
-          {icon === "approx" ? "≈" : "?"}
-        </span>
-      )}
-      {label}
-    </span>
-  )
-}
+// Toggle a value in/out of a multi-select filter array.
+const toggleVal = (arr: string[], v: string) =>
+  arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]
 
 const LLM_OPTIONS = [
   {
@@ -70,40 +49,44 @@ const LLM_OPTIONS = [
   },
 ]
 
+// Circle icons matching the Human-review cell chip.
 const HUMAN_OPTIONS = [
   {
     value: "approved",
     label: "approved",
-    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="approved" />,
+    render: (
+      <span className="inline-flex items-center gap-1 font-medium text-green-700 dark:text-green-400">
+        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} /> approved
+      </span>
+    ),
   },
   {
     value: "pending",
     label: "pending",
-    render: <IconLabel icon="clock" text="text-amber-700 dark:text-amber-400" label="pending" />,
+    render: (
+      <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
+        <Clock className="h-3.5 w-3.5" strokeWidth={2} /> pending
+      </span>
+    ),
   },
   {
     value: "rejected",
     label: "declined",
-    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="declined" />,
+    render: (
+      <span className="inline-flex items-center gap-1 font-medium text-red-700 dark:text-red-400">
+        <XCircle className="h-3.5 w-3.5" strokeWidth={2} /> declined
+      </span>
+    ),
   },
 ]
 
+// Author-Fit column filter: fit verdicts + a "COI disclosed" option (the column
+// also surfaces the blue COI badge).
 const FIT_OPTIONS = [
-  {
-    value: "direct",
-    label: "direct",
-    render: <span className="font-medium text-green-700 dark:text-green-400">direct</span>,
-  },
-  {
-    value: "adjacent",
-    label: "adjacent",
-    render: <span className="font-medium text-amber-700 dark:text-amber-400">adjacent</span>,
-  },
-  {
-    value: "unrelated",
-    label: "unrelated",
-    render: <span className="font-medium text-red-700 dark:text-red-400">unrelated</span>,
-  },
+  { value: "direct", label: "direct", render: <span className="font-medium text-green-700 dark:text-green-400">direct</span> },
+  { value: "adjacent", label: "adjacent", render: <span className="font-medium text-amber-700 dark:text-amber-400">adjacent</span> },
+  { value: "unrelated", label: "unrelated", render: <span className="font-medium text-red-700 dark:text-red-400">unrelated</span> },
+  { value: "coi", label: "COI disclosed", render: <span className="font-medium text-blue-700 dark:text-blue-400">COI disclosed</span> },
 ]
 
 /** Pill toggle: All / Open / Approved / Closed for proposals.
@@ -194,6 +177,23 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
   return out
 }
 
+// Active sort as a column label + direction detail (for the "Sorted by" chip).
+function propSortText(sorting: SortingState): { label: string; detail: string; isDefault: boolean } {
+  const s = sorting[0]
+  const isDefault = !s || (s.id === "proposal_number" && s.desc === true)
+  if (!s) return { label: "Order", detail: "newest", isDefault: true }
+  let label: string
+  let detail: string
+  switch (s.id) {
+    case "proposal_number": label = "Order"; detail = s.desc ? "newest" : "oldest"; break
+    case "title": label = "Title"; detail = s.desc ? "Z→A" : "A→Z"; break
+    case "updated_days": label = "Updated"; detail = s.desc ? "least recent" : "most recent"; break
+    case "age_days": label = "Posted"; detail = s.desc ? "oldest" : "newest"; break
+    default: label = s.id; detail = s.desc ? "desc" : "asc"
+  }
+  return { label, detail, isDefault }
+}
+
 export function ProposalsTable({
   proposals,
   externalField,
@@ -207,8 +207,7 @@ export function ProposalsTable({
 }) {
   const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([
-    // Newest first — sort by Task Proposal number descending. Avoids ties
-    // between proposals submitted on the same day that age_days can't break.
+    // Newest first — sort by Task Proposal number descending.
     { id: "proposal_number", desc: true },
   ])
   // Filters bound to URL query params (p-prefixed so they don't collide with
@@ -216,20 +215,25 @@ export function ProposalsTable({
   const [search, setSearch] = useUrlState("pq", "")
   const [state, setState] = useUrlState<ProposalStateFilter | "all">("pstate", "open")
   const [activeNum, setActiveNum] = useUrlState<number | null>("prop", null, numberCodec)
-  const [field, setField] = useUrlState<string | null>("pfield", null)
-  const [author, setAuthor] = useUrlState<string | null>("pauthor", null)
-  const [llm, setLlm] = useUrlState<string | null>("llm", null)
-  const [fit, setFit] = useUrlState<string | null>("fit", null)
-  const [human, setHuman] = useUrlState<string | null>("human", null)
+  const [field, setField] = useUrlState<string[]>("pfield", [], stringArrayCodec)
+  const [author, setAuthor] = useUrlState<string[]>("pauthor", [], stringArrayCodec)
+  const [llm, setLlm] = useUrlState<string[]>("pllm", [], stringArrayCodec)
+  const [fit, setFit] = useUrlState<string[]>("pfit", [], stringArrayCodec)
+  const [human, setHuman] = useUrlState<string[]>("phuman", [], stringArrayCodec)
+  // Which column's filter popover is open — lifted so it survives the header
+  // re-render each multi-select toggle triggers.
+  const [openCol, setOpenCol] = useState<string | null>(null)
+  const openProps = (id: string) => ({
+    open: openCol === id,
+    onOpenChange: (v: boolean) => setOpenCol(v ? id : null),
+  })
   const active = useMemo(
     () => (activeNum == null ? null : (proposals.find((p) => p.number === activeNum) ?? null)),
     [proposals, activeNum],
   )
 
-  // Derive the 3-way bucket (open / approved / closed) from the
-  // underlying `state` + `status` fields. "Approved" peels off
-  // GH-closed proposals that the maintainers approved; everything
-  // else closed (declined, abandoned, no decision) stays in "closed".
+  // Derive the 3-way bucket (open / approved / closed) from the underlying
+  // `state` + `status` fields.
   const bucketOf = (p: Proposal): ProposalStateFilter => {
     if (p.state === "open") return "open"
     return p.status === "approved" ? "approved" : "closed"
@@ -241,12 +245,11 @@ export function ProposalsTable({
     return c
   }, [proposals])
 
-  // When the Stats tab forwards filters, apply them and reset state to "all"
-  // so every matching proposal shows up regardless of open/closed.
+  // When the Stats tab forwards filters, apply them and reset state to "all".
   useEffect(() => {
     if (externalField || externalStatus) {
-      if (externalField) setField(externalField)
-      setHuman(externalStatus ?? null)
+      if (externalField) setField([externalField])
+      setHuman(externalStatus ? [externalStatus] : [])
       setState("all")
       onExternalFieldConsumed?.()
     }
@@ -256,21 +259,22 @@ export function ProposalsTable({
     const needle = search.toLowerCase().trim()
     return proposals.filter((p) => {
       if (state !== "all" && bucketOf(p) !== state) return false
-      if (field) {
-        if (field.startsWith("__domain:")) {
-          if (p.domain !== field.slice("__domain:".length)) return false
-        } else if (p.subfield !== field) return false
+      if (field.length) {
+        const ok = field.some((f) =>
+          f.startsWith("__domain:") ? p.domain === f.slice("__domain:".length) : p.subfield === f,
+        )
+        if (!ok) return false
       }
-      if (author && p.author.login !== author) return false
-      if (llm) {
+      if (author.length && !author.includes(p.author.login)) return false
+      if (llm.length) {
         const rec = p.llm_review?.recommendation ?? null
-        if (llm === "none" ? rec !== null : rec !== llm) return false
+        if (!llm.some((l) => (l === "none" ? rec === null : rec === l))) return false
       }
-      if (fit) {
-        const f = p.llm_review?.author_fit ?? null
-        if (fit === "none" ? f !== null : f !== fit) return false
+      if (fit.length) {
+        const af = p.llm_review?.author_fit ?? null
+        if (!fit.some((f) => (f === "coi" ? !!p.coi : af === f))) return false
       }
-      if (human && p.status !== human) return false
+      if (human.length && !human.includes(p.status)) return false
       if (needle) {
         const hay =
           `${p.proposal_number ?? p.number} ${p.title} ${p.author.login} ${p.field ?? ""}`.toLowerCase()
@@ -309,8 +313,6 @@ export function ProposalsTable({
         header: "#",
         cell: ({ row }) => {
           const p = row.original
-          // 3-state: open → open; closed+approved → approved; any other
-          // closed (declined, withdrawn, no decision) → declined.
           const tone: "open" | "approved" | "declined" =
             p.state === "open" ? "open" : p.status === "approved" ? "approved" : "declined"
           return (
@@ -355,7 +357,13 @@ export function ProposalsTable({
         accessorKey: "subfield",
         size: 185,
         header: () => (
-          <FieldColumnFilter value={field} onChange={setField} counts={fieldCounts} />
+          <FieldColumnFilter
+            selected={field}
+            onToggle={(v) => setField(toggleVal(field, v))}
+            onClearAll={() => setField([])}
+            counts={fieldCounts}
+            {...openProps("field")}
+          />
         ),
         cell: ({ row }) => (
           <FieldChip subfield={row.original.subfield} fallback={row.original.field} />
@@ -363,22 +371,45 @@ export function ProposalsTable({
       },
       {
         accessorKey: "author",
-        // Match the PRs table's author column width.
         size: 195,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
-            value={author}
-            onChange={setAuthor}
+            selected={author}
+            onToggle={(v) => setAuthor(toggleVal(author, v))}
+            onClearAll={() => setAuthor([])}
             options={authorOptions}
+            {...openProps("author")}
           />
         ),
-        cell: ({ row }) => (
-          <div className="flex flex-col items-start gap-1">
-            <UserCell user={row.original.author} />
-            {row.original.coi && <CoiBadge coi={row.original.coi} />}
-          </div>
+        cell: ({ row }) => <UserCell user={row.original.author} />,
+      },
+      {
+        id: "author_fit",
+        size: 150,
+        header: () => (
+          <ColumnFilter
+            title="AUTHOR FIT"
+            selected={fit}
+            onToggle={(v) => setFit(toggleVal(fit, v))}
+            onClearAll={() => setFit([])}
+            options={FIT_OPTIONS}
+            {...openProps("fit")}
+          />
         ),
+        cell: ({ row }) => {
+          const p = row.original
+          const af = p.llm_review?.author_fit ?? null
+          if (!af && !p.coi) {
+            return <span className="text-xs text-muted-foreground">—</span>
+          }
+          return (
+            <div className="flex flex-col items-start gap-1">
+              <AuthorFitChip fit={af} url={p.llm_review?.url ?? null} />
+              {p.coi && <CoiBadge coi={p.coi} />}
+            </div>
+          )
+        },
       },
       {
         accessorKey: "llm_review",
@@ -386,9 +417,11 @@ export function ProposalsTable({
         header: () => (
           <ColumnFilter
             title="LLM REVIEW"
-            value={llm}
-            onChange={setLlm}
+            selected={llm}
+            onToggle={(v) => setLlm(toggleVal(llm, v))}
+            onClearAll={() => setLlm([])}
             options={LLM_OPTIONS}
+            {...openProps("llm")}
           />
         ),
         cell: ({ row }) => (
@@ -399,32 +432,16 @@ export function ProposalsTable({
         ),
       },
       {
-        id: "author_fit",
-        size: 150,
-        header: () => (
-          <ColumnFilter
-            title="AUTHOR FIT"
-            value={fit}
-            onChange={setFit}
-            options={FIT_OPTIONS}
-          />
-        ),
-        cell: ({ row }) => (
-          <AuthorFitChip
-            fit={row.original.llm_review?.author_fit ?? null}
-            url={row.original.llm_review?.url ?? null}
-          />
-        ),
-      },
-      {
         accessorKey: "status",
         size: 150,
         header: () => (
           <ColumnFilter
             title="HUMAN REVIEW"
-            value={human}
-            onChange={setHuman}
+            selected={human}
+            onToggle={(v) => setHuman(toggleVal(human, v))}
+            onClearAll={() => setHuman([])}
             options={HUMAN_OPTIONS}
+            {...openProps("human")}
           />
         ),
         cell: ({ row }) => <HumanReviewChip status={row.original.status} />,
@@ -470,7 +487,7 @@ export function ProposalsTable({
         ),
       },
     ],
-    [field, author, llm, fit, human, fieldCounts, authorOptions],
+    [field, author, llm, fit, human, fieldCounts, authorOptions, openCol],
   )
 
   const table = useReactTable({
@@ -482,7 +499,8 @@ export function ProposalsTable({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyFilter = !!(search || field || author || llm || fit || human)
+  const anyChip = !!(field.length || author.length || llm.length || fit.length || human.length)
+  const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = propSortText(sorting)
 
   return (
     <>
@@ -500,58 +518,6 @@ export function ProposalsTable({
           className="max-w-md"
         />
         <StateToggle value={state} onChange={setState} counts={stateCounts} total={proposals.length} />
-        {anyFilter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => {
-              setSearch("")
-              setField(null)
-              setAuthor(null)
-              setLlm(null)
-              setFit(null)
-              setHuman(null)
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-        {field && (
-          <FilterChip
-            label="Field"
-            value={
-              field.startsWith("__domain:")
-                ? `${DOMAIN_LABELS[field.slice("__domain:".length) as Domain] ?? field.slice("__domain:".length)} (other)`
-                : (field_labels[field] ?? field)
-            }
-            onClear={() => setField(null)}
-          />
-        )}
-        {author && (
-          <FilterChip label="Author" value={author} onClear={() => setAuthor(null)} />
-        )}
-        {llm && (
-          <FilterChip
-            label="LLM review"
-            value={llm}
-            onClear={() => setLlm(null)}
-          />
-        )}
-        {fit && (
-          <FilterChip
-            label="Author fit"
-            value={fit}
-            onClear={() => setFit(null)}
-          />
-        )}
-        {human && (
-          <FilterChip
-            label="Human review"
-            value={human === "rejected" ? "declined" : human}
-            onClear={() => setHuman(null)}
-          />
-        )}
         <span className="text-xs text-muted-foreground">
           {filtered.length} {filtered.length === 1 ? "row" : "rows"}
         </span>
@@ -564,6 +530,90 @@ export function ProposalsTable({
           <Plus className="h-3.5 w-3.5" />
           Submit a proposal
         </a>
+      </div>
+
+      {/* Active filters + sort — always rendered so activating/clearing one
+          doesn't shift the table below (fixed two-row bar). */}
+      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+        <div className="flex items-start gap-2">
+          <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Filters:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {anyChip ? (
+              <>
+                {field.length > 0 && (
+                  <FilterChip
+                    label="Field"
+                    value={field
+                      .map((f) =>
+                        f.startsWith("__domain:")
+                          ? `${DOMAIN_LABELS[f.slice("__domain:".length) as Domain] ?? f.slice("__domain:".length)} (other)`
+                          : (field_labels[f] ?? f),
+                      )
+                      .join(", ")}
+                    onClear={() => setField([])}
+                  />
+                )}
+                {author.length > 0 && (
+                  <FilterChip label="Author" value={author.join(", ")} onClear={() => setAuthor([])} />
+                )}
+                {fit.length > 0 && (
+                  <FilterChip
+                    label="Author fit"
+                    value={fit.map((f) => FIT_OPTIONS.find((o) => o.value === f)?.label ?? f).join(", ")}
+                    onClear={() => setFit([])}
+                  />
+                )}
+                {llm.length > 0 && (
+                  <FilterChip
+                    label="LLM review"
+                    value={llm.map((l) => LLM_OPTIONS.find((o) => o.value === l)?.label ?? l).join(", ")}
+                    onClear={() => setLlm([])}
+                  />
+                )}
+                {human.length > 0 && (
+                  <FilterChip
+                    label="Human review"
+                    value={human.map((h) => HUMAN_OPTIONS.find((o) => o.value === h)?.label ?? h).join(", ")}
+                    onClear={() => setHuman([])}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setField([])
+                    setAuthor([])
+                    setLlm([])
+                    setFit([])
+                    setHuman([])
+                  }}
+                >
+                  Clear all filters
+                </button>
+              </>
+            ) : (
+              <span className="inline-flex shrink-0 items-center rounded-full border bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                none
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Sorted by:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {isDefaultSort ? (
+              <span className="inline-flex shrink-0 items-center rounded-full border bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                newest
+              </span>
+            ) : (
+              <FilterChip
+                label={sortLabel}
+                value={sortDetail}
+                onClear={() => setSorting([{ id: "proposal_number", desc: true }])}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border">
