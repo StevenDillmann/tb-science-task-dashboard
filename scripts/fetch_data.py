@@ -252,19 +252,32 @@ _BALL_LABEL = {"author": "waiting on author", "reviewer": "waiting on reviewer"}
 def ball_since(node: dict[str, Any], ball: str | None) -> str | None:
     """When the PR last entered its current waiting-on state.
 
-    Returns the ISO timestamp of the MOST RECENT `labeled` event for the ball's
-    label (the labels toggle back and forth as the PR bounces between author and
-    reviewer, so we want the latest application, not the first). None if the ball
-    is unset or no matching label event is found.
+    Base signal: the MOST RECENT `labeled` event for the ball's label (the labels
+    toggle as the PR bounces between author and reviewer, so we want the latest
+    application, not the first).
+
+    For the *reviewer* state we also reset on the most recent review-request:
+    the coarse `waiting on reviewer` label doesn't toggle when the ball advances
+    from the parallel reviewers to the final reviewer, so without this the timer
+    would keep counting from when review first started rather than from when the
+    ball landed on the current reviewer.
+
+    None if the ball is unset or no matching event is found.
     """
     label_name = _BALL_LABEL.get(ball or "")
     if not label_name:
         return None
+    consider_requests = ball == "reviewer"
     latest: str | None = None
     for it in (node.get("timelineItems", {}).get("nodes", []) or []):
-        if it.get("__typename") != "LabeledEvent":
-            continue
-        if (it.get("label") or {}).get("name") != label_name:
+        typ = it.get("__typename")
+        if typ == "LabeledEvent":
+            if (it.get("label") or {}).get("name") != label_name:
+                continue
+        elif typ == "ReviewRequestedEvent":
+            if not consider_requests:
+                continue
+        else:
             continue
         ts = it.get("createdAt")
         if ts and (latest is None or ts > latest):
@@ -662,10 +675,11 @@ query($owner:String!,$name:String!,$cursor:String){
         # Label-add history, newest last. Used to measure how long a PR has sat
         # in its current `waiting on author` / `waiting on reviewer` state (the
         # most recent time that label was applied), so stale hand-offs surface.
-        timelineItems(last:60, itemTypes:[LABELED_EVENT]){
+        timelineItems(last:60, itemTypes:[LABELED_EVENT, REVIEW_REQUESTED_EVENT]){
           nodes{
             __typename
             ... on LabeledEvent { createdAt label{ name } }
+            ... on ReviewRequestedEvent { createdAt }
           }
         }
         reviewRequests(first:10){
@@ -790,6 +804,59 @@ TRIAL_SUMMARY_RE = re.compile(
     r"(\d+)\s*(?:of|/)\s*(\d+)\s+trials?\s+passed",
     re.IGNORECASE,
 )
+
+# Blended cost/runtime roll-up lines the /run comment posts under the trial
+# table, each with its own denominator, e.g.
+#   💰 Average cost across all trials: 94.0¢ (over 3 trial(s))
+#   ⏱️ Average runtime across all trials: 3.0m (over 4 trial(s))
+TRIAL_COST_RE = re.compile(
+    r"Average cost across all trials\s*:\s*([^\n(]+?)\s*\(over\s+(\d+)\s+trial",
+    re.IGNORECASE,
+)
+TRIAL_RUNTIME_RE = re.compile(
+    r"Average runtime across all trials\s*:\s*([^\n(]+?)\s*\(over\s+(\d+)\s+trial",
+    re.IGNORECASE,
+)
+# Blended pass-rate roll-up line, e.g. "✅ Pass rate across all trials: 33%
+# (2/6 passed)" — the authoritative passed/total across every model & trial.
+TRIAL_PASSRATE_RE = re.compile(
+    r"Pass rate across all trials\s*:\s*\d+%\s*\(\s*(\d+)\s*/\s*(\d+)\s+passed",
+    re.IGNORECASE,
+)
+# Same roll-up trio for the cheat comment (note "cheat trials" / "Successful
+# cheats", so these never collide with the /run "all trials" lines above).
+CHEAT_SUCCESS_RE = re.compile(
+    r"Successful cheats\s*:\s*(\d+)\s*/\s*(\d+)",
+    re.IGNORECASE,
+)
+CHEAT_COST_RE = re.compile(
+    r"Average cost across cheat trials\s*:\s*([^\n(]+?)\s*\(over\s+(\d+)\s+trial",
+    re.IGNORECASE,
+)
+CHEAT_RUNTIME_RE = re.compile(
+    r"Average runtime across cheat trials\s*:\s*([^\n(]+?)\s*\(over\s+(\d+)\s+trial",
+    re.IGNORECASE,
+)
+
+
+def _parse_cost_token(tok: str) -> float | None:
+    """`$1.23` → 1.23, `94.0¢` → 0.94, `—`/blank → None (USD)."""
+    tok = tok.strip()
+    m = re.search(r"([\d.]+)", tok)
+    if not m:
+        return None
+    val = float(m.group(1))
+    return val / 100 if "¢" in tok else val
+
+
+def _parse_duration_token(tok: str) -> int | None:
+    """`3.0m` → 180, `45s` → 45, `—`/blank → None (seconds)."""
+    tok = tok.strip()
+    m = re.search(r"([\d.]+)", tok)
+    if not m:
+        return None
+    val = float(m.group(1))
+    return round(val * 60) if "m" in tok else round(val)
 
 CHEAT_HEADER = "Cheating Agent Trial Results"
 # In the cheat comment ✅ means the cheat SUCCEEDED (bad) and ❌ means the
@@ -970,12 +1037,29 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                 elif in_table:
                     break
 
+        # Prefer the authoritative "🔓 Successful cheats: X/Y" roll-up when
+        # present (the rest not succeeded → blocked).
+        succ_m = CHEAT_SUCCESS_RE.search(body_text)
+        if succ_m:
+            succeeded, total = int(succ_m.group(1)), int(succ_m.group(2))
+            blocked = max(0, total - succeeded)
+
+        # Blended cost/runtime across cheat trials (each over its own denominator).
+        cost_m = CHEAT_COST_RE.search(body_text)
+        runtime_m = CHEAT_RUNTIME_RE.search(body_text)
+        avg_cost = _parse_cost_token(cost_m.group(1)) if cost_m else None
+        avg_runtime = _parse_duration_token(runtime_m.group(1)) if runtime_m else None
+
         return {
             "succeeded": succeeded,
             "blocked": blocked,
             "total": total,
             "by_model": by_model,
             "url": c.get("url"),
+            "avg_cost_usd": avg_cost,
+            "cost_trials": int(cost_m.group(2)) if cost_m else 0,
+            "avg_runtime_secs": avg_runtime,
+            "runtime_trials": int(runtime_m.group(2)) if runtime_m else 0,
         }
     return None
 
@@ -1084,9 +1168,14 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
 
         # The auto-posted summary line is authoritative when present; otherwise
         # fall back to the counts derived from the table above.
-        m = TRIAL_SUMMARY_RE.search(body_text)
-        if m:
-            passed, total = int(m.group(1)), int(m.group(2))
+        # Prefer the blended pass-rate roll-up (authoritative); fall back to the
+        # legacy "N of M trials passed" summary, then to the derived cell counts.
+        pr_m = TRIAL_PASSRATE_RE.search(body_text)
+        sum_m = TRIAL_SUMMARY_RE.search(body_text)
+        if pr_m:
+            passed, total = int(pr_m.group(1)), int(pr_m.group(2))
+        elif sum_m:
+            passed, total = int(sum_m.group(1)), int(sum_m.group(2))
         else:
             passed, total = cell_pass, cell_verdict
         # total == 0 means no verdicts to show — most importantly this skips the
@@ -1096,11 +1185,22 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
         if total == 0:
             continue
 
+        # Blended cost/runtime roll-up (each over its own denominator, since a
+        # trial only counts when its value is present and > 0).
+        cost_m = TRIAL_COST_RE.search(body_text)
+        runtime_m = TRIAL_RUNTIME_RE.search(body_text)
+        avg_cost = _parse_cost_token(cost_m.group(1)) if cost_m else None
+        avg_runtime = _parse_duration_token(runtime_m.group(1)) if runtime_m else None
+
         return {
             "passed": passed,
             "total": total,
             "by_model": by_model,
             "url": c.get("url"),
+            "avg_cost_usd": avg_cost,
+            "cost_trials": int(cost_m.group(2)) if cost_m else 0,
+            "avg_runtime_secs": avg_runtime,
+            "runtime_trials": int(runtime_m.group(2)) if runtime_m else 0,
         }
     return None
 
