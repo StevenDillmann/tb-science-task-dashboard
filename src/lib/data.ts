@@ -87,6 +87,7 @@ export type PR = {
     discussion_number: number
     title: string
     url: string
+    status: "approved" | "rejected" | "pending"
   } | null
   body: string
   head_sha: string | null

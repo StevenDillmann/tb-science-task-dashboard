@@ -521,24 +521,27 @@ export function PRsTable({
       },
       {
         accessorKey: "linked_proposal",
-        size: 100,
+        size: 130,
         header: "PROPOSAL",
         cell: ({ row }) => {
           const lp = row.original.linked_proposal
           if (!lp) return <span className="text-xs text-muted-foreground">—</span>
           const label = lp.proposal_number !== null ? `#${lp.proposal_number}` : `#d${lp.discussion_number}`
           return (
-            <a
-              href={lp.url}
-              target="_blank"
-              rel="noreferrer"
-              title={lp.title}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
-            >
-              {label}
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            <span className="inline-flex items-center gap-1.5">
+              <a
+                href={lp.url}
+                target="_blank"
+                rel="noreferrer"
+                title={lp.title}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {label}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <HumanReviewChip status={lp.status} compact />
+            </span>
           )
         },
       },

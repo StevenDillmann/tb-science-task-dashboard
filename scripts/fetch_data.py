@@ -1321,6 +1321,9 @@ def build_prs(
                 "discussion_number": linked["number"],
                 "title": linked["title"],
                 "url": linked["url"],
+                # Human-review status of the source proposal (approved / pending
+                # / rejected), so the PR table can flag it next to the link.
+                "status": linked["status"],
             }
             if linked
             else None
