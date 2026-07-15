@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronDown, Filter, X } from "lucide-react"
+import { Check, ChevronDown, Filter, X } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -22,15 +22,29 @@ const domainSentinel = (d: string) => `${DOMAIN_SENTINEL_PREFIX}${d}`
  * Field column header in PRs and Proposals tables.
  */
 export function FieldColumnFilter({
-  value,
+  value = null,
   onChange,
   counts,
+  selected,
+  onToggle,
+  onClearAll,
+  open: openProp,
+  onOpenChange,
 }: {
-  value: string | null
-  onChange: (v: string | null) => void
+  value?: string | null
+  onChange?: (v: string | null) => void
   counts?: Record<string, number>
+  /** Multi-select mode (OR semantics) when `selected` is provided. */
+  selected?: string[]
+  onToggle?: (v: string) => void
+  onClearAll?: () => void
+  /** Controlled open state (survives header re-renders while multi-selecting). */
+  open?: boolean
+  onOpenChange?: (v: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [openState, setOpenState] = useState(false)
+  const open = openProp ?? openState
+  const setOpen = onOpenChange ?? setOpenState
   const { taxonomy, field_labels } = useTaxonomy()
 
   const domains = Object.keys(taxonomy) as Domain[]
@@ -39,7 +53,16 @@ export function FieldColumnFilter({
     ...domains.filter((d) => !KNOWN_ORDER.includes(d)),
   ]
 
-  const active = value !== null
+  const multiple = selected !== undefined
+  const isSel = (v: string) => (multiple ? selected!.includes(v) : value === v)
+  const pick = (v: string) => {
+    if (multiple) onToggle?.(v)
+    else {
+      onChange?.(v === value ? null : v)
+      setOpen(false)
+    }
+  }
+  const active = multiple ? selected!.length > 0 : value !== null
   let activeLabel: string | null = null
   if (value) {
     if (value.startsWith(DOMAIN_SENTINEL_PREFIX)) {
@@ -76,13 +99,18 @@ export function FieldColumnFilter({
           <button
             type="button"
             onClick={() => {
-              onChange(null)
+              if (multiple) onClearAll?.()
+              else onChange?.(null)
               setOpen(false)
             }}
             className="flex w-full items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent"
           >
             <span>
-              Active: <span className="font-medium text-foreground">{activeLabel}</span>
+              {multiple ? (
+                <>Clear <span className="font-medium text-foreground">{selected!.length}</span> selected</>
+              ) : (
+                <>Active: <span className="font-medium text-foreground">{activeLabel}</span></>
+              )}
             </span>
             <X className="h-3 w-3" />
           </button>
@@ -102,16 +130,18 @@ export function FieldColumnFilter({
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      onChange(sentinel === value ? null : sentinel)
-                      setOpen(false)
-                    }}
+                    onClick={() => pick(sentinel)}
                     className={cn(
                       "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm italic text-muted-foreground hover:bg-accent",
-                      value === sentinel && "bg-accent font-medium not-italic text-foreground",
+                      isSel(sentinel) && "bg-accent font-medium not-italic text-foreground",
                     )}
                   >
-                    <span className="truncate">(uncategorized)</span>
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                      {multiple && (
+                        <Check className={cn("h-3 w-3 shrink-0", isSel(sentinel) ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+                      )}
+                      <span className="truncate">(uncategorized)</span>
+                    </span>
                     {n !== undefined && (
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {n}
@@ -132,16 +162,18 @@ export function FieldColumnFilter({
                     <button
                       key={sub}
                       type="button"
-                      onClick={() => {
-                        onChange(sub === value ? null : sub)
-                        setOpen(false)
-                      }}
+                      onClick={() => pick(sub)}
                       className={cn(
                         "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent",
-                        value === sub && "bg-accent font-medium",
+                        isSel(sub) && "bg-accent font-medium",
                       )}
                     >
-                      <span className="truncate">{field_labels[sub] ?? sub}</span>
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        {multiple && (
+                          <Check className={cn("h-3 w-3 shrink-0", isSel(sub) ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+                        )}
+                        <span className="truncate">{field_labels[sub] ?? sub}</span>
+                      </span>
                       {n !== undefined && (
                         <span className="font-mono text-[10px] text-muted-foreground">
                           {n}

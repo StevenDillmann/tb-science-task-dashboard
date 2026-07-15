@@ -112,13 +112,14 @@ export function FieldFilter({
   )
 }
 
-/** Small chip showing an active column filter, with an × to remove it. */
+/** Small chip showing an active column filter, with an × to remove it. The
+ *  `label:` prefix is omitted when no label is given. */
 export function FilterChip({
   label,
   value,
   onClear,
 }: {
-  label: string
+  label?: string
   value: ReactNode
   onClear: () => void
 }) {
@@ -127,9 +128,9 @@ export function FilterChip({
       type="button"
       onClick={onClear}
       className="inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs hover:bg-accent"
-      title={`Clear ${label} filter`}
+      title={label ? `Clear ${label} filter` : "Clear"}
     >
-      <span className="text-muted-foreground">{label}:</span>
+      {label && <span className="text-muted-foreground">{label}:</span>}
       <span>{value}</span>
       <X className="h-3 w-3 text-muted-foreground" />
     </button>
