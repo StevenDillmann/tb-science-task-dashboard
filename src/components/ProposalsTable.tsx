@@ -33,7 +33,7 @@ function IconLabel({
   text,
   label,
 }: {
-  icon: "check" | "question" | "x" | "clock"
+  icon: "check" | "question" | "x" | "clock" | "approx"
   text: string
   label: string
 }) {
@@ -42,9 +42,9 @@ function IconLabel({
       {icon === "check" && <Check className="h-3 w-3" strokeWidth={3} />}
       {icon === "x" && <XIcon className="h-3 w-3" strokeWidth={3} />}
       {icon === "clock" && <Clock className="h-3 w-3" strokeWidth={2} />}
-      {icon === "question" && (
+      {(icon === "question" || icon === "approx") && (
         <span className="inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none">
-          ?
+          {icon === "approx" ? "≈" : "?"}
         </span>
       )}
       {label}
@@ -88,30 +88,21 @@ const HUMAN_OPTIONS = [
   },
 ]
 
-function DotLabel({ dot, text, label }: { dot: string; text: string; label: string }) {
-  return (
-    <span className={cn("inline-flex items-center gap-1 font-medium", text)}>
-      <span className={cn("h-2 w-2 rounded-full", dot)} />
-      {label}
-    </span>
-  )
-}
-
 const FIT_OPTIONS = [
   {
     value: "direct",
     label: "direct",
-    render: <DotLabel dot="bg-green-600 dark:bg-green-400" text="text-green-700 dark:text-green-400" label="direct" />,
+    render: <IconLabel icon="check" text="text-green-700 dark:text-green-400" label="direct" />,
   },
   {
     value: "adjacent",
     label: "adjacent",
-    render: <DotLabel dot="bg-amber-500 dark:bg-amber-400" text="text-amber-700 dark:text-amber-400" label="adjacent" />,
+    render: <IconLabel icon="approx" text="text-amber-700 dark:text-amber-400" label="adjacent" />,
   },
   {
     value: "unrelated",
     label: "unrelated",
-    render: <DotLabel dot="bg-red-600 dark:bg-red-400" text="text-red-700 dark:text-red-400" label="unrelated" />,
+    render: <IconLabel icon="x" text="text-red-700 dark:text-red-400" label="unrelated" />,
   },
 ]
 

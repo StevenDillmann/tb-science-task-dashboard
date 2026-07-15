@@ -48,6 +48,21 @@ function QuestionGlyph({
   )
 }
 
+/** "≈" glyph — a partial/approximate match (used for author-fit "adjacent"). */
+function ApproxGlyph({ className }: { className?: string; strokeWidth?: number }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-3 w-3 items-center justify-center text-[13px] font-bold leading-none",
+        className,
+      )}
+      aria-hidden
+    >
+      ≈
+    </span>
+  )
+}
+
 /** Wraps a chip's contents in a button when an onClick is provided.
  * Otherwise renders as a static div so it doesn't grab focus.
  */
@@ -778,26 +793,31 @@ export function AuthorFitChip({
 }: {
   fit: "direct" | "adjacent" | "unrelated" | null
   url: string | null
-  /** When true, show only the dot (no label text). */
+  /** When true, show only the icon (no label text). */
   compact?: boolean
 }) {
   if (!fit) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
-  const map: Record<string, { label: string; dot: string; text: string }> = {
+  // ✓ direct / ≈ adjacent / ✗ unrelated — matches the LLM Review vocabulary
+  // for the extremes; ≈ reads as "approximately in this field" (a partial
+  // match), not the uncertainty that "?" would imply.
+  type IconC = ComponentType<{ className?: string; strokeWidth?: number }>
+  type Cfg = { Icon: IconC; label: string; text: string }
+  const map: Record<string, Cfg> = {
     direct: {
+      Icon: Check as IconC,
       label: "direct",
-      dot: "bg-green-600 dark:bg-green-400",
       text: "text-green-700 dark:text-green-400",
     },
     adjacent: {
+      Icon: ApproxGlyph,
       label: "adjacent",
-      dot: "bg-amber-500 dark:bg-amber-400",
       text: "text-amber-700 dark:text-amber-400",
     },
     unrelated: {
+      Icon: XIcon as IconC,
       label: "unrelated",
-      dot: "bg-red-600 dark:bg-red-400",
       text: "text-red-700 dark:text-red-400",
     },
   }
@@ -806,7 +826,10 @@ export function AuthorFitChip({
   const title = `Author–task fit · ${cfg.label} (advisory — stated relevance, not verified)`
   const inner = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", cfg.text)}>
-      <span className={cn("h-2 w-2 shrink-0 rounded-full", cfg.dot)} />
+      <cfg.Icon
+        className="h-3 w-3"
+        strokeWidth={cfg.Icon === Check || cfg.Icon === XIcon ? 3 : 2}
+      />
       {!compact && cfg.label}
     </span>
   )
