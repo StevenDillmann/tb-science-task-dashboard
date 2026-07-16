@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 import subprocess
 import sys
@@ -122,29 +123,34 @@ def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def gh(args: list[str], *, retries: int = 5) -> str:
+def gh(args: list[str], *, retries: int = 8) -> str:
     """Run a `gh` command, retrying transient API failures with backoff.
 
     The GitHub API intermittently returns a truncated/empty body (`gh` then
-    exits non-zero with "unexpected end of JSON input") or drops the connection.
-    A single such blip used to abort the whole fetch — and with ~40 calls per
-    run, the hourly rebuild failed most of the time. Every call here expects a
-    non-empty JSON body, so treat a non-zero exit OR empty stdout as transient
-    and retry; only give up (and fail the run) after `retries` attempts.
+    exits non-zero with "unexpected end of JSON input"), drops the HTTP/2 stream
+    ("stream error: … CANCEL; received from peer"), or gateway-times-out
+    (HTTP 504) when it's under load. A single such blip used to abort the whole
+    fetch — and with many calls per run, the rebuild failed most of the time.
+    Every call here expects a non-empty JSON body, so treat a non-zero exit OR
+    empty stdout as transient and retry with jittered exponential backoff; only
+    give up (raising GHError) after `retries` attempts. Jitter spreads retries
+    so a burst of concurrent rebuilds doesn't hammer the API in lockstep.
     """
-    delay = 2.0
+    base = 2.0
     for attempt in range(retries + 1):
         res = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
         if res.returncode == 0 and res.stdout.strip():
             return res.stdout
         if attempt < retries:
+            # Equal-jitter backoff: half fixed, half random, capped.
+            window = min(base * (2 ** attempt), 45.0)
+            delay = window / 2 + random.uniform(0, window / 2)
             sys.stderr.write(
                 f"gh call failed (attempt {attempt + 1}/{retries + 1}, "
                 f"rc={res.returncode}): {res.stderr.strip()[:200] or 'empty body'} "
                 f"— retrying in {delay:.0f}s\n"
             )
             time.sleep(delay)
-            delay = min(delay * 2, 30)
             continue
         sys.stderr.write(res.stderr)
         raise SystemExit(res.returncode or 1)
