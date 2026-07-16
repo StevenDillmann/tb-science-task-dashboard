@@ -102,9 +102,7 @@ function Body({ pr }: { pr: PR }) {
               rel="noreferrer"
               className="font-medium text-foreground underline underline-offset-2 hover:text-[#038F99]"
             >
-              Task Proposal #
-              {pr.linked_proposal.proposal_number ??
-                `d${pr.linked_proposal.discussion_number}`}
+              Proposal #{pr.linked_proposal.discussion_number}
             </a>
             {pr.linked_proposal.title && (
               <span className="ml-2 italic">— {pr.linked_proposal.title}</span>

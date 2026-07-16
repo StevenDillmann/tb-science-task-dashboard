@@ -180,12 +180,12 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
 // Active sort as a column label + direction detail (for the "Sorted by" chip).
 function propSortText(sorting: SortingState): { label: string; detail: string; isDefault: boolean } {
   const s = sorting[0]
-  const isDefault = !s || (s.id === "proposal_number" && s.desc === true)
+  const isDefault = !s || (s.id === "number" && s.desc === true)
   if (!s) return { label: "Order", detail: "newest", isDefault: true }
   let label: string
   let detail: string
   switch (s.id) {
-    case "proposal_number": label = "Order"; detail = s.desc ? "newest" : "oldest"; break
+    case "number": label = "Order"; detail = s.desc ? "newest" : "oldest"; break
     case "title": label = "Title"; detail = s.desc ? "Z→A" : "A→Z"; break
     case "updated_days": label = "Updated"; detail = s.desc ? "least recent" : "most recent"; break
     case "age_days": label = "Posted"; detail = s.desc ? "oldest" : "newest"; break
@@ -207,8 +207,8 @@ export function ProposalsTable({
 }) {
   const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([
-    // Newest first — sort by Task Proposal number descending.
-    { id: "proposal_number", desc: true },
+    // Newest first — sort by discussion number descending.
+    { id: "number", desc: true },
   ])
   // Filters bound to URL query params (p-prefixed so they don't collide with
   // the PRs tab's params). `prop` holds the opened proposal's number.
@@ -277,7 +277,7 @@ export function ProposalsTable({
       if (human.length && !human.includes(p.status)) return false
       if (needle) {
         const hay =
-          `${p.proposal_number ?? p.number} ${p.title} ${p.author.login} ${p.field ?? ""}`.toLowerCase()
+          `${p.number} ${p.proposal_number ?? ""} ${p.title} ${p.author.login} ${p.field ?? ""}`.toLowerCase()
         if (!hay.includes(needle)) return false
       }
       return true
@@ -309,7 +309,7 @@ export function ProposalsTable({
   const columns = useMemo<ColumnDef<Proposal>[]>(
     () => [
       {
-        accessorKey: "proposal_number",
+        accessorKey: "number",
         header: "#",
         cell: ({ row }) => {
           const p = row.original
@@ -323,7 +323,7 @@ export function ProposalsTable({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:underline"
               >
-                {p.proposal_number ?? p.number}
+                {p.number}
                 <ExternalLink className="h-3 w-3" />
               </a>
               <StatePill tone={tone} label={tone} />
@@ -609,7 +609,7 @@ export function ProposalsTable({
               <FilterChip
                 label={sortLabel}
                 value={sortDetail}
-                onClear={() => setSorting([{ id: "proposal_number", desc: true }])}
+                onClear={() => setSorting([{ id: "number", desc: true }])}
               />
             )}
           </div>

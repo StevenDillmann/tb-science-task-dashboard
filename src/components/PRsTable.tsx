@@ -822,7 +822,7 @@ export function PRsTable({
         cell: ({ row }) => {
           const lp = row.original.linked_proposal
           if (!lp) return <span className="text-xs text-muted-foreground">—</span>
-          const label = lp.proposal_number !== null ? `#${lp.proposal_number}` : `#d${lp.discussion_number}`
+          const label = `#${lp.discussion_number}`
           return (
             <span className="inline-flex items-center gap-1.5">
               <a

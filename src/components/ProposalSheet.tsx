@@ -51,11 +51,9 @@ export function ProposalSheet({
           <>
             <SheetHeader>
               <SheetTitle>
-                {proposal.proposal_number !== null && (
-                  <span className="mr-2 font-mono text-xs text-muted-foreground">
-                    #{proposal.proposal_number}
-                  </span>
-                )}
+                <span className="mr-2 font-mono text-xs text-muted-foreground">
+                  #{proposal.number}
+                </span>
                 {proposal.title}
               </SheetTitle>
               <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
