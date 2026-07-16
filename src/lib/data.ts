@@ -149,6 +149,9 @@ export type Proposal = {
   field: string | null
   /** Declared conflict-of-interest text, or null when none was disclosed. */
   coi: string | null
+  /** Author–task fit from the discussion's `author-fit:` label (falls back to
+   *  the rubric review's verdict). */
+  author_fit: "direct" | "adjacent" | "unrelated" | null
   status: "approved" | "rejected" | "pending"
   state: ProposalState
   closed: boolean

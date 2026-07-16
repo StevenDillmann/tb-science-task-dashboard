@@ -63,14 +63,14 @@ export function ProposalSheet({
                   <UserCell user={proposal.author} />
                   <FieldChip subfield={proposal.subfield} fallback={proposal.field} />
                 </span>
-                {proposal.llm_review?.author_fit && (
+                {proposal.author_fit && (
                   <span className="inline-flex items-center gap-1.5">
                     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                       Author fit
                     </span>
                     <AuthorFitChip
-                      fit={proposal.llm_review.author_fit}
-                      url={proposal.llm_review.url ?? null}
+                      fit={proposal.author_fit}
+                      url={proposal.llm_review?.url ?? null}
                       showIcon
                     />
                   </span>

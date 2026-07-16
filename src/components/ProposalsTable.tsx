@@ -271,7 +271,7 @@ export function ProposalsTable({
         if (!llm.some((l) => (l === "none" ? rec === null : rec === l))) return false
       }
       if (fit.length) {
-        const af = p.llm_review?.author_fit ?? null
+        const af = p.author_fit ?? null
         if (!fit.some((f) => (f === "coi" ? !!p.coi : af === f))) return false
       }
       if (human.length && !human.includes(p.status)) return false
@@ -399,7 +399,7 @@ export function ProposalsTable({
         ),
         cell: ({ row }) => {
           const p = row.original
-          const af = p.llm_review?.author_fit ?? null
+          const af = p.author_fit ?? null
           if (!af && !p.coi) {
             return <span className="text-xs text-muted-foreground">—</span>
           }

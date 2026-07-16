@@ -1599,6 +1599,10 @@ def build_proposals(
             has_pr = any(needle in t for t in pr_titles)
 
         llm_review = parse_llm_review(n.get("comments", {}).get("nodes", []) or [])
+        # Author-fit + COI are now tagged directly on the discussion with the same
+        # `author-fit: …` labels as PRs (upstream source of truth). Fall back to
+        # the rubric-review comment only when the proposal carries no such label.
+        prop_fit, prop_coi = derive_author_fit(labels)
         # Human-review status is purely label-driven — a GH-closed discussion
         # without an explicit `proposal-declined` label stays `pending` (it
         # just lives in the Closed state-pill bucket).
@@ -1630,11 +1634,20 @@ def build_proposals(
             "domain": domain,
             "subfield": subfield,
             "field": raw_field,
-            # COI from the structured rubric-review line when present (upstream
-            # source of truth); scrape the discussion body only as a fallback.
+            # Author-fit label first; else the rubric review's verdict.
+            "author_fit": (
+                prop_fit if prop_fit
+                else (llm_review.get("author_fit") if llm_review else None)
+            ),
+            # COI: the `coi disclosed` label first (add-only, authoritative); else
+            # the structured review line; else scrape the discussion body.
             "coi": (
-                llm_review["coi"] if llm_review and llm_review.get("coi_seen")
-                else parse_coi(n.get("body") or "")
+                (llm_review["coi"] if llm_review and llm_review.get("coi") else "disclosed")
+                if prop_coi
+                else (
+                    llm_review["coi"] if llm_review and llm_review.get("coi_seen")
+                    else parse_coi(n.get("body") or "")
+                )
             ),
             "status": status,
             "state": state,
