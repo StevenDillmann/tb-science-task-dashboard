@@ -21,7 +21,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 UPSTREAM_OWNER = "harbor-framework"
 UPSTREAM_NAME = "terminal-bench-science"
@@ -753,10 +753,14 @@ def field_from_proposal_body(
 
 # --- GraphQL queries --------------------------------------------------------
 
+# `__STATES__` is substituted with a state-filter literal (e.g. `[OPEN]`) rather
+# than a GraphQL variable: `gh api graphql` can't pass a list-typed variable
+# cleanly, and we fetch open vs closed/merged PRs on different cadences anyway
+# (open fresh every run, closed/merged incrementally — see fetch_prs).
 PR_QUERY = """
-query($owner:String!,$name:String!,$cursor:String){
+query($owner:String!,$name:String!,$first:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
-    pullRequests(states:[OPEN,CLOSED,MERGED],first:25,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+    pullRequests(states:__STATES__,first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
       pageInfo{ hasNextPage endCursor }
       nodes{
         number title url isDraft state mergedAt closedAt createdAt updatedAt
@@ -1312,9 +1316,9 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
     return None
 
 DISCUSSION_QUERY = """
-query($owner:String!,$name:String!,$cursor:String){
+query($owner:String!,$name:String!,$first:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
-    discussions(first:50,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+    discussions(first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
       pageInfo{ hasNextPage endCursor }
       nodes{
         number title url body closed closedAt createdAt updatedAt
@@ -1394,17 +1398,36 @@ def parse_llm_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
     return None
 
 
-def paged(query: str, key: str, max_pages: int | None = None) -> list[dict[str, Any]]:
+def paged(
+    query: str,
+    key: str,
+    *,
+    extra_vars: dict[str, Any] | None = None,
+    max_pages: int | None = None,
+    stop: Callable[[dict[str, Any]], bool] | None = None,
+) -> list[dict[str, Any]]:
+    """Page a GraphQL connection, newest-first.
+
+    `stop(node)` powers incremental fetch: when it returns True the node — and,
+    because results are UPDATED_AT-DESC ordered, everything after it — is
+    unchanged since the cache, so we drop the tail and return immediately.
+    `extra_vars` supplies query variables beyond owner/name/cursor (e.g. first).
+    """
     out: list[dict[str, Any]] = []
     cursor: str | None = None
     pages = 0
     while True:
         variables: dict[str, Any] = {"owner": UPSTREAM_OWNER, "name": UPSTREAM_NAME}
+        if extra_vars:
+            variables.update(extra_vars)
         if cursor:
             variables["cursor"] = cursor
         data = graphql(query, variables)
         block = data["data"]["repository"][key]
-        out.extend(block["nodes"])
+        for node in block["nodes"]:
+            if stop and stop(node):
+                return out
+            out.append(node)
         pages += 1
         if not block["pageInfo"]["hasNextPage"]:
             break
@@ -1412,6 +1435,111 @@ def paged(query: str, key: str, max_pages: int | None = None) -> list[dict[str, 
             break
         cursor = block["pageInfo"]["endCursor"]
     return out
+
+
+# Page sizes tuned small: a large nested page (files + comments + check contexts
+# per PR) is exactly what GitHub gateway-times-out on under load. Smaller pages
+# cost more round-trips but each is cheap enough to complete and be retried.
+PR_PAGE = 10
+DISC_PAGE = 25
+# Rolling closed/merged-PR history kept in the cache/payload. Open PRs are
+# always kept in full; without this bound, incremental merges would accumulate
+# every PR ever seen and the payload would grow without limit. 40 cold-start
+# pages of PR_PAGE fill exactly this window.
+CLOSED_HISTORY = 400
+
+
+def merge_nodes(
+    base: list[dict[str, Any]],
+    fresh: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Overlay freshly-fetched nodes onto cached ones, keyed by number.
+
+    Fresh wins on collision; unfetched cached nodes are retained. Result is
+    UPDATED_AT-DESC ordered to match a full `paged` fetch.
+    """
+    by_num = {n["number"]: n for n in base}
+    for n in fresh:
+        by_num[n["number"]] = n
+    return sorted(by_num.values(), key=lambda n: n.get("updatedAt") or "", reverse=True)
+
+
+def _unchanged(base: list[dict[str, Any]]) -> Callable[[dict[str, Any]], bool]:
+    """Predicate: node's (number, updatedAt) already present in `base`."""
+    seen = {n["number"]: n.get("updatedAt") for n in base}
+    return lambda node: seen.get(node["number"]) == node["updatedAt"]
+
+
+def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    """Fetch PR nodes, merged over `base`. Returns (nodes, "ok"|"stale").
+
+    Open PRs are always fetched fresh: a CI check completing does NOT bump a
+    PR's updatedAt, so an incremental-by-updatedAt scan would leave stale CI
+    dots on open PRs. Closed/merged PRs are effectively immutable, so those are
+    fetched incrementally (early-stop at the first unchanged one). A state
+    transition (open→merged) bumps updatedAt to the top of the closed list, so
+    it's always re-fetched and overwrites the stale open copy on merge.
+    """
+    stale = False
+    fresh: list[dict[str, Any]] = []
+    try:
+        fresh += paged(
+            PR_QUERY.replace("__STATES__", "[OPEN]"), "pullRequests",
+            extra_vars={"first": PR_PAGE}, max_pages=20,
+        )
+    except GHError as e:
+        if not base:
+            raise
+        sys.stderr.write(f"open-PR fetch failed ({e}); keeping cached open PRs.\n")
+        stale = True
+    try:
+        # max_pages only bounds a COLD start (empty cache): warm runs early-stop
+        # at the first unchanged PR. 40 pages preserves the same ~400-PR
+        # closed/merged history window the pre-incremental full fetch had.
+        fresh += paged(
+            PR_QUERY.replace("__STATES__", "[CLOSED,MERGED]"), "pullRequests",
+            extra_vars={"first": PR_PAGE}, max_pages=40, stop=_unchanged(base),
+        )
+    except GHError as e:
+        if not base:
+            raise
+        sys.stderr.write(f"closed-PR fetch failed ({e}); keeping cached closed PRs.\n")
+        stale = True
+    backfill_pr_comments(fresh)  # only freshly-fetched PRs can need more comments
+    merged = merge_nodes(base, fresh)
+    # Bound growth: keep every open PR plus the most-recently-updated
+    # CLOSED_HISTORY closed/merged ones (merged is already UPDATED_AT-DESC).
+    open_nodes = [n for n in merged if n.get("state") == "OPEN"]
+    closed_nodes = [n for n in merged if n.get("state") != "OPEN"]
+    kept = sorted(
+        open_nodes + closed_nodes[:CLOSED_HISTORY],
+        key=lambda n: n.get("updatedAt") or "", reverse=True,
+    )
+    sys.stderr.write(
+        f"PRs: {len(fresh)} fetched fresh, {len(base)} cached, {len(kept)} kept.\n"
+    )
+    return kept, ("stale" if stale else "ok")
+
+
+def fetch_discussions(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    """Fetch discussion nodes incrementally, merged over `base`.
+
+    Unlike PRs, everything the dashboard reads off a discussion (comments, the
+    rubric-review comment, labels, close state) bumps its updatedAt, so a pure
+    incremental early-stop is safe — no open/closed split needed.
+    """
+    try:
+        changed = paged(
+            DISCUSSION_QUERY, "discussions",
+            extra_vars={"first": DISC_PAGE}, max_pages=20, stop=_unchanged(base),
+        )
+    except GHError as e:
+        if not base:
+            raise
+        sys.stderr.write(f"discussion fetch failed ({e}); keeping cached discussions.\n")
+        return merge_nodes(base, []), "stale"
+    sys.stderr.write(f"Discussions: {len(changed)} fetched fresh, {len(base)} cached.\n")
+    return merge_nodes(base, changed), "ok"
 
 
 def build_prs(
@@ -1798,37 +1926,17 @@ def main() -> int:
     for d in DOMAIN_LABEL_SET:
         taxonomy.setdefault(d, {})
 
-    # Fetch PRs and discussions independently, and fall back to the cached raw
-    # nodes for whichever one the API can't serve — a GitHub outage then leaves
-    # the affected tab stale rather than freezing (or failing) the whole
-    # dashboard. With no cache to fall back on (cold start), the failure still
-    # propagates and aborts the run.
-    fetch_status = {"prs": "ok", "proposals": "ok"}
+    # Incrementally fetch PRs and discussions over the cached nodes, each
+    # falling back to the cache for whatever the API can't serve — so a GitHub
+    # outage leaves the affected tab stale rather than freezing (or failing) the
+    # whole dashboard. With no cache to fall back on (cold start), a total
+    # failure still propagates and aborts the run.
+    pr_nodes, prs_status = fetch_prs(base_pr_nodes)
+    discussion_nodes, proposals_status = fetch_discussions(base_discussion_nodes)
+    fetch_status = {"prs": prs_status, "proposals": proposals_status}
 
-    # Cap PR pages so closed/merged history doesn't bloat the payload.
-    try:
-        pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=16)
-        backfill_pr_comments(pr_nodes)
-    except GHError as e:
-        if not base_pr_nodes:
-            raise
-        sys.stderr.write(f"PR fetch failed ({e}); using {len(base_pr_nodes)} cached PR node(s).\n")
-        pr_nodes = base_pr_nodes
-        fetch_status["prs"] = "stale"
-
-    try:
-        discussion_nodes = paged(DISCUSSION_QUERY, "discussions")
-    except GHError as e:
-        if not base_discussion_nodes:
-            raise
-        sys.stderr.write(
-            f"Discussion fetch failed ({e}); using {len(base_discussion_nodes)} cached node(s).\n"
-        )
-        discussion_nodes = base_discussion_nodes
-        fetch_status["proposals"] = "stale"
-
-    # Persist whatever we ended up with (fresh or fallen-back) so the next run
-    # keeps a warm base even after a stale run.
+    # Persist whatever we ended up with (fresh + carried-over cache) so the next
+    # run has a warm base to fetch incrementally against — even after a stale run.
     save_raw_cache(args.cache, pr_nodes, discussion_nodes)
 
     # Build proposals first so we can backreference them when linking PRs.
