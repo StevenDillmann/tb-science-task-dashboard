@@ -43,10 +43,23 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Raw-node cache persisted across runs. It lets the fetch (a) fall back to
+      # the last good data when the GitHub API is down instead of freezing the
+      # site, and (b) pull only what changed. A unique key per run always saves a
+      # fresh entry; restore-keys grabs the most recent prior one. A cache miss
+      # is harmless — the fetch just does a full pull and self-heals.
+      - name: Restore raw-node cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: rawcache-${{ github.run_id }}
+          restore-keys: |
+            rawcache-
+
       - name: Fetch upstream PRs + proposals
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 scripts/fetch_data.py --out public/data.json
+        run: python3 scripts/fetch_data.py --out public/data.json --cache .cache/raw.json
 
       - run: npm run build
 

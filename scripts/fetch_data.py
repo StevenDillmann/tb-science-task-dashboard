@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import re
 import subprocess
@@ -123,6 +124,15 @@ def parse_proposal_author(body: str) -> tuple[str | None, str | None]:
     return None, None
 
 
+class GHError(RuntimeError):
+    """Raised when a `gh` call fails after exhausting all retries.
+
+    Distinct from SystemExit so callers can catch it and fall back to cached
+    data (see main's graceful-degradation blocks) instead of aborting the whole
+    run. An uncaught GHError still exits non-zero (see __main__).
+    """
+
+
 def gh(args: list[str], *, retries: int = 8) -> str:
     """Run a `gh` command, retrying transient API failures with backoff.
 
@@ -153,8 +163,8 @@ def gh(args: list[str], *, retries: int = 8) -> str:
             time.sleep(delay)
             continue
         sys.stderr.write(res.stderr)
-        raise SystemExit(res.returncode or 1)
-    raise SystemExit(1)  # unreachable
+        raise GHError(res.stderr.strip()[:200] or f"gh exited {res.returncode}")
+    raise GHError("gh: exhausted retries")  # unreachable
 
 
 def graphql(query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -165,6 +175,57 @@ def graphql(query: str, variables: dict[str, Any] | None = None) -> dict[str, An
         else:
             args += ["-F", f"{k}={v}"]
     return json.loads(gh(args))
+
+
+# --- Raw-node cache ---------------------------------------------------------
+# We persist the raw GraphQL PR + discussion nodes (not the derived payload) so
+# a later run can re-derive the whole set with the *current* build logic — the
+# derivation (build_prs / build_proposals) evolves often, so caching derived
+# rows would freeze untouched items at stale logic. The cache serves two ends:
+#   * graceful degradation — fall back to it when the API is unreachable, so a
+#     GitHub outage never freezes the deployed dashboard;
+#   * incremental fetch — pull only what changed since it was written.
+CACHE_VERSION = 1
+
+
+def load_raw_cache(path: str | None) -> dict[str, Any]:
+    """Load the prior run's raw nodes, or {} when absent/corrupt/stale-schema.
+
+    A missing or unreadable cache is never fatal: the caller simply does a full
+    fetch and self-heals.
+    """
+    if not path:
+        return {}
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if data.get("version") != CACHE_VERSION:
+        return {}
+    return data
+
+
+def save_raw_cache(
+    path: str | None,
+    pr_nodes: list[dict[str, Any]],
+    discussion_nodes: list[dict[str, Any]],
+) -> None:
+    """Atomically persist the raw nodes we ended up using this run."""
+    if not path:
+        return
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    tmp = f"{path}.tmp"
+    with open(tmp, "w") as f:
+        json.dump(
+            {
+                "version": CACHE_VERSION,
+                "pr_nodes": pr_nodes,
+                "discussion_nodes": discussion_nodes,
+            },
+            f,
+        )
+    os.replace(tmp, path)
 
 
 def slugify(text: str) -> str:
@@ -1709,9 +1770,19 @@ def build_coverage(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="-", help="Output path (default: stdout)")
+    ap.add_argument(
+        "--cache",
+        default=None,
+        help="Raw-node cache path. Enables fall-back-on-outage and incremental "
+             "fetch across runs. Omit for a stateless full fetch.",
+    )
     args = ap.parse_args()
 
     now = datetime.now(timezone.utc)
+
+    cache = load_raw_cache(args.cache)
+    base_pr_nodes = cache.get("pr_nodes", []) or []
+    base_discussion_nodes = cache.get("discussion_nodes", []) or []
 
     tree = fetch_tree()
     taxonomy, field_labels, field_to_domain = discover_taxonomy(tree)
@@ -1727,12 +1798,38 @@ def main() -> int:
     for d in DOMAIN_LABEL_SET:
         taxonomy.setdefault(d, {})
 
-    # Cap PR pages so closed/merged history doesn't bloat the payload. 8 pages
-    # × 50 = up to 400 most-recently-updated PRs covering every open one plus
-    # plenty of recent merges/closes.
-    pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=16)
-    backfill_pr_comments(pr_nodes)
-    discussion_nodes = paged(DISCUSSION_QUERY, "discussions")
+    # Fetch PRs and discussions independently, and fall back to the cached raw
+    # nodes for whichever one the API can't serve — a GitHub outage then leaves
+    # the affected tab stale rather than freezing (or failing) the whole
+    # dashboard. With no cache to fall back on (cold start), the failure still
+    # propagates and aborts the run.
+    fetch_status = {"prs": "ok", "proposals": "ok"}
+
+    # Cap PR pages so closed/merged history doesn't bloat the payload.
+    try:
+        pr_nodes = paged(PR_QUERY, "pullRequests", max_pages=16)
+        backfill_pr_comments(pr_nodes)
+    except GHError as e:
+        if not base_pr_nodes:
+            raise
+        sys.stderr.write(f"PR fetch failed ({e}); using {len(base_pr_nodes)} cached PR node(s).\n")
+        pr_nodes = base_pr_nodes
+        fetch_status["prs"] = "stale"
+
+    try:
+        discussion_nodes = paged(DISCUSSION_QUERY, "discussions")
+    except GHError as e:
+        if not base_discussion_nodes:
+            raise
+        sys.stderr.write(
+            f"Discussion fetch failed ({e}); using {len(base_discussion_nodes)} cached node(s).\n"
+        )
+        discussion_nodes = base_discussion_nodes
+        fetch_status["proposals"] = "stale"
+
+    # Persist whatever we ended up with (fresh or fallen-back) so the next run
+    # keeps a warm base even after a stale run.
+    save_raw_cache(args.cache, pr_nodes, discussion_nodes)
 
     # Build proposals first so we can backreference them when linking PRs.
     # We pass an empty pr_titles list initially since has_pr can still update
@@ -1747,6 +1844,10 @@ def main() -> int:
     payload = {
         "generated_at": now.isoformat(),
         "upstream": UPSTREAM,
+        # Per-section freshness: "stale" means the API was unreachable and this
+        # section fell back to the last cached fetch. The UI can surface a badge.
+        "fetch_status": fetch_status,
+        "partial": any(v != "ok" for v in fetch_status.values()),
         "taxonomy": taxonomy,
         "field_labels": field_labels,
         "field_to_domain": field_to_domain,
@@ -1777,4 +1878,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except GHError as e:
+        # An essential call (taxonomy tree) or a cold-start fetch with no cache
+        # to fall back on exhausted its retries. Nothing we can safely deploy.
+        sys.stderr.write(f"fatal: {e}\n")
+        raise SystemExit(1)
