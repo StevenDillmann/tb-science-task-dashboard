@@ -378,9 +378,12 @@ def derive_type(labels: list[str]) -> str:
 
 
 def derive_status(labels: list[str]) -> str:
-    if "proposal-approved" in labels:
+    # Match by prefix — upstream appended emoji to the label names
+    # ("proposal-approved ✅" / "proposal-declined ❌"), so exact matching would
+    # miss them and read every proposal as pending.
+    if any(lab.startswith("proposal-approved") for lab in labels):
         return "approved"
-    if "proposal-declined" in labels:
+    if any(lab.startswith("proposal-declined") for lab in labels):
         return "rejected"
     return "pending"
 
