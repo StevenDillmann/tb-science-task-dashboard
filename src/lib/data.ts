@@ -155,6 +155,9 @@ export type Proposal = {
   status: "approved" | "rejected" | "pending"
   state: ProposalState
   closed: boolean
+  /** Domain reviewer assigned by the proposal-review workflow, or null when
+   *  unassigned. Read from the workflow's sticky comment (upstream source). */
+  reviewer: User | null
   llm_review: {
     recommendation: "accept" | "uncertain" | "reject" | "unknown"
     author_fit: "direct" | "adjacent" | "unrelated" | null

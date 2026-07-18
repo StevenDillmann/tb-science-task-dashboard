@@ -217,6 +217,7 @@ export function ProposalsTable({
   const [activeNum, setActiveNum] = useUrlState<number | null>("prop", null, numberCodec)
   const [field, setField] = useUrlState<string[]>("pfield", [], stringArrayCodec)
   const [author, setAuthor] = useUrlState<string[]>("pauthor", [], stringArrayCodec)
+  const [reviewer, setReviewer] = useUrlState<string[]>("previewer", [], stringArrayCodec)
   const [llm, setLlm] = useUrlState<string[]>("pllm", [], stringArrayCodec)
   const [fit, setFit] = useUrlState<string[]>("pfit", [], stringArrayCodec)
   const [human, setHuman] = useUrlState<string[]>("phuman", [], stringArrayCodec)
@@ -266,6 +267,10 @@ export function ProposalsTable({
         if (!ok) return false
       }
       if (author.length && !author.includes(p.author.login)) return false
+      if (reviewer.length) {
+        const rl = p.reviewer?.login ?? null
+        if (!reviewer.some((r) => (r === "__none" ? rl === null : rl === r))) return false
+      }
       if (llm.length) {
         const rec = p.llm_review?.recommendation ?? null
         if (!llm.some((l) => (l === "none" ? rec === null : rec === l))) return false
@@ -282,7 +287,7 @@ export function ProposalsTable({
       }
       return true
     })
-  }, [proposals, search, state, field, author, llm, fit, human])
+  }, [proposals, search, state, field, author, reviewer, llm, fit, human])
 
   const stateFiltered = useMemo(
     () =>
@@ -304,6 +309,16 @@ export function ProposalsTable({
     return Object.entries(c)
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }))
+  }, [stateFiltered])
+  const reviewerOptions = useMemo(() => {
+    const c = countBy(stateFiltered, (p) => p.reviewer?.login ?? null)
+    const opts = Object.entries(c)
+      .sort((a, b) => b[1] - a[1])
+      .map(([value, count]) => ({ value, label: value, count }))
+    // Trailing "unassigned" bucket so those proposals stay filterable.
+    const none = stateFiltered.filter((p) => !p.reviewer).length
+    if (none) opts.push({ value: "__none", label: "unassigned", count: none })
+    return opts
   }, [stateFiltered])
 
   const columns = useMemo<ColumnDef<Proposal>[]>(
@@ -383,6 +398,21 @@ export function ProposalsTable({
           />
         ),
         cell: ({ row }) => <UserCell user={row.original.author} />,
+      },
+      {
+        id: "reviewer",
+        size: 195,
+        header: () => (
+          <ColumnFilter
+            title="REVIEWER"
+            selected={reviewer}
+            onToggle={(v) => setReviewer(toggleVal(reviewer, v))}
+            onClearAll={() => setReviewer([])}
+            options={reviewerOptions}
+            {...openProps("reviewer")}
+          />
+        ),
+        cell: ({ row }) => <UserCell user={row.original.reviewer} />,
       },
       {
         id: "author_fit",
@@ -487,7 +517,7 @@ export function ProposalsTable({
         ),
       },
     ],
-    [field, author, llm, fit, human, fieldCounts, authorOptions, openCol],
+    [field, author, reviewer, llm, fit, human, fieldCounts, authorOptions, reviewerOptions, openCol],
   )
 
   const table = useReactTable({
@@ -499,7 +529,7 @@ export function ProposalsTable({
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const anyChip = !!(field.length || author.length || llm.length || fit.length || human.length)
+  const anyChip = !!(field.length || author.length || reviewer.length || llm.length || fit.length || human.length)
   const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = propSortText(sorting)
 
   return (
