@@ -1398,6 +1398,45 @@ def parse_llm_review(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
     return None
 
 
+# Hidden machine-readable marker the proposal-review workflow emits into its
+# sticky comment, e.g. "<!-- proposal-reviewer:k-rl field:biology -->". This is
+# the authoritative signal — wording-independent, mirroring the reviewer-slots
+# marker PRs carry. Read from raw `body` (HTML comments are stripped from
+# `bodyText`).
+PROPOSAL_REVIEWER_RE = re.compile(
+    r"<!--\s*proposal-reviewer:\s*(?P<login>[A-Za-z0-9-]+)", re.IGNORECASE
+)
+# Fallback: the visible line the workflow renders, e.g.
+# "- **Assigned reviewer (biology):** @k-rl". Covers proposals reviewed before
+# the marker shipped, so the column isn't blank until the backlog is re-reviewed.
+# `[^@\n]*` keeps the match on that one line so it can't run on to a later
+# @mention; the "_unassigned_" case carries no @handle and so never matches.
+ASSIGNED_REVIEWER_RE = re.compile(
+    r"Assigned reviewer[^@\n]*@(?P<login>[A-Za-z0-9-]+)", re.IGNORECASE
+)
+
+
+def parse_assigned_reviewer(comments: list[dict[str, Any]]) -> str | None:
+    """Return the assigned domain reviewer's login from the latest auto-posted
+    proposal review comment, or None when unassigned / no such comment.
+
+    Prefers the hidden `proposal-reviewer:` marker (upstream source of truth);
+    falls back to scraping the visible "Assigned reviewer … @handle" line for
+    older comments predating the marker. Scoped to the bot comment (the one that
+    carries the rubric review) so a human can't spoof it with a stray mention.
+    """
+    for c in reversed(comments):  # most recent matching comment wins
+        if (c.get("author") or {}).get("login", "") not in LLM_REVIEW_BOTS:
+            continue
+        marker = PROPOSAL_REVIEWER_RE.search(c.get("body", "") or "")
+        if marker:
+            return marker.group("login")
+        prose = ASSIGNED_REVIEWER_RE.search(c.get("bodyText", "") or "")
+        if prose:
+            return prose.group("login")
+    return None
+
+
 def paged(
     query: str,
     key: str,
@@ -1796,7 +1835,19 @@ def build_proposals(
             needle = f"#{proposal_number}"
             has_pr = any(needle in t for t in pr_titles)
 
-        llm_review = parse_llm_review(n.get("comments", {}).get("nodes", []) or [])
+        comment_nodes = n.get("comments", {}).get("nodes", []) or []
+        llm_review = parse_llm_review(comment_nodes)
+        # Domain reviewer assigned by the proposal-review workflow (read from its
+        # sticky comment — upstream is the source of truth). None when unassigned.
+        reviewer_login = parse_assigned_reviewer(comment_nodes)
+        reviewer = (
+            {
+                "login": reviewer_login,
+                "avatar_url": f"https://github.com/{reviewer_login}.png?size=80",
+            }
+            if reviewer_login
+            else None
+        )
         # Author-fit + COI are now tagged directly on the discussion with the same
         # `author-fit: …` labels as PRs (upstream source of truth). Fall back to
         # the rubric-review comment only when the proposal carries no such label.
@@ -1850,6 +1901,7 @@ def build_proposals(
             "status": status,
             "state": state,
             "closed": bool(n.get("closed")),
+            "reviewer": reviewer,
             "llm_review": llm_review,
             "age_days": age_days(n["createdAt"], now),
             "updated_days": age_days(n["updatedAt"], now),
