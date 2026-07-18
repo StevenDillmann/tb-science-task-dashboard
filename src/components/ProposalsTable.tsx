@@ -349,7 +349,7 @@ export function ProposalsTable({
       },
       {
         accessorKey: "title",
-        size: 380,
+        size: 420,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
