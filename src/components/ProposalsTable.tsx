@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table"
 import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
-import { cn } from "@/lib/utils"
+import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import { AuthorFitChip, CoiBadge, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
@@ -488,12 +488,14 @@ export function ProposalsTable({
             <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
           </button>
         ),
-        cell: ({ row }) => {
-          const d = row.original.updated_days
-          return (
-            <span className="text-muted-foreground">{d === 0 ? "today" : `${d}d`}</span>
-          )
-        },
+        cell: ({ row }) => (
+          <span
+            className="text-muted-foreground"
+            title={formatExactDateTime(row.original.updated_at)}
+          >
+            {formatRelativeTime(row.original.updated_at)}
+          </span>
+        ),
       },
       {
         accessorKey: "age_days",
