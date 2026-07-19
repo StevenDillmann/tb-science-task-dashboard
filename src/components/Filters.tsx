@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { X } from "lucide-react"
+import { Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -150,19 +150,22 @@ export function SearchInput({
 }) {
   return (
     <div className={cn("relative", className)}>
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Search…"}
-        className="h-8 pr-7"
+        className="h-8 pl-8 pr-8"
       />
       {value && (
         <button
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+          type="button"
+          className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           onClick={() => onChange("")}
           aria-label="Clear search"
+          title="Clear search"
         >
-          <X className="h-3 w-3" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
