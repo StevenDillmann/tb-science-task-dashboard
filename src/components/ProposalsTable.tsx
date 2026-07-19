@@ -588,6 +588,13 @@ export function ProposalsTable({
                 {author.length > 0 && (
                   <FilterChip label="Author" value={author.join(", ")} onClear={() => setAuthor([])} />
                 )}
+                {reviewer.length > 0 && (
+                  <FilterChip
+                    label="Reviewer"
+                    value={reviewer.map((r) => (r === "__none" ? "unassigned" : r)).join(", ")}
+                    onClear={() => setReviewer([])}
+                  />
+                )}
                 {fit.length > 0 && (
                   <FilterChip
                     label="Author fit"
@@ -615,6 +622,7 @@ export function ProposalsTable({
                   onClick={() => {
                     setField([])
                     setAuthor([])
+                    setReviewer([])
                     setLlm([])
                     setFit([])
                     setHuman([])
