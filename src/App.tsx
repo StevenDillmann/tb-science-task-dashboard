@@ -196,6 +196,20 @@ export default function App() {
                 setForcedField(null)
                 setForcedProposalStatus(null)
                 setForcedPRState(null)
+                // Reset the previous tab's filters/search/opened-item so each
+                // tab opens on a clean slate. Every filter lives in a query
+                // param, so we rebuild the query with only `tab` (dropped when
+                // it's the default) — the newly-mounted table then reads
+                // defaults. Shared links with filters still load fine; this
+                // only fires on a manual tab click, not on initial load.
+                const params = new URLSearchParams()
+                if (v !== "prs") params.set("tab", v)
+                const qs = params.toString()
+                window.history.replaceState(
+                  null,
+                  "",
+                  qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+                )
               }}
             >
               <TabsList>
