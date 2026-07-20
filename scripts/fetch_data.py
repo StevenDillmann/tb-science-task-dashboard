@@ -272,25 +272,18 @@ def derive_review_stage(reviewers: list[dict[str, Any]]) -> str:
     column renders — so the Stage dots can never disagree with the column.
     Labels are deliberately not consulted (they drift out of sync).
 
-      "none" → 0 approvals · "1st" → 1 parallel · "2nd" → both parallel
-      "3rd"  → final reviewer approved
+    A plain COUNT of approvals, not a sequential workflow position. The final
+    reviewer approving does NOT jump a PR to "3rd" on its own — it counts as one
+    approval like any other. This keeps the Stage bucket honest against its
+    "N approvals" filter labels, so e.g. domain + final approved (technical
+    still pending) reads as "2nd", not "3rd".
+
+      "none" → 0 approvals · "1st" → 1 · "2nd" → 2 · "3rd" → 3
     """
     if not reviewers:
         return "none"
-    by_role = {r["role"]: r for r in reviewers if r.get("role")}
-    if by_role:
-        final = by_role.get("final")
-        if final and final.get("status") == "approved":
-            return "3rd"
-        approvals = sum(
-            1
-            for role in ("domain", "technical")
-            if (by_role.get(role) or {}).get("status") == "approved"
-        )
-        return {2: "2nd", 1: "1st"}.get(approvals, "none")
-    # No role marker: count approvals among the reviewers directly.
     approvals = sum(1 for r in reviewers if r.get("status") == "approved")
-    return {2: "2nd", 1: "1st"}.get(min(approvals, 2), "none")
+    return {3: "3rd", 2: "2nd", 1: "1st"}.get(min(approvals, 3), "none")
 
 
 def derive_ball_in_court(labels: list[str]) -> str | None:
