@@ -303,9 +303,9 @@ export function StageChip({
   const filled = stage === "1st" ? 1 : stage === "2nd" ? 2 : stage === "3rd" ? 3 : 0
   const baseLabels = [
     "No approvals yet",
-    "1 of 2 parallel reviewers approved",
-    "Both parallel reviewers approved",
-    "Final reviewer approved",
+    "1 approval",
+    "2 approvals",
+    "3 approvals",
   ]
 
   // Resolve each slot's status. Prefer the actual per-slot reviewer; fall back
