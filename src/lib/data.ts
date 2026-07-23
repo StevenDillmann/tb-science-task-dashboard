@@ -56,6 +56,9 @@ export type PR = {
   merged_days: number | null
   closed_days: number | null
   ci: string | null
+  /** Where the CI dot links — the checks summary comment on the PR (falls back
+   *  to the PR's Checks tab). Null when the PR carries no checks at all. */
+  ci_url: string | null
   trials: {
     passed: number
     total: number

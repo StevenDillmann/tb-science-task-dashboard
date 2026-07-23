@@ -656,7 +656,7 @@ export function PRsTable({
             {...openProps("ci")}
           />
         ),
-        cell: ({ row }) => <CIChip ci={row.original.ci} />,
+        cell: ({ row }) => <CIChip ci={row.original.ci} url={row.original.ci_url} />,
       },
       {
         accessorKey: "rubric",

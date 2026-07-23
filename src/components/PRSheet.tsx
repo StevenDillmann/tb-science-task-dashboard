@@ -142,7 +142,7 @@ function Body({ pr }: { pr: PR }) {
             <StageChip stage={pr.review_stage} action={pr.ball_in_court} reviewers={pr.reviewers} />
           </LabeledChip>
           <LabeledChip label="CI">
-            <CIChip ci={pr.ci} />
+            <CIChip ci={pr.ci} url={pr.ci_url} />
           </LabeledChip>
           <LabeledChip label="Rubric">
             <RubricChip rubric={pr.rubric} />

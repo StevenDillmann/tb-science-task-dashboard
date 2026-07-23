@@ -627,32 +627,49 @@ export function TrialsChip({
   return <span title={title}>{inner}</span>
 }
 
-export function CIChip({ ci }: { ci: string | null }) {
+export function CIChip({ ci, url }: { ci: string | null; url?: string | null }) {
+  let icon: ReactNode
+  let label: string
   if (ci === "success") {
-    return (
-      <CheckCircle2
-        className="h-4 w-4 text-green-700 dark:text-green-400"
-        aria-label="CI passing"
-      />
+    icon = (
+      <CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-400" aria-label="CI passing" />
     )
-  }
-  if (ci === "failure" || ci === "error") {
-    return (
-      <XCircle
-        className="h-4 w-4 text-red-700 dark:text-red-400"
-        aria-label="CI failing"
-      />
-    )
-  }
-  if (ci === "pending") {
-    return (
+    label = "CI passing"
+  } else if (ci === "failure" || ci === "error") {
+    icon = <XCircle className="h-4 w-4 text-red-700 dark:text-red-400" aria-label="CI failing" />
+    label = "CI failing"
+  } else if (ci === "pending") {
+    icon = (
       <Clock
         className="h-4 w-4 text-amber-600 dark:text-amber-400"
         aria-label="CI pending — checks running or incomplete"
       />
     )
+    label = "CI pending — checks running or incomplete"
+  } else {
+    // No gate checks on this PR — nothing to link to.
+    return <span className="text-xs text-muted-foreground">—</span>
   }
-  return <span className="text-xs text-muted-foreground">—</span>
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${label} — open the checks summary`}
+        onClick={(e) => e.stopPropagation()}
+        className="inline-flex hover:opacity-80"
+      >
+        {icon}
+      </a>
+    )
+  }
+  return (
+    <span title={label} className="inline-flex">
+      {icon}
+    </span>
+  )
 }
 
 export function HumanReviewChip({

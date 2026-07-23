@@ -430,6 +430,43 @@ def derive_ci(rollup: dict[str, Any] | None) -> str | None:
     return "success"
 
 
+# Headings of the two sticky bot comments the checks workflow maintains. The
+# "Automated Checks" comment is the umbrella (links to every sub-check); the
+# "Static Checks" comment is the detail table (canary strings, task fields,
+# timeout cap). Both are updated in place, so their URLs are stable across
+# pushes. We match on the comment STARTING with the heading — the umbrella
+# comment mentions "Static checks" in a bullet, and we must not mistake that
+# bullet for the detail comment.
+CI_COMMENT_HEADINGS = ("Static Checks", "Automated Checks")
+
+
+def derive_ci_url(comments: list[dict[str, Any]], pr_url: str) -> str | None:
+    """URL the CI dot links to — the checks summary comment, so a click lands
+    on the failure detail rather than a bare status page.
+
+    Prefers the sticky "Static Checks" comment (the ❌ detail table), falling
+    back to the "Automated Checks" umbrella, then to the PR's Checks tab. Both
+    comments are authored by the actions bot and updated in place; a newest-first
+    scan finds the single live instance.
+    """
+    found: dict[str, str] = {}
+    for c in reversed(comments):
+        author = (c.get("author") or {}).get("login", "")
+        if author not in LLM_REVIEW_BOTS:
+            continue
+        head = (c.get("bodyText") or "").lstrip()
+        url = c.get("url")
+        if not url:
+            continue
+        for heading in CI_COMMENT_HEADINGS:
+            if heading not in found and head.startswith(heading):
+                found[heading] = url
+    for heading in CI_COMMENT_HEADINGS:  # priority order
+        if heading in found:
+            return found[heading]
+    return f"{pr_url}/checks" if pr_url else None
+
+
 def derive_type(labels: list[str]) -> str:
     for lab in ("task fix", "documentation", "new task"):
         if lab in labels:
@@ -1681,6 +1718,9 @@ def build_prs(
         author = n.get("author") or {}
         state = (n.get("state") or "OPEN").lower()  # "open" | "closed" | "merged"
         comments = n.get("comments", {}).get("nodes", []) or []
+        # Link the CI dot to the checks summary comment (falls back to the PR's
+        # Checks tab) so a click lands on the failure detail.
+        ci_url = derive_ci_url(comments, n["url"])
         # Per-reviewer status (approved / pending / changes), with role pulled
         # from the hidden reviewer-slots marker where the PR has one. `comments`
         # is the complete timeline (see backfill_pr_comments), so the most-recent
@@ -1764,6 +1804,7 @@ def build_prs(
             "merged_days": age_days(n["mergedAt"], now) if n.get("mergedAt") else None,
             "closed_days": age_days(n["closedAt"], now) if n.get("closedAt") else None,
             "ci": ci,
+            "ci_url": ci_url,
             "trials": trials,
             "rubric": rubric,
             "cheat": cheat,
