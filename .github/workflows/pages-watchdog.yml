@@ -1,0 +1,121 @@
+name: Pages Watchdog
+
+# Unsticks the Pages pipeline after a GitHub-side stall.
+#
+# Failure mode this exists for (seen 2026-07-25, during the Actions "delays in
+# run starts" incident): the `deploy` job claims the `github-pages` environment
+# and creates a deployment, the Pages backend never dispatches it, and the
+# deployment sits at `queued` forever. The job never reaches a terminal state,
+# so its run keeps the `pages` concurrency lock. Because rebuild.yml sets
+# `cancel-in-progress: false`, GitHub allows a queue depth of exactly one, so
+# every subsequent run is *evicted* rather than run — 10 in a row were silently
+# cancelled and the site served 16-hour-old data.
+#
+# Why this can't live in rebuild.yml: that workflow's concurrency group is the
+# very thing being held. A preflight job there would be queued behind the wedged
+# run and never execute. So this is a separate workflow with its own group, and
+# it deliberately does NOT declare `environment:` — an environment-gated job
+# would be blocked by the same orphaned deployment it is trying to clear.
+#
+# `timeout-minutes` is not an alternative: that clock only starts once a job
+# begins executing. A job stuck in `queued` sits until GitHub's separate 24h cap.
+
+on:
+  schedule:
+    # Twice hourly, offset off rebuild.yml's :17 so the two don't collide.
+    # (Short intervals like */5 are throttled and not honoured; this is the
+    # tightest cadence that runs reliably.)
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write # cancel wedged runs
+  deployments: write # retire orphaned deployments
+
+concurrency:
+  # Must NOT be `pages` — that is the lock this workflow exists to break.
+  group: pages-watchdog
+  cancel-in-progress: false
+
+jobs:
+  unstick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel wedged runs and retire orphaned deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          # A healthy rebuild is ~2 min end to end and a healthy deploy settles
+          # in ~12s, so anything non-terminal past this is genuinely stuck and
+          # not merely slow.
+          STALE_MINUTES: "15"
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from datetime import datetime, timezone
+
+          repo  = os.environ["REPO"]
+          stale = int(os.environ["STALE_MINUTES"])
+          now   = datetime.now(timezone.utc)
+          TERMINAL = {"success", "failure", "error", "inactive"}
+          acted = False
+
+          def gh(*args):
+              out = subprocess.run(["gh", *args], capture_output=True, text=True)
+              if out.returncode != 0:
+                  print(f"::warning::gh {' '.join(args)} failed: {out.stderr.strip()}")
+                  return None
+              return json.loads(out.stdout) if out.stdout.strip() else None
+
+          def age_min(ts):
+              t = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+              return (now - t).total_seconds() / 60
+
+          # 1. Wedged runs of rebuild.yml. These hold the `pages` group.
+          #    Cancelling forces them terminal, which also flips their orphaned
+          #    deployment to `error` and frees the github-pages environment.
+          runs = gh("api", f"repos/{repo}/actions/workflows/rebuild.yml/runs?per_page=50",
+                    "--jq", ".workflow_runs")
+          for r in runs or []:
+              if r["status"] in ("queued", "pending", "waiting"):
+                  mins = age_min(r["created_at"])
+                  if mins > stale:
+                      print(f"::warning::Run {r['id']} ({r['event']}) stuck in "
+                            f"'{r['status']}' for {mins:.0f} min — cancelling to "
+                            f"release the 'pages' concurrency group.")
+                      gh("api", "-X", "POST",
+                         f"repos/{repo}/actions/runs/{r['id']}/cancel")
+                      acted = True
+                  else:
+                      print(f"Run {r['id']} queued {mins:.0f} min — within threshold.")
+
+          # 2. Orphaned deployments. Normally step 1 clears these as a side
+          #    effect; this catches a deployment whose run already went terminal
+          #    but which still pins the environment.
+          deps = gh("api", f"repos/{repo}/deployments?environment=github-pages&per_page=20")
+          for d in deps or []:
+              statuses = gh("api", f"repos/{repo}/deployments/{d['id']}/statuses?per_page=1")
+              state = statuses[0]["state"] if statuses else "none"
+              if state in TERMINAL:
+                  continue
+              mins = age_min(d["created_at"])
+              if mins > stale:
+                  print(f"::warning::Deployment {d['id']} non-terminal ('{state}') "
+                        f"for {mins:.0f} min — marking inactive.")
+                  gh("api", "-X", "POST",
+                     f"repos/{repo}/deployments/{d['id']}/statuses",
+                     "-f", "state=inactive",
+                     "-f", "description=Retired by pages-watchdog: stalled Pages deploy")
+                  acted = True
+              else:
+                  print(f"Deployment {d['id']} '{state}' for {mins:.0f} min — within threshold.")
+
+          if acted:
+              # Surface it. A silent auto-heal would hide a recurring GitHub-side
+              # problem; the next scheduled rebuild picks up the freed lock.
+              print("::notice::Watchdog cleared a stalled Pages deploy. The next "
+                    "rebuild (cron :17, or any upstream dispatch) will deploy.")
+          else:
+              print("Nothing stuck.")
+          PY
