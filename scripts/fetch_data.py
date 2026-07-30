@@ -991,6 +991,30 @@ CHEAT_HEADER = "Cheating Agent Trial Results"
 # to just the top trial table by stopping at "Job Analysis" / "Overall Results".
 
 
+# Header cells naming a per-trial verdict column: "Trial 1", "Trial 2", …  in the
+# /run table and "Cheat Trial" in the /cheat table. Everything else in the header
+# row — "Model (Agent)", "Average", "Hub Link" — is a label, a roll-up, or a link,
+# never a trial.
+TRIAL_COL_RE = re.compile(r"\btrial\b", re.IGNORECASE)
+
+
+def _trial_cell_picker(header_cells: list[str]):
+    """Build a function that selects the per-trial cells from a table row.
+
+    Match the `Trial N` / `Cheat Trial` headers by name rather than trimming a
+    known trailing column: the /run and /cheat comments append columns over time
+    (`Average`, then `Hub Link`), and a trailing-column heuristic silently counts
+    each new one as an extra errored trial dot. Falls back to the old "drop a
+    trailing Average" behaviour when no header matches, so tables from older
+    comment formats still parse.
+    """
+    idx = [i for i, h in enumerate(header_cells) if TRIAL_COL_RE.search(h)]
+    if idx:
+        return lambda cells: [cells[i] for i in idx if i < len(cells)]
+    drop_last = len(header_cells) > 2 and "average" in header_cells[-1].lower()
+    return (lambda cells: cells[1:-1]) if drop_last else (lambda cells: cells[1:])
+
+
 def _slice_trial_table(body: str) -> str:
     """Return only the section between the header line and the first analysis
     section, to avoid counting emojis in per-criterion breakdowns.
@@ -1131,7 +1155,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             tail = body_md[header_idx:]
             in_table = False
             header_seen = False
-            drop_last = False
+            pick_trials = lambda cells: cells[1:]  # noqa: E731 — replaced from the header row
             for line in tail.splitlines():
                 if line.startswith("|"):
                     in_table = True
@@ -1140,7 +1164,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         continue
                     if not header_seen:
                         header_cells = [c.strip() for c in line.strip("|").split("|")]
-                        drop_last = len(header_cells) > 2 and "average" in header_cells[-1].lower()
+                        pick_trials = _trial_cell_picker(header_cells)
                         continue
                     cells = [c.strip() for c in line.strip("|").split("|")]
                     if len(cells) < 2:
@@ -1148,7 +1172,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                     model_label = cells[0]
                     display = re.sub(r"`", "", model_label).split("<br>")[0].strip()
                     results: list[str] = []
-                    for cell in (cells[1:-1] if drop_last else cells[1:]):
+                    for cell in pick_trials(cells):
                         c_clean = cell.strip()
                         if "✅" in c_clean:
                             results.append("succeeded")
@@ -1252,9 +1276,10 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             # Split on lines, pick the first `|...|` block.
             in_table = False
             header_seen = False
-            # A trailing per-model "Average" column is a summary, not a trial —
-            # drop it so it isn't counted as an extra (errored) trial cell.
-            drop_last = False
+            # Per-model "Average" / "Hub Link" columns are summaries, not trials —
+            # pick the trial columns by header so they aren't counted as extra
+            # (errored) trial cells.
+            pick_trials = lambda cells: cells[1:]  # noqa: E731 — replaced from the header row
             for line in tail.splitlines():
                 if line.startswith("|"):
                     if not in_table:
@@ -1264,7 +1289,7 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         continue
                     if not header_seen:
                         header_cells = [x.strip() for x in line.strip("|").split("|")]
-                        drop_last = len(header_cells) > 2 and "average" in header_cells[-1].lower()
+                        pick_trials = _trial_cell_picker(header_cells)
                         continue
                     cells = [x.strip() for x in line.strip("|").split("|")]
                     if len(cells) < 2:
@@ -1275,7 +1300,7 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                     display = re.sub(r"`", "", model_label)
                     display = display.split("<br>")[0].strip()
                     results: list[str] = []
-                    for cell in (cells[1:-1] if drop_last else cells[1:]):
+                    for cell in pick_trials(cells):
                         c_clean = cell.strip()
                         if "✅" in c_clean:
                             results.append("pass")
