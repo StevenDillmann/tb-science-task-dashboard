@@ -286,7 +286,9 @@ def derive_review_stage(reviewers: list[dict[str, Any]]) -> str:
     return {3: "3rd", 2: "2nd", 1: "1st"}.get(min(approvals, 3), "none")
 
 
-def derive_ball_in_court(labels: list[str]) -> str | None:
+def derive_ball_in_court(
+    labels: list[str], reviewers: list[dict[str, Any]] | None = None
+) -> str | None:
     """Whose court the PR is in — taken straight from the GitHub workflow label.
 
     The `waiting on …` labels are the team's source of truth for whose turn it
@@ -296,10 +298,34 @@ def derive_ball_in_court(labels: list[str]) -> str | None:
     - "waiting on author"   → author
     - "waiting on reviewer" → reviewer
     - neither label present  → None
+
+    BOTH labels at once is not a state the workflow means to express — it's an
+    upstream bug: the paths that hand the ball to the next reviewer add
+    `waiting on reviewer` without clearing a `waiting on author` left over from
+    an earlier changes-request. Label precedence would silently resolve that to
+    `author`, parking a fully-approved PR in the author's queue (see #105:
+    3/3 approved, still reading "waiting on author 5d"). So when the labels
+    contradict each other, arbitrate with the reviewer statuses instead — they
+    come from the reviews themselves and can't drift:
+
+      - any slot wants changes → author
+      - else any slot pending  → reviewer
+      - else (every slot approved) → None, i.e. nothing left but the merge
+
+    With no reviewer data to arbitrate with, keep the old label precedence.
     """
-    if "waiting on author" in labels:
+    on_author = "waiting on author" in labels
+    on_reviewer = "waiting on reviewer" in labels
+    if on_author and on_reviewer and reviewers:
+        statuses = {r.get("status") for r in reviewers}
+        if "changes_requested" in statuses:
+            return "author"
+        if "pending" in statuses:
+            return "reviewer"
+        return None
+    if on_author:
         return "author"
-    if "waiting on reviewer" in labels:
+    if on_reviewer:
         return "reviewer"
     return None
 
@@ -1781,7 +1807,9 @@ def build_prs(
         # Author–task fit + COI straight from the PR's own `author-fit:` labels.
         pr_fit, pr_coi = derive_author_fit(labels)
         # Whose court + how long it's been there (only meaningful for open PRs).
-        ball = derive_ball_in_court(labels) if state == "open" else None
+        # `reviewers` is passed so a contradictory pair of `waiting on …` labels
+        # is resolved from the actual review statuses rather than by precedence.
+        ball = derive_ball_in_court(labels, reviewers) if state == "open" else None
         ball_at = ball_since(n, ball)
         rows.append({
             "number": n["number"],
