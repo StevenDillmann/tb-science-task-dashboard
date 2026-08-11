@@ -16,6 +16,7 @@ import {
   CIChip,
   CostTimeChip,
   FieldChip,
+  GpuChip,
   RubricChip,
   StageChip,
   TrialsChip,
@@ -92,6 +93,7 @@ function Body({ pr }: { pr: PR }) {
             #{pr.number}
           </span>
           {pr.title}
+          {pr.labels.includes("gpu") && <GpuChip className="ml-2 align-middle" />}
         </SheetTitle>
         {pr.linked_proposal && (
           <div className="pt-1 text-xs text-muted-foreground">

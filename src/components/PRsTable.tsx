@@ -42,6 +42,7 @@ import {
   CoiBadge,
   CostTimeChip,
   FieldChip,
+  GpuChip,
   HumanReviewChip,
   RubricChip,
   StageChip,
@@ -505,13 +506,16 @@ export function PRsTable({
           const fixes = row.original.fixes ?? []
           return (
             <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveNum(row.original.number)}
-                className="text-left font-medium hover:underline underline-offset-4"
-              >
-                {row.original.title}
-              </button>
+              <span className="flex items-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveNum(row.original.number)}
+                  className="text-left font-medium hover:underline underline-offset-4"
+                >
+                  {row.original.title}
+                </button>
+                {row.original.labels.includes("gpu") && <GpuChip className="mt-[3px]" />}
+              </span>
               {fixes.length > 0 && (
                 <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-0.5">
                   {fixes.map((f) => (

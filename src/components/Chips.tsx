@@ -830,6 +830,24 @@ export function AuthorFitChip({
   return <span title={title}>{inner}</span>
 }
 
+/** Upstream's `gpu` label, mirrored next to the task title: this task needs GPU
+ *  hardware to run, which decides who can review it and where trials run. Purple
+ *  is upstream's own label colour (#8250df), lightened in dark mode so it stays
+ *  legible against the dark surface. */
+export function GpuChip({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-sm border border-[#8250df]/40 px-1 py-px font-mono text-[10px] font-semibold uppercase leading-none tracking-wider text-[#8250df] dark:border-[#a371f7]/50 dark:text-[#a371f7]",
+        className,
+      )}
+      title="Needs GPU hardware to run"
+    >
+      gpu
+    </span>
+  )
+}
+
 /** "COI disclosed" — a proposal's (or its PR's) declared conflict of interest.
  *  Rendered as plain blue text so it reads as just another author-fit value
  *  alongside direct/adjacent/unrelated. `fromProposal` notes when a PR inherited
