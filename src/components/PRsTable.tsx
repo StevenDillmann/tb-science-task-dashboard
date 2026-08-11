@@ -531,9 +531,10 @@ export function PRsTable({
           const fixes = row.original.fixes ?? []
           return (
             <div className="flex flex-col gap-1">
-              {/* Not a flex row: the chip rides in the text flow so it trails
-                  the last word of a wrapped title instead of being pinned to
-                  the first line. */}
+              {/* Not a flex row: the chip rides in the text flow so it sits
+                  directly after the title's last word. The separator is a
+                  non-breaking space, so a wrapping title can never strand the
+                  chip alone on a line below the name. */}
               <div>
                 <button
                   type="button"
@@ -543,7 +544,10 @@ export function PRsTable({
                   {row.original.title}
                 </button>
                 {row.original.labels.includes("gpu") && (
-                  <GpuChip className="ml-1.5 align-[1px]" />
+                  <>
+                    {" "}
+                    <GpuChip className="ml-0.5 align-[1px]" />
+                  </>
                 )}
               </div>
               {fixes.length > 0 && (
