@@ -1,6 +1,6 @@
 # tb-science-task-dashboard — Design
 
-A public, auto-refreshing dashboard that gives the Terminal-Bench Science reviewer team a single place to see open task PRs and task proposals, and gives the wider community visibility into what domains are covered or under-served.
+A public, auto-refreshing dashboard that gives the Terminal-Bench-Science reviewer team a single place to see open task PRs and task proposals, and gives the wider community visibility into what domains are covered or under-served.
 
 ## Goals
 

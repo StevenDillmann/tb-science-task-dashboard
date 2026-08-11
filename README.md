@@ -1,6 +1,6 @@
 # tb-science-task-dashboard
 
-A public, auto-refreshing dashboard for the Terminal-Bench Science reviewer team — see open task PRs and proposals from [`harbor-framework/terminal-bench-science`](https://github.com/harbor-framework/terminal-bench-science) at a glance.
+A public, auto-refreshing dashboard for the Terminal-Bench-Science reviewer team — see open task PRs and proposals from [`harbor-framework/terminal-bench-science`](https://github.com/harbor-framework/terminal-bench-science) at a glance.
 
 See [DESIGN.md](./DESIGN.md) for the full design.
 

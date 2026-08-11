@@ -82,20 +82,20 @@ export default function App() {
                 yet; rendering both keeps the swap instant. */}
             <img
               src={logoLight}
-              alt="Terminal-Bench Science"
+              alt="Terminal-Bench-Science"
               className="h-12 w-auto dark:hidden"
             />
             <img
               src={logoDark}
-              alt="Terminal-Bench Science"
+              alt="Terminal-Bench-Science"
               className="hidden h-12 w-auto dark:block"
             />
             <div className="font-prose">
               <h1 className="text-xl font-semibold uppercase tracking-wider">
-                Terminal-Bench Science · Task Submission Dashboard
+                Terminal-Bench-Science · Task Submission Dashboard
               </h1>
               <p className="text-sm text-muted-foreground">
-                Task proposal and pull requests for Terminal-Bench Science.
+                Task proposal and pull requests for Terminal-Bench-Science.
               </p>
             </div>
           </a>
@@ -110,8 +110,8 @@ export default function App() {
               href={WEBSITE_URL}
               target="_blank"
               rel="noreferrer"
-              title="Terminal-Bench Science announcement"
-              aria-label="Terminal-Bench Science announcement on tbench.ai"
+              title="Terminal-Bench-Science announcement"
+              aria-label="Terminal-Bench-Science announcement on tbench.ai"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               <Globe className="h-5 w-5" />
@@ -140,8 +140,8 @@ export default function App() {
               href={CALENDAR_URL}
               target="_blank"
               rel="noreferrer"
-              title="Terminal-Bench Science calendar — weekly meeting & office hours"
-              aria-label="Terminal-Bench Science calendar"
+              title="Terminal-Bench-Science calendar — weekly meeting & office hours"
+              aria-label="Terminal-Bench-Science calendar"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               <Calendar className="h-5 w-5" />
