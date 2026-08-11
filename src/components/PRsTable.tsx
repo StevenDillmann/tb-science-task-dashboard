@@ -342,6 +342,29 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
   return out
 }
 
+// Labels that already drive a dedicated column or filter (state, stage, ball,
+// author fit, proposal status). Folding these into the search haystack would
+// make common words match nearly every row — "task" would hit all 161 PRs via
+// "new task" — so search only sees the labels nothing else surfaces. Anything
+// upstream adds later is searchable by default.
+const COVERED_LABEL_PREFIXES = [
+  "new task",
+  "task fix",
+  "waiting on",
+  "author-fit:",
+  "proposal-",
+  "documentation",
+]
+
+function searchableLabels(labels: string[]): string[] {
+  return labels.filter(
+    (l) =>
+      // The `… review ✅` labels are the stage column's own source data.
+      !l.endsWith("review ✅") &&
+      !COVERED_LABEL_PREFIXES.some((p) => l.startsWith(p)),
+  )
+}
+
 export function PRsTable({
   prs,
   externalField,
@@ -424,8 +447,10 @@ export function PRsTable({
         if (!ok) return false
       }
       if (needle) {
+        // Labels are searchable so hardware/workflow tags that have no column of
+        // their own (e.g. `gpu`) are still reachable by typing their name.
         const hay =
-          `${p.number} ${p.title} ${p.author.login} ${p.reviewers.map((d) => d.login).join(" ")} ${p.field ?? ""}`.toLowerCase()
+          `${p.number} ${p.title} ${p.author.login} ${p.reviewers.map((d) => d.login).join(" ")} ${p.field ?? ""} ${searchableLabels(p.labels).join(" ")}`.toLowerCase()
         if (!hay.includes(needle)) return false
       }
       return true
