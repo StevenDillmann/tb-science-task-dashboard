@@ -531,16 +531,21 @@ export function PRsTable({
           const fixes = row.original.fixes ?? []
           return (
             <div className="flex flex-col gap-1">
-              <span className="flex items-start gap-1.5">
+              {/* Not a flex row: the chip rides in the text flow so it trails
+                  the last word of a wrapped title instead of being pinned to
+                  the first line. */}
+              <div>
                 <button
                   type="button"
                   onClick={() => setActiveNum(row.original.number)}
-                  className="text-left font-medium hover:underline underline-offset-4"
+                  className="inline text-left font-medium hover:underline underline-offset-4"
                 >
                   {row.original.title}
                 </button>
-                {row.original.labels.includes("gpu") && <GpuChip className="mt-[3px]" />}
-              </span>
+                {row.original.labels.includes("gpu") && (
+                  <GpuChip className="ml-1.5 align-[1px]" />
+                )}
+              </div>
               {fixes.length > 0 && (
                 <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-0.5">
                   {fixes.map((f) => (
