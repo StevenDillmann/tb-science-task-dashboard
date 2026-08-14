@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import type { PR } from "@/lib/data"
+import { tagLabels } from "@/lib/labels"
 import {
   CIChip,
   CostTimeChip,
   FieldChip,
-  GpuChip,
   RubricChip,
   StageChip,
+  TagChip,
   TrialsChip,
   UserCell,
 } from "./Chips"
@@ -93,7 +94,9 @@ function Body({ pr }: { pr: PR }) {
             #{pr.number}
           </span>
           {pr.title}
-          {pr.labels.includes("gpu") && <GpuChip className="ml-2 align-middle" />}
+          {tagLabels(pr.labels).map((tag) => (
+            <TagChip key={tag} tag={tag} className="ml-2 align-middle" />
+          ))}
         </SheetTitle>
         {pr.linked_proposal && (
           <div className="pt-1 text-xs text-muted-foreground">

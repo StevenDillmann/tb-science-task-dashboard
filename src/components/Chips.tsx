@@ -830,20 +830,40 @@ export function AuthorFitChip({
   return <span title={title}>{inner}</span>
 }
 
-/** Upstream's `gpu` label, mirrored next to the task title: this task needs GPU
- *  hardware to run, which decides who can review it and where trials run. Purple
- *  is upstream's own label colour (#8250df), lightened in dark mode so it stays
- *  legible against the dark surface. */
-export function GpuChip({ className }: { className?: string }) {
+/** Colours for the tags in `KNOWN_TAGS` (see lib/labels.ts, which decides which
+ *  labels become tags at all). Upstream's own label hex, swapped for the matching
+ *  GitHub dark-theme shade where the light one goes muddy against the dark
+ *  surface. The neutral fallback only covers the two lists drifting apart. */
+const TAG_STYLES: Record<string, { classes: string; title: string }> = {
+  gpu: {
+    classes:
+      "border-[#8250df]/40 text-[#8250df] dark:border-[#a371f7]/50 dark:text-[#a371f7]",
+    title: "Needs GPU hardware to run",
+  },
+  lite: {
+    // Upstream's light teal (#c1e3e6) is 14.5:1 on the dark surface but 1.4:1 on
+    // white — invisible as text. Dark mode keeps upstream's own shade; light mode
+    // drops to the same hue (185°) at a value that clears AA.
+    classes:
+      "border-[#1d6c73]/40 text-[#1d6c73] dark:border-[#c1e3e6]/50 dark:text-[#c1e3e6]",
+    title: "Good task, but may be too easy",
+  },
+}
+
+/** A single upstream tag (see TAG_STYLES). Amber/purple carry meaning; unknown
+ *  tags fall back to muted so they read as "a tag" without inventing a colour. */
+export function TagChip({ tag, className }: { tag: string; className?: string }) {
+  const style = TAG_STYLES[tag]
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-sm border border-[#8250df]/40 px-1 py-px font-mono text-[10px] font-semibold uppercase leading-none tracking-wider text-[#8250df] dark:border-[#a371f7]/50 dark:text-[#a371f7]",
+        "inline-flex shrink-0 items-center rounded-sm border px-1 py-px font-mono text-[10px] font-semibold uppercase leading-none tracking-wider",
+        style?.classes ?? "border-muted-foreground/40 text-muted-foreground",
         className,
       )}
-      title="Needs GPU hardware to run"
+      title={style?.title ?? tag}
     >
-      gpu
+      {tag}
     </span>
   )
 }
