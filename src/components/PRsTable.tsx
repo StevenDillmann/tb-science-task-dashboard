@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import {
   flexRender,
   getCoreRowModel,
@@ -33,6 +33,7 @@ import {
 import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
+import { searchableLabels, tagLabels } from "@/lib/labels"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import {
   AuthorFitChip,
@@ -42,11 +43,11 @@ import {
   CoiBadge,
   CostTimeChip,
   FieldChip,
-  GpuChip,
   HumanReviewChip,
   RubricChip,
   StageChip,
   StatePill,
+  TagChip,
   TrialsChip,
   UserCell,
   ReviewersCell,
@@ -169,6 +170,7 @@ function prSortText(
   let detail: string
   switch (s.id) {
     case "number": label = "Order"; detail = s.desc ? "newest" : "oldest"; break
+    case "title": label = "Title"; detail = s.desc ? "Z→A" : "A→Z"; break
     case "age_days": label = "Posted"; detail = s.desc ? "oldest" : "newest"; break
     case "updated_days": label = "Updated"; detail = s.desc ? "least recent" : "most recent"; break
     case "ball_in_court": label = "Action"; detail = s.desc ? "longest waiting" : "shortest waiting"; break
@@ -178,6 +180,12 @@ function prSortText(
   }
   return { label, detail, isDefault }
 }
+
+// Sort choices for the Task column (alphabetical by title).
+const TITLE_SORT_OPTIONS = [
+  { value: "title:asc", label: "title (A → Z)" },
+  { value: "title:desc", label: "title (Z → A)" },
+]
 
 // Sort choices for the Action column (how long it's waited in its state).
 const ACTION_SORT_OPTIONS = [
@@ -342,29 +350,6 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
   return out
 }
 
-// Labels that already drive a dedicated column or filter (state, stage, ball,
-// author fit, proposal status). Folding these into the search haystack would
-// make common words match nearly every row — "task" would hit all 161 PRs via
-// "new task" — so search only sees the labels nothing else surfaces. Anything
-// upstream adds later is searchable by default.
-const COVERED_LABEL_PREFIXES = [
-  "new task",
-  "task fix",
-  "waiting on",
-  "author-fit:",
-  "proposal-",
-  "documentation",
-]
-
-function searchableLabels(labels: string[]): string[] {
-  return labels.filter(
-    (l) =>
-      // The `… review ✅` labels are the stage column's own source data.
-      !l.endsWith("review ✅") &&
-      !COVERED_LABEL_PREFIXES.some((p) => l.startsWith(p)),
-  )
-}
-
 export function PRsTable({
   prs,
   externalField,
@@ -411,6 +396,9 @@ export function PRsTable({
   const [propStatus, setPropStatus] = useUrlState<string[]>("prop_status", [], stringArrayCodec)
   // Author-fit filter: fit verdicts + "coi" (COI disclosed).
   const [fit, setFit] = useUrlState<string[]>("fit", [], stringArrayCodec)
+  // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
+  // on the Task column, since that's where the chips render.
+  const [tags, setTags] = useUrlState<string[]>("tags", [], stringArrayCodec)
   // The opened PR, resolved from its number in the URL (looked up in the full
   // list so a deep link opens the panel regardless of the active filters).
   const active = useMemo(
@@ -446,6 +434,7 @@ export function PRsTable({
         const ok = fit.some((f) => (f === "coi" ? !!p.coi : p.author_fit === f))
         if (!ok) return false
       }
+      if (tags.length && !tags.some((t) => p.labels.includes(t))) return false
       if (needle) {
         // Labels are searchable so hardware/workflow tags that have no column of
         // their own (e.g. `gpu`) are still reachable by typing their name.
@@ -455,7 +444,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
 
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
@@ -472,6 +461,22 @@ export function PRsTable({
       }
     }
     return c
+  }, [stateFiltered])
+  // Tag options come straight from the data, so a label upstream adds later
+  // shows up as a filter choice without a code change. Most-common first.
+  const tagOptions = useMemo(() => {
+    const c: Record<string, number> = {}
+    for (const p of stateFiltered) {
+      for (const t of tagLabels(p.labels)) c[t] = (c[t] ?? 0) + 1
+    }
+    return Object.entries(c)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({
+        value,
+        label: value,
+        render: <TagChip tag={value} />,
+        count,
+      }))
   }, [stateFiltered])
   const authorOptions = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.author.login)
@@ -519,19 +524,35 @@ export function PRsTable({
       {
         accessorKey: "title",
         size: 260,
-        header: ({ column }) => (
-          <button
-            className="inline-flex items-center gap-1"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            TITLE <ArrowUpDown className="h-3 w-3" />
-          </button>
-        ),
+        // The Tags facet hangs off this header rather than earning a column of
+        // its own: only a handful of PRs carry a tag, so a Tags column would pay
+        // width on every row to stay empty. The chips live in the cell below.
+        header: () => {
+          const cur = sorting[0]?.id === "title" ? sorting[0] : null
+          return (
+            <ColumnFilter
+              title="TITLE"
+              heading="Tags"
+              options={tagOptions}
+              selected={tags}
+              onToggle={(v) => setTags(toggleVal(tags, v))}
+              onClearAll={() => setTags([])}
+              sortOptions={TITLE_SORT_OPTIONS}
+              sortValue={cur ? `title:${cur.desc ? "desc" : "asc"}` : null}
+              onSortChange={(v) =>
+                setSorting(
+                  v ? [{ id: "title", desc: v.endsWith(":desc") }] : [{ id: "number", desc: true }],
+                )
+              }
+              {...openProps("title")}
+            />
+          )
+        },
         cell: ({ row }) => {
           const fixes = row.original.fixes ?? []
           return (
             <div className="flex flex-col gap-1">
-              {/* Not a flex row: the chip rides in the text flow, so it behaves
+              {/* Not a flex row: the chips ride in the text flow, so each behaves
                   like one more word at the end of the title — sitting after the
                   last word and wrapping with it. */}
               <div>
@@ -542,12 +563,12 @@ export function PRsTable({
                 >
                   {row.original.title}
                 </button>
-                {row.original.labels.includes("gpu") && (
-                  <>
+                {tagLabels(row.original.labels).map((tag) => (
+                  <Fragment key={tag}>
                     {" "}
-                    <GpuChip className="align-[1px]" />
-                  </>
-                )}
+                    <TagChip tag={tag} className="align-[1px]" />
+                  </Fragment>
+                ))}
               </div>
               {fixes.length > 0 && (
                 <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -921,7 +942,7 @@ export function PRsTable({
         ),
       },
     ],
-    [field, stage, ball, dri, author, ci, propStatus, fit, fieldCounts, driOptions, authorOptions, trialMetric, cheatMetric, sorting, openCol],
+    [field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -942,7 +963,8 @@ export function PRsTable({
     author.length ||
     ci.length ||
     propStatus.length ||
-    fit.length
+    fit.length ||
+    tags.length
   )
   const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = prSortText(
     sorting,
@@ -1059,6 +1081,9 @@ export function PRsTable({
                   onClear={() => setFit([])}
                 />
               )}
+              {tags.length > 0 && (
+                <FilterChip label="Tags" value={tags.join(", ")} onClear={() => setTags([])} />
+              )}
               <button
                 type="button"
                 className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
@@ -1071,6 +1096,7 @@ export function PRsTable({
                   setCi([])
                   setPropStatus([])
                   setFit([])
+                  setTags([])
                 }}
               >
                 Clear all filters
