@@ -69,6 +69,13 @@ jobs:
         with:
           path: ./dist
 
+  # Observed 2026-08-16: every deploy reported `success` (waiting → queued →
+  # in_progress → success in ~15s) while the live origin stayed frozen on the
+  # 02:50 deploy for 6.5h — index.html and data.json both pinned to that
+  # last-modified, cache-busted requests included. Distinct from the stall
+  # pages-watchdog.yml handles, where deploys hang at `queued` instead.
+  # Every deployment carried the same sha (the data refresh needs no commit),
+  # so a sha-level dedupe on the Pages side is the leading suspect.
   deploy:
     needs: build
     runs-on: ubuntu-latest
