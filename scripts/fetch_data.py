@@ -278,11 +278,23 @@ def derive_review_stage(reviewers: list[dict[str, Any]]) -> str:
     "N approvals" filter labels, so e.g. domain + final approved (technical
     still pending) reads as "2nd", not "3rd".
 
+    Only the three real slots can advance the stage. A PR can carry assignees
+    beyond its reviewer-slots marker, and their approval must not fill a gate no
+    slotted reviewer has cleared: three dots with the final slot still pending
+    reads as "all reviews complete" everywhere the stage is consumed (the filter
+    bucket, and the "completed" affordance in ActionChip). Counting only slotted
+    approvals keeps the count denominated in the same slots as the dots.
+
+    Without a marker nobody has a role (most pre-parallel-model PRs), so there
+    are no slots to denominate against and every approval counts.
+
       "none" → 0 approvals · "1st" → 1 · "2nd" → 2 · "3rd" → 3
     """
     if not reviewers:
         return "none"
-    approvals = sum(1 for r in reviewers if r.get("status") == "approved")
+    slotted = [r for r in reviewers if r.get("role")]
+    counted = slotted or reviewers
+    approvals = sum(1 for r in counted if r.get("status") == "approved")
     return {3: "3rd", 2: "2nd", 1: "1st"}.get(min(approvals, 3), "none")
 
 
