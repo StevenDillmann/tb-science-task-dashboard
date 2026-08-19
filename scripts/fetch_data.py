@@ -863,6 +863,7 @@ query($owner:String!,$name:String!,$first:Int!,$cursor:String){
           }
         }
         files(first:100){
+          pageInfo{ hasNextPage endCursor }
           nodes{ path changeType }
         }
         commits(last:1){
@@ -927,6 +928,61 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
   }
 }
 """
+
+
+PR_FILES_QUERY = """
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      files(first:100,after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ path changeType }
+      }
+    }
+  }
+}
+"""
+
+
+def backfill_pr_files(nodes: list[dict[str, Any]]) -> None:
+    """Ensure every PR node carries its COMPLETE file list.
+
+    PR_QUERY fetches the first 100 files per PR, and a task PR can easily exceed
+    that (datasets, fixtures, authoring notebooks). Everything path-derived then
+    breaks quietly on the tail: `task_dir` comes from an ADDED `task.toml`, so a
+    PR whose task.toml sits past file 100 claims no directory at all — no file
+    previewer in the sheet, and no directory for a `task fix` to match against.
+    #700 (variable-star-vetting, 115 files) was exactly that. Mutates in place.
+    """
+    backfilled = 0
+    for n in nodes:
+        conn = n.get("files", {})
+        page = conn.get("pageInfo", {}) or {}
+        cursor = page.get("endCursor") if page.get("hasNextPage") else None
+        if not cursor:
+            # A node cached before files carried pageInfo can't say whether it
+            # was truncated, and a full 100-file page is exactly what a
+            # truncated one looks like — so re-page those from the start. Costs
+            # one pass over the handful of large PRs, once.
+            if page or len(conn.get("nodes") or []) < 100:
+                continue
+            conn["nodes"] = []
+        while True:
+            data = graphql(PR_FILES_QUERY, {
+                "owner": UPSTREAM_OWNER,
+                "name": UPSTREAM_NAME,
+                "number": n["number"],
+                "cursor": cursor,
+            })
+            block = data["data"]["repository"]["pullRequest"]["files"]
+            conn["nodes"].extend(block["nodes"])
+            conn["pageInfo"] = {"hasNextPage": False, "endCursor": None}
+            if not block["pageInfo"]["hasNextPage"]:
+                break
+            cursor = block["pageInfo"]["endCursor"]
+        backfilled += 1
+    if backfilled:
+        sys.stderr.write(f"Backfilled files for {backfilled} large PR(s).\n")
 
 
 def backfill_pr_comments(nodes: list[dict[str, Any]]) -> None:
@@ -1697,6 +1753,10 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         stale = True
     backfill_pr_comments(fresh)  # only freshly-fetched PRs can need more comments
     merged = merge_nodes(base, fresh)
+    # Files are backfilled across the MERGED set, not just the fresh nodes: a
+    # merged/closed PR is fetched once and then served from cache forever, so a
+    # file list truncated at 100 would never repair itself.
+    backfill_pr_files(merged)
     # Bound growth: keep every open PR plus the most-recently-updated
     # CLOSED_HISTORY closed/merged ones (merged is already UPDATED_AT-DESC).
     open_nodes = [n for n in merged if n.get("state") == "OPEN"]
