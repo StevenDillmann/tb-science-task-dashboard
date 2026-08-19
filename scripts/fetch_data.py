@@ -1569,6 +1569,7 @@ def paged(
     extra_vars: dict[str, Any] | None = None,
     max_pages: int | None = None,
     stop: Callable[[dict[str, Any]], bool] | None = None,
+    require_complete: bool = False,
 ) -> list[dict[str, Any]]:
     """Page a GraphQL connection, newest-first.
 
@@ -1576,6 +1577,8 @@ def paged(
     because results are UPDATED_AT-DESC ordered, everything after it — is
     unchanged since the cache, so we drop the tail and return immediately.
     `extra_vars` supplies query variables beyond owner/name/cursor (e.g. first).
+    `require_complete` turns a binding page cap into an IncompleteFetch instead
+    of a quiet truncation — see the open-PR fetch.
     """
     out: list[dict[str, Any]] = []
     cursor: str | None = None
@@ -1596,6 +1599,15 @@ def paged(
         if not block["pageInfo"]["hasNextPage"]:
             break
         if max_pages is not None and pages >= max_pages:
+            # A cap that binds while GitHub still has pages means we silently
+            # dropped rows. Callers that MUST have the whole connection say so
+            # and get an error they can degrade on; the rest (e.g. the
+            # deliberate closed-PR history window) just stop here.
+            if require_complete:
+                raise IncompleteFetch(
+                    f"{key}: hit the {max_pages}-page cap with more pages left "
+                    f"({len(out)} fetched) — raise max_pages"
+                )
             break
         cursor = block["pageInfo"]["endCursor"]
     return out
@@ -1611,6 +1623,15 @@ DISC_PAGE = 25
 # every PR ever seen and the payload would grow without limit. 40 cold-start
 # pages of PR_PAGE fill exactly this window.
 CLOSED_HISTORY = 400
+
+
+class IncompleteFetch(GHError):
+    """A paged fetch stopped while the API still had rows to give.
+
+    A GHError subclass so the callers that already fall back to cached data on
+    a fetch failure treat a truncated fetch the same way — the dashboard shows
+    its stale badge instead of quietly serving a short list.
+    """
 
 
 def merge_nodes(
@@ -1647,9 +1668,14 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     stale = False
     fresh: list[dict[str, Any]] = []
     try:
+        # NO page cap: every open PR has to be on the board. A cap here silently
+        # dropped the tail once already — 254 open PRs upstream against a
+        # 20-page × 10-per-page budget meant ~46 open task PRs were missing —
+        # so the only safe budget is "until GitHub says there are no more".
+        # `require_complete` keeps that honest if a cap is ever reintroduced.
         fresh += paged(
             PR_QUERY.replace("__STATES__", "[OPEN]"), "pullRequests",
-            extra_vars={"first": PR_PAGE}, max_pages=20,
+            extra_vars={"first": PR_PAGE}, max_pages=None, require_complete=True,
         )
     except GHError as e:
         if not base:
