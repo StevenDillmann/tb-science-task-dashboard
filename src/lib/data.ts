@@ -23,6 +23,30 @@ export type Domain =
 
 export type PRState = "open" | "closed" | "merged"
 
+/** One `/run` result set: the per-model trial grid plus its roll-up. */
+export type TrialRun = {
+    passed: number
+    total: number
+    by_model: Array<{
+      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
+      display: string
+      results: Array<"pass" | "fail" | "none">
+    }>
+    url: string | null
+    /** True only when the comment carried the pass-rate roll-up line. The
+     *  rate·cost·time summary is shown only then, so the displayed % is always
+     *  the authoritative roll-up and never a cell-derived guess. */
+    has_rollup: boolean
+    /** Blended average cost (USD) / runtime (seconds) across trials with a
+     *  reported value, each over its own denominator. Null when not reported. */
+    avg_cost_usd: number | null
+    cost_trials: number
+    avg_runtime_secs: number | null
+    runtime_trials: number
+    /** When this run was posted upstream (shown in the chip's tooltip). */
+    at: string | null
+  }
+
 export type PR = {
   number: number
   title: string
@@ -59,26 +83,11 @@ export type PR = {
   /** Where the CI dot links — the checks summary comment on the PR (falls back
    *  to the PR's Checks tab). Null when the PR carries no checks at all. */
   ci_url: string | null
-  trials: {
-    passed: number
-    total: number
-    by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "other"
-      display: string
-      results: Array<"pass" | "fail" | "none">
-    }>
-    url: string | null
-    /** True only when the comment carried the pass-rate roll-up line. The
-     *  rate·cost·time summary is shown only then, so the displayed % is always
-     *  the authoritative roll-up and never a cell-derived guess. */
-    has_rollup: boolean
-    /** Blended average cost (USD) / runtime (seconds) across trials with a
-     *  reported value, each over its own denominator. Null when not reported. */
-    avg_cost_usd: number | null
-    cost_trials: number
-    avg_runtime_secs: number | null
-    runtime_trials: number
-  } | null
+  trials: TrialRun | null
+  /** `/run agents=oracle` — the reference `solve.sh` driven through the same
+   *  harness as an agent. Its own field so an oracle run is never read as an
+   *  agent result, and never overwrites one. */
+  oracle_trials: TrialRun | null
   rubric: {
     passed: number
     failed: number

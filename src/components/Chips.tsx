@@ -16,7 +16,7 @@ import {
 import type { ComponentType, MouseEventHandler, ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatExactDateTime } from "@/lib/utils"
 import {
   DOMAIN_COLORS,
   DOMAIN_LABELS,
@@ -402,7 +402,7 @@ export function CheatChip({
     blocked: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "other"
+      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
       display: string
       results: Array<"succeeded" | "blocked" | "none">
     }>
@@ -530,6 +530,7 @@ export function RubricChip({
 }
 
 const MODEL_LABEL: Record<string, string> = {
+  oracle: "ORACLE",
   claude: "CLAUDE",
   gpt: "GPT",
   gemini: "GEMINI",
@@ -546,23 +547,31 @@ const ROLE_LABEL: Record<string, string> = {
 
 export function TrialsChip({
   trials,
+  showModelLabel = true,
 }: {
+  /** Off in the ORACLE column, where the header already names the only row. */
+  showModelLabel?: boolean
   trials: {
     passed: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "other"
+      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
       display: string
       results: Array<"pass" | "fail" | "none">
     }>
     url: string | null
+    at?: string | null
   } | null
 }) {
   if (!trials || trials.total === 0) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
-  const { passed, total, by_model, url } = trials
-  const title = `Agent trials: ${passed} of ${total} passed`
+  const { passed, total, by_model, url, at } = trials
+  // The run date matters on a merged task: a `task fix` may have changed the
+  // task since, in which case these numbers describe the pre-fix version.
+  const title =
+    `Agent trials: ${passed} of ${total} passed` +
+    (at ? ` · run ${formatExactDateTime(at)}` : "")
 
   // Fallback to summary chip if we couldn't parse per-model data.
   const inner = by_model.length === 0 ? (
@@ -573,9 +582,11 @@ export function TrialsChip({
     <span className="inline-flex flex-col gap-0.5">
       {by_model.map((m, i) => (
         <span key={i} className="inline-flex items-center gap-1.5" title={m.display}>
-          <span className="w-12 text-[10px] font-medium tracking-wider text-muted-foreground">
-            {MODEL_LABEL[m.model] ?? "OTHER"}
-          </span>
+          {showModelLabel && (
+            <span className="w-12 text-[10px] font-medium tracking-wider text-muted-foreground">
+              {MODEL_LABEL[m.model] ?? "OTHER"}
+            </span>
+          )}
           <span className="inline-flex items-center gap-px">
             {m.results.map((r, j) => {
               if (r === "pass") {

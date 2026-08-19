@@ -894,6 +894,7 @@ query($owner:String!,$name:String!,$first:Int!,$cursor:String){
           pageInfo{ hasNextPage endCursor }
           nodes{
             url
+            createdAt
             author{ login }
             body
             bodyText
@@ -916,6 +917,7 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
         pageInfo{ hasNextPage endCursor }
         nodes{
           url
+          createdAt
           author{ login }
           body
           bodyText
@@ -1257,8 +1259,18 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
     return None
 
 
+# A trial row for the oracle solution: `/run agents=oracle` runs `solve.sh`
+# through the same harness as an agent, so it posts the SAME "Agent Trial
+# Results" comment with `oracle` as the agent and no model.
+ORACLE_AGENT_RE = re.compile(r"\(\s*`?oracle`?\s*\)")
+
+
 def _classify_model(text: str) -> str:
     t = text.lower()
+    # The oracle is not a model — but it rides the same table, so it gets its
+    # own slug rather than falling into "other" and rendering as OTHER.
+    if ORACLE_AGENT_RE.search(text):
+        return "oracle"
     if "claude" in t:
         return "claude"
     # Check gemini before gpt/openai: Gemini is routed through the openai/
@@ -1271,9 +1283,18 @@ def _classify_model(text: str) -> str:
     return "other"
 
 
-def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None:
+def parse_trial_results(
+    comments: list[dict[str, Any]],
+    want_oracle: bool = False,
+) -> dict[str, Any] | None:
     """Scan PR comments for the latest `🧪 Agent Trial Results` post and
     extract both the summary totals AND the per-model trial breakdown.
+
+    Oracle runs post under the very same header, so the two are separated by
+    the agent named in the table: `want_oracle` picks the latest all-oracle
+    run, and the default picks the latest run with a real agent in it. Without
+    that split an `/run agents=oracle` would be read as the newest agent run
+    and wipe a task's agent trials out of the Trials column.
 
     The markdown body has a leading table of the shape:
 
@@ -1305,6 +1326,7 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
         # table is always present. Deriving keeps the latest /run visible instead
         # of silently falling back to an older run that happened to have a summary.
         by_model: list[dict[str, Any]] = []
+        oracle_rows = 0
         cell_pass = 0
         cell_verdict = 0  # pass + fail + errored — the count of attempted trials
         header_idx = body_md.find("Agent Trial Results")
@@ -1356,6 +1378,8 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                         else:
                             results.append("none")  # blank placeholder cell
                     if results:
+                        if ORACLE_AGENT_RE.search(model_label):
+                            oracle_rows += 1
                         by_model.append({
                             "model": _classify_model(model_label),
                             "display": display,
@@ -1364,6 +1388,12 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
                 elif in_table:
                     # First non-pipe line after entering the table = table end.
                     break
+
+        # An all-oracle table is an oracle run; anything with a real agent in it
+        # is an agent run. Mixed tables (never seen in practice) count as agent
+        # runs, since that's the column their agent rows belong in.
+        if (bool(by_model) and oracle_rows == len(by_model)) != want_oracle:
+            continue
 
         # The auto-posted summary line is authoritative when present; otherwise
         # fall back to the counts derived from the table above.
@@ -1396,6 +1426,8 @@ def parse_trial_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             "total": total,
             "by_model": by_model,
             "url": c.get("url"),
+            # When this run was posted (shown in the chip's tooltip).
+            "at": c.get("createdAt"),
             # True only when the comment carried the pass-rate roll-up line. The
             # summary (rate · cost · time) is shown only in that case, so the
             # displayed % is always the authoritative roll-up value and never a
@@ -1689,44 +1721,19 @@ def build_prs(
             proposals_by_num[p["proposal_number"]] = p
         proposals_by_discussion[p["number"]] = p
 
-    # First pass: collect `task fix` PRs and group them by the task directory
-    # they touch. This lets us attach a `fixes` list to each `new task` PR row
-    # without showing fix PRs as standalone entries in the dashboard.
-    fixes_by_task_dir: dict[str, list[dict[str, Any]]] = {}
-    for n in nodes:
-        labels = [lab["name"] for lab in n["labels"]["nodes"]]
-        if "task fix" not in labels:
-            continue
-        files = [f["path"] for f in (n.get("files", {}).get("nodes", []) or [])]
-        fix_task_dir: str | None = None
-        for path in files:
-            parts = path.split("/")
-            if len(parts) >= 5 and parts[0] == "tasks":
-                fix_task_dir = "/".join(parts[:4])
-                break
-        if not fix_task_dir:
-            continue
-        fixes_by_task_dir.setdefault(fix_task_dir, []).append({
-            "number": n["number"],
-            "title": n["title"],
-            "url": n["url"],
-            "state": (n.get("state") or "OPEN").lower(),
-            "merged_at": n.get("mergedAt"),
-            "closed_at": n.get("closedAt"),
-            "created_at": n["createdAt"],
-            "author": {
-                "login": (n.get("author") or {}).get("login", "ghost"),
-                "avatar_url": (n.get("author") or {}).get("avatarUrl"),
-            },
-        })
+    def build_row(
+        n: dict[str, Any],
+        labels: list[str],
+        task_dir_hint: str | None = None,
+    ) -> dict[str, Any]:
+        """One dashboard row from one PR node.
 
-    rows = []
-    for n in nodes:
-        labels = [lab["name"] for lab in n["labels"]["nodes"]]
-        # Source of truth = upstream labels. Mislabeled PRs are an upstream
-        # issue to fix there, not here.
-        if "new task" not in labels:
-            continue
+        Shared by `new task` PRs (the rows themselves) and `task fix` PRs (the
+        expandable subrows), so a fix fills the very same columns — its own CI,
+        rubric, trials and reviewers — instead of a stub. `task_dir_hint` is the
+        fix's task directory: a fix usually touches an EXISTING task.toml rather
+        than adding one, so the ADDED-file detection below finds nothing.
+        """
         file_nodes = n.get("files", {}).get("nodes", []) or []
         files = [f["path"] for f in file_nodes]
 
@@ -1800,6 +1807,9 @@ def build_prs(
         # shows, and can never disagree with it.
         reviewers = build_reviewers(n, reviewer_roles) if state != "closed" else []
         trials = parse_trial_results(comments)
+        # `/run agents=oracle` — the reference solution through the same harness.
+        # Its own column, so it can't be mistaken for an agent result.
+        oracle_trials = parse_trial_results(comments, want_oracle=True)
         rubric = parse_rubric_review(comments)
         cheat = parse_cheat_results(comments)
         linked = find_linked_proposal(
@@ -1873,6 +1883,7 @@ def build_prs(
             "ci": ci,
             "ci_url": ci_url,
             "trials": trials,
+            "oracle_trials": oracle_trials,
             "rubric": rubric,
             "cheat": cheat,
             "linked_proposal": linked_proposal,

@@ -186,6 +186,8 @@ function Body({ pr, fixOf }: { pr: PR; fixOf: PR | null }) {
             </LabeledChip>
           )}
           <TrialsChip trials={pr.trials} />
+          {/* No label wrapper: the row inside already reads ORACLE. */}
+          <TrialsChip trials={pr.oracle_trials} />
           <a
             href={pr.url}
             target="_blank"
