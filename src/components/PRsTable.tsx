@@ -903,32 +903,6 @@ export function PRsTable({
         },
       },
       {
-        id: "author_fit",
-        size: 150,
-        header: () => (
-          <ColumnFilter
-            title="AUTHOR FIT"
-            selected={fit}
-            onToggle={(v) => setFit(toggleVal(fit, v))}
-            onClearAll={() => setFit([])}
-            options={FIT_FILTER_OPTIONS}
-            {...openProps("fit")}
-          />
-        ),
-        cell: ({ row }) => {
-          const p = row.original
-          if (!p.author_fit && !p.coi) {
-            return <span className="text-xs text-muted-foreground">—</span>
-          }
-          return (
-            <div className="flex flex-col items-start gap-1">
-              <AuthorFitChip fit={p.author_fit} url={p.linked_proposal?.url ?? null} />
-              {p.coi && <CoiBadge coi={p.coi} fromProposal />}
-            </div>
-          )
-        },
-      },
-      {
         accessorKey: "oracle_trials",
         // Narrow: the cell is a dot or two, with no model label.
         size: 72,
@@ -969,6 +943,32 @@ export function PRsTable({
           return (
             <div className="flex flex-col gap-1">
               <TrialsChip trials={t} showModelLabel={false} />
+            </div>
+          )
+        },
+      },
+      {
+        id: "author_fit",
+        size: 150,
+        header: () => (
+          <ColumnFilter
+            title="AUTHOR FIT"
+            selected={fit}
+            onToggle={(v) => setFit(toggleVal(fit, v))}
+            onClearAll={() => setFit([])}
+            options={FIT_FILTER_OPTIONS}
+            {...openProps("fit")}
+          />
+        ),
+        cell: ({ row }) => {
+          const p = row.original
+          if (!p.author_fit && !p.coi) {
+            return <span className="text-xs text-muted-foreground">—</span>
+          }
+          return (
+            <div className="flex flex-col items-start gap-1">
+              <AuthorFitChip fit={p.author_fit} url={p.linked_proposal?.url ?? null} />
+              {p.coi && <CoiBadge coi={p.coi} fromProposal />}
             </div>
           )
         },
