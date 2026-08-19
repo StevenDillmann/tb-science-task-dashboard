@@ -55,6 +55,14 @@ export default function App() {
     () => (data ? data.prs.filter((p) => !p.is_draft) : []),
     [data],
   )
+  // `task fix` PRs get their own tab so every fix is visible — including the
+  // ones no task row could be matched to (task outside the fetched window, or
+  // upstream moved its directory). They ALSO show as subrows under the task
+  // they fix, for reading one task's history in place.
+  const visibleFixes = useMemo(
+    () => (data ? (data.fixes ?? []).filter((p) => !p.is_draft) : []),
+    [data],
+  )
 
   useEffect(() => {
     loadData()
@@ -225,6 +233,12 @@ export default function App() {
                     {visiblePRs.length}
                   </Badge>
                 </TabsTrigger>
+                <TabsTrigger value="fixes">
+                  Task Fixes
+                  <Badge variant="secondary" className="ml-2">
+                    {visibleFixes.length}
+                  </Badge>
+                </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
 
@@ -246,6 +260,17 @@ export default function App() {
                   prs={visiblePRs}
                   externalField={tab === "prs" ? forcedField : null}
                   externalState={tab === "prs" ? forcedPRState : null}
+                  onExternalFieldConsumed={() => {
+                    setForcedField(null)
+                    setForcedPRState(null)
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="fixes" className="mt-6">
+                <PRsTable
+                  prs={visibleFixes}
+                  externalField={tab === "fixes" ? forcedField : null}
+                  externalState={tab === "fixes" ? forcedPRState : null}
                   onExternalFieldConsumed={() => {
                     setForcedField(null)
                     setForcedPRState(null)

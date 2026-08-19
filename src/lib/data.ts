@@ -133,6 +133,10 @@ export type PR = {
   // nested inside the parent and so never reach the filters, the row count,
   // or any aggregate.
   fix_rows: PR[]
+  // On a `task fix` row: the task PRs it fixes. Empty when no task row matches
+  // (the task is outside the fetched window, or upstream moved its directory) —
+  // the fix is still listed in the Task Fixes tab.
+  fix_of?: number[]
 }
 
 export type ProposalState = "open" | "closed"
@@ -204,6 +208,9 @@ export type Data = {
   field_labels: Record<string, string>
   field_to_domain: Record<string, Domain>
   prs: PR[]
+  /** Every `task fix` PR as its own row. Also nested on the task rows they
+   *  touch as `fix_rows`; unmatched fixes appear only here. */
+  fixes: PR[]
   proposals: Proposal[]
   coverage: Coverage
   stats: Stats

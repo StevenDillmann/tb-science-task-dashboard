@@ -1739,7 +1739,8 @@ def build_prs(
     field_to_domain: dict[str, str],
     task_locations: dict[str, tuple[str, str]] | None = None,
     proposals: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Returns (task rows, `task fix` rows)."""
     proposals_by_num: dict[int, dict[str, Any]] = {}
     proposals_by_discussion: dict[int, dict[str, Any]] = {}
     for p in proposals or []:
@@ -1934,26 +1935,32 @@ def build_prs(
             "labels": labels,
         }
 
-    # First pass: build a full row for every `task fix` PR, grouped by the task
-    # directory it touches. Fix PRs are never rows of their own — they hang off
-    # their parent task's row as `fix_rows` and surface only when expanded.
-    fix_rows_by_task_dir: dict[str, list[dict[str, Any]]] = {}
+    # First pass: a full row for EVERY `task fix` PR. These are returned as
+    # their own list (the Task Fixes tab) so a fix is always visible, and are
+    # additionally hung off the task rows they touch as `fix_rows` for the
+    # in-place subrow view. A fix that can't be matched to a task row still
+    # appears in the tab — it just has no parent.
+    fix_rows: list[dict[str, Any]] = []
+    fix_dirs: dict[int, list[str]] = {}  # fix PR number -> task dirs it touches
     for n in nodes:
         labels = [lab["name"] for lab in n["labels"]["nodes"]]
         if "task fix" not in labels:
             continue
         files = [f["path"] for f in (n.get("files", {}).get("nodes", []) or [])]
-        fix_task_dir: str | None = None
+        # EVERY task directory the fix touches, not just the first: a repo-wide
+        # fix (e.g. a spell-check pass) spans several tasks and belongs under
+        # each of them.
+        dirs: list[str] = []
         for path in files:
             parts = path.split("/")
             if len(parts) >= 5 and parts[0] == "tasks":
-                fix_task_dir = "/".join(parts[:4])
-                break
-        if not fix_task_dir:
-            continue
-        fix_rows_by_task_dir.setdefault(fix_task_dir, []).append(
-            build_row(n, labels, task_dir_hint=fix_task_dir)
-        )
+                d = "/".join(parts[:4])
+                if d not in dirs:
+                    dirs.append(d)
+        fix_dirs[n["number"]] = dirs
+        row = build_row(n, labels, task_dir_hint=dirs[0] if dirs else None)
+        row["fix_of"] = []
+        fix_rows.append(row)
 
     rows = []
     for n in nodes:
@@ -1963,16 +1970,34 @@ def build_prs(
         if "new task" not in labels:
             continue
         row = build_row(n, labels)
-        task_dir = row["task_dir"]
-        # Closed (abandoned) fixes are kept: the subrows are opt-in behind a
-        # click, so showing the full fix history beats hiding part of it. Their
-        # state is on the row itself.
-        row["fix_rows"] = sorted(
-            fix_rows_by_task_dir.get(task_dir, []) if task_dir else [],
-            key=lambda f: f["number"],
-        )
+        row["fix_rows"] = []
         rows.append(row)
-    return rows
+
+    # Second pass: match fixes to task rows. Exact directory first; then by task
+    # SLUG (the last path segment), because upstream moves tasks between
+    # subfields — `physical-sciences/chemistry/x` vs
+    # `physical-sciences/chemistry-and-materials/x` is the same task, and an
+    # exact-string match silently loses the link.
+    rows_by_dir: dict[str, list[dict[str, Any]]] = {}
+    rows_by_slug: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        if row["task_dir"]:
+            rows_by_dir.setdefault(row["task_dir"], []).append(row)
+            rows_by_slug.setdefault(row["task_dir"].split("/")[-1], []).append(row)
+    for fix in fix_rows:
+        for d in fix_dirs.get(fix["number"], []):
+            parents = rows_by_dir.get(d) or rows_by_slug.get(d.split("/")[-1]) or []
+            for parent in parents:
+                # Closed (abandoned) fixes are kept: the subrows are opt-in
+                # behind a click, so the full fix history beats a partial one.
+                # Their state is on the row itself.
+                if fix not in parent["fix_rows"]:
+                    parent["fix_rows"].append(fix)
+                if parent["number"] not in fix["fix_of"]:
+                    fix["fix_of"].append(parent["number"])
+    for row in rows:
+        row["fix_rows"].sort(key=lambda f: f["number"])
+    return rows, sorted(fix_rows, key=lambda f: -f["number"])
 
 
 def build_proposals(
@@ -2168,7 +2193,9 @@ def main() -> int:
     # We pass an empty pr_titles list initially since has_pr can still update
     # after PR build, but the PR's linked_proposal points back here.
     proposals_pre = build_proposals(discussion_nodes, now, [], field_to_domain)
-    prs = build_prs(pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre)
+    prs, fixes = build_prs(
+        pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre
+    )
     proposals = build_proposals(
         discussion_nodes, now, [p["title"] for p in prs], field_to_domain
     )
@@ -2185,6 +2212,10 @@ def main() -> int:
         "field_labels": field_labels,
         "field_to_domain": field_to_domain,
         "prs": prs,
+        # Every `task fix` PR as its own row (the Task Fixes tab). Also nested
+        # on the task rows they touch as `fix_rows`; a fix that matches no task
+        # row is visible here and only here.
+        "fixes": fixes,
         "proposals": proposals,
         "coverage": coverage,
         "stats": {

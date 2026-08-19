@@ -531,15 +531,26 @@ export function PRsTable({
           // On a fix subrow, say which task PR it belongs to. It goes here
           // rather than in the title so every column stays aligned with the
           // parent's.
-          const parentNum = row.depth > 0 ? row.getParentRow()?.original.number : null
+          // A subrow knows its parent from the table; a fix listed in the Task
+          // Fixes tab is top-level, so it carries the numbers on the row.
+          const parentNums =
+            row.depth > 0
+              ? [row.getParentRow()?.original.number].filter(
+                  (n): n is number => typeof n === "number",
+                )
+              : (row.original.fix_of ?? [])
           return (
             <span className="inline-flex flex-col items-start gap-1">
-              {parentNum != null && (
+              {parentNums.length > 0 && (
+                /* One parent fits; a fix spanning several tasks (or matching a
+                   task's closed duplicates) would overflow the column, so the
+                   rest collapse into +N with the full list in the tooltip. */
                 <span
                   className="whitespace-nowrap font-mono text-[10px] leading-none text-muted-foreground"
-                  title={`Fix for task PR #${parentNum} — the row above`}
+                  title={`Fix for task PR ${parentNums.map((n) => `#${n}`).join(", ")}`}
                 >
-                  ↳ #{parentNum}
+                  ↳ #{parentNums[0]}
+                  {parentNums.length > 1 && ` +${parentNums.length - 1}`}
                 </span>
               )}
               <a
