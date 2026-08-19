@@ -1732,6 +1732,59 @@ def fetch_discussions(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     return merge_nodes(base, changed), "ok"
 
 
+def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
+    """Group task directories that are the SAME task under different paths.
+
+    Upstream moves tasks — between subfields, or by renaming the task itself —
+    and a move usually lands in a `task fix` PR, not the task PR. The task PR
+    therefore keeps claiming the OLD directory forever, so a later fix touching
+    the NEW one matches nothing by directory or slug and loses its provenance.
+
+    The move is recoverable from the PR that performed it: GitHub reports the
+    files under the new directory as RENAMED and the old directory's as DELETED.
+    Requiring a RENAMED file (rather than accepting ADD+DELETE) keeps a PR that
+    adds one task while deleting an unrelated one from being read as a move.
+
+    Unions are transitive, so a task moved twice still resolves to one group.
+    Returns dir -> every dir in its group (including itself).
+    """
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for n in nodes:
+        by_dir: dict[str, set[str]] = {}
+        for f in n.get("files", {}).get("nodes", []) or []:
+            parts = (f.get("path") or "").split("/")
+            if len(parts) >= 5 and parts[0] == "tasks":
+                by_dir.setdefault("/".join(parts[:4]), set()).add(f.get("changeType") or "")
+        renamed = [d for d, c in by_dir.items() if "RENAMED" in c]
+        gone = [
+            d
+            for d, c in by_dir.items()
+            if "DELETED" in c and not ({"RENAMED", "ADDED"} & c)
+        ]
+        if len(renamed) != 1 or not gone:
+            continue
+        for d in gone:
+            union(d, renamed[0])
+
+    groups: dict[str, set[str]] = {}
+    for d in list(parent):
+        groups.setdefault(find(d), set()).add(d)
+    return {d: groups[find(d)] for d in parent}
+
+
 def build_prs(
     nodes: list[dict[str, Any]],
     now: datetime,
@@ -1984,9 +2037,16 @@ def build_prs(
         if row["task_dir"]:
             rows_by_dir.setdefault(row["task_dir"], []).append(row)
             rows_by_slug.setdefault(row["task_dir"].split("/")[-1], []).append(row)
+    # Third route, for a task whose directory MOVED after its PR merged: the
+    # rename tells us the old and new paths are one task (see build_dir_aliases).
+    aliases = build_dir_aliases(nodes)
     for fix in fix_rows:
         for d in fix_dirs.get(fix["number"], []):
-            parents = rows_by_dir.get(d) or rows_by_slug.get(d.split("/")[-1]) or []
+            parents: list[dict[str, Any]] = []
+            for cand in [d] + sorted(aliases.get(d, set()) - {d}):
+                parents = rows_by_dir.get(cand) or rows_by_slug.get(cand.split("/")[-1]) or []
+                if parents:
+                    break
             for parent in parents:
                 # Closed (abandoned) fixes are kept: the subrows are opt-in
                 # behind a click, so the full fix history beats a partial one.
