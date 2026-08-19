@@ -51,23 +51,29 @@ function blobUrl(sha: string, path: string): string {
 
 export function PRSheet({
   pr,
+  fixOf,
   open,
   onOpenChange,
 }: {
   pr: PR | null
+  /** Set when `pr` is a `task fix` opened from a subrow: the task PR it fixes.
+   *  A fix carries no task identity of its own (no linked proposal, and a title
+   *  that names the bug, not the task), so the parent is the only place that
+   *  context lives. */
+  fixOf?: PR | null
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
-        {pr && <Body pr={pr} />}
+        {pr && <Body pr={pr} fixOf={fixOf ?? null} />}
       </SheetContent>
     </Sheet>
   )
 }
 
-function Body({ pr }: { pr: PR }) {
+function Body({ pr, fixOf }: { pr: PR; fixOf: PR | null }) {
   // The active "page" in the panel — either "description" or a file path
   // relative to the task directory.
   const [active, setActive] = useState<string>("description")
@@ -114,19 +120,33 @@ function Body({ pr }: { pr: PR }) {
             )}
           </div>
         )}
-        {pr.fixes && pr.fixes.length > 0 && (
+        {fixOf && (
+          <div className="pt-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Fixes task</span>{" "}
+            <a
+              href={fixOf.url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[11px] font-semibold text-muted-foreground hover:underline underline-offset-2"
+            >
+              #{fixOf.number}
+            </a>
+            <span className="ml-2 italic">— {fixOf.title}</span>
+          </div>
+        )}
+        {pr.fix_rows && pr.fix_rows.length > 0 && (
           <div className="pt-1 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">
               Task fixes:
             </span>{" "}
-            {pr.fixes.map((f, i) => (
+            {pr.fix_rows.map((f, i) => (
               <span key={f.number}>
                 {i > 0 && ", "}
                 <a
                   href={f.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-mono text-[11px] font-semibold uppercase tracking-wider text-blue-700 hover:underline underline-offset-2 dark:text-blue-400"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:underline underline-offset-2"
                   title={`${f.title} (${f.state})`}
                 >
                   fix #{f.number}

@@ -2,10 +2,12 @@ import { Fragment, useEffect, useMemo, useState } from "react"
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type ExpandedState,
   type SortingState,
 } from "@tanstack/react-table"
 import {
@@ -399,12 +401,24 @@ export function PRsTable({
   // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
   // on the Task column, since that's where the chips render.
   const [tags, setTags] = useUrlState<string[]>("tags", [], stringArrayCodec)
+  // Which task rows have their fix subrows open. Deliberately NOT in the URL:
+  // it's a transient reading gesture, not a view worth sharing.
+  const [expanded, setExpanded] = useState<ExpandedState>({})
   // The opened PR, resolved from its number in the URL (looked up in the full
-  // list so a deep link opens the panel regardless of the active filters).
-  const active = useMemo(
-    () => (activeNum == null ? null : (prs.find((p) => p.number === activeNum) ?? null)),
-    [prs, activeNum],
-  )
+  // list so a deep link opens the panel regardless of the active filters). Fix
+  // PRs live inside their parent's `fix_rows`, so they are searched too —
+  // otherwise clicking a fix subrow's title would open an empty sheet. `fixOf`
+  // carries the parent, which is the only place the fix's task context lives.
+  const active = useMemo(() => {
+    if (activeNum == null) return null
+    const parent = prs.find((p) => p.number === activeNum)
+    if (parent) return { pr: parent, fixOf: null as PR | null }
+    for (const p of prs) {
+      const fix = p.fix_rows?.find((f) => f.number === activeNum)
+      if (fix) return { pr: fix, fixOf: p }
+    }
+    return null
+  }, [prs, activeNum])
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
@@ -506,20 +520,34 @@ export function PRsTable({
         accessorKey: "number",
         size: 70,
         header: "#",
-        cell: ({ row }) => (
-          <span className="inline-flex flex-col items-start gap-1">
-            <a
-              href={row.original.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:underline"
-            >
-              {row.original.number}
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            <StatePill tone={row.original.state} label={row.original.state} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          // On a fix subrow, say which task PR it belongs to. It goes here
+          // rather than in the title so every column stays aligned with the
+          // parent's.
+          const parentNum = row.depth > 0 ? row.getParentRow()?.original.number : null
+          return (
+            <span className="inline-flex flex-col items-start gap-1">
+              {parentNum != null && (
+                <span
+                  className="whitespace-nowrap font-mono text-[10px] leading-none text-muted-foreground"
+                  title={`Fix for task PR #${parentNum} — the row above`}
+                >
+                  ↳ #{parentNum}
+                </span>
+              )}
+              <a
+                href={row.original.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:underline"
+              >
+                {row.original.number}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <StatePill tone={row.original.state} label={row.original.state} />
+            </span>
+          )
+        },
       },
       {
         accessorKey: "title",
@@ -549,7 +577,8 @@ export function PRsTable({
           )
         },
         cell: ({ row }) => {
-          const fixes = row.original.fixes ?? []
+          const fixes = row.original.fix_rows ?? []
+          const expandedRow = row.getIsExpanded()
           return (
             <div className="flex flex-col gap-1">
               {/* Not a flex row: the chips ride in the text flow, so each behaves
@@ -571,23 +600,47 @@ export function PRsTable({
                 ))}
               </div>
               {fixes.length > 0 && (
-                <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-0.5">
-                  {/* The chip goes to the fix PR on GitHub, not to the parent's
-                      sheet — the sheet has nothing more to say about a fix than
-                      the chip already shows, and the fix itself lives upstream. */}
-                  {fixes.map((f) => (
-                    <a
-                      key={f.number}
-                      href={f.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono text-[10px] font-semibold uppercase tracking-wider text-blue-700 hover:underline underline-offset-2 dark:text-blue-400"
-                      title={`#${f.number} (${f.state}) — ${f.title}`}
-                    >
-                      fix #{f.number}
-                    </a>
-                  ))}
-                </div>
+                /* The chips now EXPAND the fix as a subrow carrying the same
+                   columns — its own CI, rubric and trials — rather than leaving
+                   for GitHub. Nothing is lost: the subrow's own # cell links
+                   upstream, exactly as a task row's does. One toggle serves the
+                   whole group; a task rarely has more than two fixes. */
+                <button
+                  type="button"
+                  onClick={() => row.toggleExpanded()}
+                  aria-expanded={expandedRow}
+                  className={cn(
+                    "-ml-1 inline-flex w-fit items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted-foreground/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-muted-foreground/60",
+                    // Reads as "on" while its fixes are showing.
+                    expandedRow && "bg-muted-foreground/10 text-foreground",
+                  )}
+                  title={
+                    expandedRow
+                      ? "Hide the fix PRs"
+                      : fixes.map((f) => `#${f.number} (${f.state}) — ${f.title}`).join("\n")
+                  }
+                >
+                  <ChevronRight
+                    className={cn(
+                      "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+                      expandedRow && "rotate-90",
+                    )}
+                  />
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {fixes.length} {fixes.length === 1 ? "fix" : "fixes"}
+                  </span>
+                  {/* Collapsed, the numbers are worth scanning; expanded, they
+                      are right below in the rows themselves. */}
+                  {!expandedRow &&
+                    fixes.map((f) => (
+                      <span
+                        key={f.number}
+                        className="font-mono text-[10px] tracking-wider text-muted-foreground/70"
+                      >
+                        #{f.number}
+                      </span>
+                    ))}
+                </button>
               )}
             </div>
           )
@@ -952,11 +1005,18 @@ export function PRsTable({
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting },
+    state: { sorting, expanded },
     onSortingChange: setSorting,
+    onExpandedChange: setExpanded,
+    // A task's `task fix` PRs are its subrows. They are DISPLAY-ONLY: `filtered`
+    // is computed over the top-level `prs` (see the memo above), so a fix can
+    // never pull its parent into a filter the parent doesn't match, and never
+    // lands in the row count or any aggregate.
+    getSubRows: (row) => row.fix_rows,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
   })
 
   const anyChip = !!(
@@ -996,7 +1056,8 @@ export function PRsTable({
   return (
     <>
     <PRSheet
-      pr={active}
+      pr={active?.pr ?? null}
+      fixOf={active?.fixOf ?? null}
       open={active !== null}
       onOpenChange={(v) => !v && setActiveNum(null)}
     />
@@ -1159,7 +1220,30 @@ export function PRsTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                /* Fix subrows read as attached to the task above them: tinted,
+                   with the title cell indented (see the title column). */
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    // Only the FIXES get the grey band — the task row keeps the
+                    // ordinary row background so it still reads as the original.
+                    // In dark, --muted (oklch .269) reads clearly against
+                    // --background (.145); in light the two are 3% apart, so
+                    // light gets a deeper neutral instead.
+                    row.depth > 0 &&
+                      "bg-neutral-200/70 hover:bg-neutral-200 dark:bg-muted dark:hover:bg-muted",
+                    // The left rule runs down the whole group — including the
+                    // expanded task row, where it's the marker that says "the
+                    // rows below are mine" without touching the background.
+                    (row.depth > 0 || (row.getIsExpanded() && row.subRows.length > 0)) &&
+                      "border-l-2 border-l-muted-foreground/40",
+                    // Drop the divider on every row of the group except its last.
+                    (row.getIsExpanded() && row.subRows.length > 0) ||
+                      (row.depth > 0 && row.index < (row.getParentRow()?.subRows.length ?? 0) - 1)
+                      ? "border-b-0"
+                      : undefined,
+                  )}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

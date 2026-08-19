@@ -119,16 +119,11 @@ export type PR = {
   merged_at: string | null
   closed_at: string | null
   labels: string[]
-  fixes: Array<{
-    number: number
-    title: string
-    url: string
-    state: PRState
-    merged_at: string | null
-    closed_at: string | null
-    created_at: string
-    author: User
-  }>
+  // `task fix` PRs touching this task's directory. Full rows, so an expanded
+  // fix subrow fills the same columns as its parent. Display-only: they are
+  // nested inside the parent and so never reach the filters, the row count,
+  // or any aggregate.
+  fix_rows: PR[]
 }
 
 export type ProposalState = "open" | "closed"

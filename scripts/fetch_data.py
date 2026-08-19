@@ -1750,6 +1750,8 @@ def build_prs(
                     if len(parts) == 5 and parts[0] == "tasks":
                         task_dir = "/".join(parts[:4])
                         break
+        # A fix PR that touches no task.toml at all still belongs to a task.
+        task_dir = task_dir or task_dir_hint
         raw_field: str | None = None
         if not subfield:
             domain, subfield, raw_field = field_from_title_fallback(
@@ -1823,7 +1825,7 @@ def build_prs(
         # is resolved from the actual review statuses rather than by precedence.
         ball = derive_ball_in_court(labels, reviewers) if state == "open" else None
         ball_at = ball_since(n, ball)
-        rows.append({
+        return {
             "number": n["number"],
             "title": n["title"],
             "url": n["url"],
@@ -1893,11 +1895,46 @@ def build_prs(
             "merged_at": n.get("mergedAt"),
             "closed_at": n.get("closedAt"),
             "labels": labels,
-            "fixes": sorted(
-                fixes_by_task_dir.get(task_dir, []) if task_dir else [],
-                key=lambda f: f["number"],
-            ),
-        })
+        }
+
+    # First pass: build a full row for every `task fix` PR, grouped by the task
+    # directory it touches. Fix PRs are never rows of their own — they hang off
+    # their parent task's row as `fix_rows` and surface only when expanded.
+    fix_rows_by_task_dir: dict[str, list[dict[str, Any]]] = {}
+    for n in nodes:
+        labels = [lab["name"] for lab in n["labels"]["nodes"]]
+        if "task fix" not in labels:
+            continue
+        files = [f["path"] for f in (n.get("files", {}).get("nodes", []) or [])]
+        fix_task_dir: str | None = None
+        for path in files:
+            parts = path.split("/")
+            if len(parts) >= 5 and parts[0] == "tasks":
+                fix_task_dir = "/".join(parts[:4])
+                break
+        if not fix_task_dir:
+            continue
+        fix_rows_by_task_dir.setdefault(fix_task_dir, []).append(
+            build_row(n, labels, task_dir_hint=fix_task_dir)
+        )
+
+    rows = []
+    for n in nodes:
+        labels = [lab["name"] for lab in n["labels"]["nodes"]]
+        # Source of truth = upstream labels. Mislabeled PRs are an upstream
+        # issue to fix there, not here.
+        if "new task" not in labels:
+            continue
+        row = build_row(n, labels)
+        task_dir = row["task_dir"]
+        # Closed (abandoned) fixes are kept: the subrows are opt-in behind a
+        # click, so showing the full fix history beats hiding part of it. Their
+        # state is on the row itself.
+        row["fix_rows"] = sorted(
+            fix_rows_by_task_dir.get(task_dir, []) if task_dir else [],
+            key=lambda f: f["number"],
+        )
+        rows.append(row)
     return rows
 
 
