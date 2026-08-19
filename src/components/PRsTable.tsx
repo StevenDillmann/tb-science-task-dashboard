@@ -846,51 +846,6 @@ export function PRsTable({
         },
       },
       {
-        accessorKey: "oracle_trials",
-        // Narrow: the cell is a dot or two, with no model label.
-        size: 72,
-        // `/run agents=oracle` — the reference solution through the trial
-        // harness. Its own column rather than a row inside FRONTIER TRIALS: it
-        // is not an agent result, and mixing the two made the newest oracle run
-        // read as the newest agent run.
-        sortingFn: (a, b) => {
-          const pick = (r: typeof a) => {
-            const t = r.original.oracle_trials
-            return t && t.total ? t.passed / t.total : -1
-          }
-          return pick(a) - pick(b)
-        },
-        header: () => {
-          const cur = sorting[0]?.id === "oracle_trials" ? sorting[0] : null
-          return (
-            <ColumnFilter
-              title="ORACLE"
-              value={null}
-              onChange={() => {}}
-              options={[]}
-              sortOptions={ORACLE_SORT_OPTIONS}
-              sortValue={cur ? `pass:${cur.desc ? "desc" : "asc"}` : null}
-              onSortChange={(v) =>
-                setSorting(
-                  v
-                    ? [{ id: "oracle_trials", desc: v.endsWith(":desc") }]
-                    : [{ id: "number", desc: true }],
-                )
-              }
-              {...openProps("oracle_trials")}
-            />
-          )
-        },
-        cell: ({ row }) => {
-          const t = row.original.oracle_trials
-          return (
-            <div className="flex flex-col gap-1">
-              <TrialsChip trials={t} showModelLabel={false} />
-            </div>
-          )
-        },
-      },
-      {
         accessorKey: "cheat",
         size: 180,
         sortingFn: (a, b) => {
@@ -969,6 +924,51 @@ export function PRsTable({
             <div className="flex flex-col items-start gap-1">
               <AuthorFitChip fit={p.author_fit} url={p.linked_proposal?.url ?? null} />
               {p.coi && <CoiBadge coi={p.coi} fromProposal />}
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: "oracle_trials",
+        // Narrow: the cell is a dot or two, with no model label.
+        size: 72,
+        // `/run agents=oracle` — the reference solution through the trial
+        // harness. Its own column rather than a row inside FRONTIER TRIALS: it
+        // is not an agent result, and mixing the two made the newest oracle run
+        // read as the newest agent run.
+        sortingFn: (a, b) => {
+          const pick = (r: typeof a) => {
+            const t = r.original.oracle_trials
+            return t && t.total ? t.passed / t.total : -1
+          }
+          return pick(a) - pick(b)
+        },
+        header: () => {
+          const cur = sorting[0]?.id === "oracle_trials" ? sorting[0] : null
+          return (
+            <ColumnFilter
+              title="ORACLE"
+              value={null}
+              onChange={() => {}}
+              options={[]}
+              sortOptions={ORACLE_SORT_OPTIONS}
+              sortValue={cur ? `pass:${cur.desc ? "desc" : "asc"}` : null}
+              onSortChange={(v) =>
+                setSorting(
+                  v
+                    ? [{ id: "oracle_trials", desc: v.endsWith(":desc") }]
+                    : [{ id: "number", desc: true }],
+                )
+              }
+              {...openProps("oracle_trials")}
+            />
+          )
+        },
+        cell: ({ row }) => {
+          const t = row.original.oracle_trials
+          return (
+            <div className="flex flex-col gap-1">
+              <TrialsChip trials={t} showModelLabel={false} />
             </div>
           )
         },
