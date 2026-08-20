@@ -1448,7 +1448,16 @@ def parse_trial_results(
                         if ORACLE_AGENT_RE.search(model_label):
                             oracle_rows += 1
                         by_model.append({
-                            "model": _classify_model(model_label),
+                            # Under the oracle heading the first column is the
+                            # TASK, not a model — `/oracle`'s own renderer
+                            # dropped the agent column — so classify by the
+                            # comment we're in rather than by the row label,
+                            # which would otherwise read OTHER.
+                            "model": (
+                                "oracle"
+                                if header == ORACLE_HEADER
+                                else _classify_model(model_label)
+                            ),
                             "display": display,
                             "results": results,
                         })
