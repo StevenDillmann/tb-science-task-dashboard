@@ -1019,6 +1019,11 @@ def backfill_pr_comments(nodes: list[dict[str, Any]]) -> None:
 
 
 TRIAL_HEADER = "Agent Trial Results"
+# `/run agents=oracle` posts under TRIAL_HEADER with `oracle` as the agent, but
+# the `/oracle` shorthand posts its own comment titled "Oracle Validation
+# Results" instead. Same table shape either way — only the heading differs — so
+# both have to be recognised or an /oracle run is invisible.
+ORACLE_HEADER = "Oracle Validation Results"
 # The auto-posted job-summary line has the canonical totals, e.g. "0 of 8
 # trials passed". Counting raw emojis in the comment body double-counts the
 # per-criterion sub-tables; this is the reliable signal.
@@ -1369,7 +1374,12 @@ def parse_trial_results(
         body_md = c.get("body", "") or ""
         if author not in LLM_REVIEW_BOTS:
             continue
-        if TRIAL_HEADER not in body_text:
+        header = None
+        if TRIAL_HEADER in body_text:
+            header = TRIAL_HEADER
+        elif want_oracle and ORACLE_HEADER in body_text:
+            header = ORACLE_HEADER
+        if header is None:
             continue
         # The cheat comment's header ("Cheating Agent Trial Results") CONTAINS
         # the trial header, so skip it here — otherwise the latest cheat run gets
@@ -1386,7 +1396,7 @@ def parse_trial_results(
         oracle_rows = 0
         cell_pass = 0
         cell_verdict = 0  # pass + fail + errored — the count of attempted trials
-        header_idx = body_md.find("Agent Trial Results")
+        header_idx = body_md.find(header)
         if header_idx >= 0:
             tail = body_md[header_idx:]
             # First non-trivial table is the trial table.
@@ -1449,7 +1459,10 @@ def parse_trial_results(
         # An all-oracle table is an oracle run; anything with a real agent in it
         # is an agent run. Mixed tables (never seen in practice) count as agent
         # runs, since that's the column their agent rows belong in.
-        if (bool(by_model) and oracle_rows == len(by_model)) != want_oracle:
+        is_oracle = header == ORACLE_HEADER or (
+            bool(by_model) and oracle_rows == len(by_model)
+        )
+        if is_oracle != want_oracle:
             continue
 
         # The auto-posted summary line is authoritative when present; otherwise
