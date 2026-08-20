@@ -156,11 +156,15 @@ export default function App() {
           </a>
           <div className="flex flex-wrap items-center gap-3">
             {data && (
-              <span className="text-xs text-muted-foreground">
-                updated {formatGeneratedAt(data.generated_at)}
+              /* Stacked, right-aligned: the coverage verdict is a footnote to
+                 the timestamp — both answer "how much do I trust this view?" */
+              <span className="flex flex-col items-end gap-0.5">
+                <span className="text-xs text-muted-foreground">
+                  updated {formatGeneratedAt(data.generated_at)}
+                </span>
+                <CoverageBadge data={data} />
               </span>
             )}
-            {data && <CoverageBadge data={data} />}
             <ThemeToggle />
             <a
               href={WEBSITE_URL}
