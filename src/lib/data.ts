@@ -201,12 +201,26 @@ export type Stats = {
   needs_author: number
 }
 
+/** Per-source completeness, each count measured against GitHub's own
+ *  totalCount. `complete: false` means rows are missing — the header says so
+ *  rather than letting a short list look whole. */
+export type CoverageCheck = {
+  complete: boolean
+  sources: Record<string, { shown: number; upstream: number }>
+}
+
 export type Data = {
   generated_at: string
   upstream: string
+  /** Per-section freshness: "stale" means the API was unreachable and that
+   *  section fell back to its last cached fetch. */
+  fetch_status?: Record<string, string>
+  /** True when any section is stale — surfaced in the header. */
+  partial?: boolean
   taxonomy: Record<string, Record<string, string[]>>
   field_labels: Record<string, string>
   field_to_domain: Record<string, Domain>
+  coverage_check?: CoverageCheck
   prs: PR[]
   /** Every `task fix` PR as its own row. Also nested on the task rows they
    *  touch as `fix_rows`; unmatched fixes appear only here. */

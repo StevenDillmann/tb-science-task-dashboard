@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertCircle, Calendar, Globe, Loader2, Mail } from "lucide-react"
+import { AlertCircle, Calendar, CheckCircle2, Globe, Loader2, Mail, TriangleAlert } from "lucide-react"
 
 import logoLight from "@/assets/tb-science-logo-light-bold.png"
 import logoDark from "@/assets/tb-science-logo-dark-bold.png"
@@ -34,6 +34,53 @@ function formatGeneratedAt(iso: string): string {
   if (day < 7) return `${day}d ago`
   const wk = Math.round(day / 7)
   return `${wk}w ago`
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  open_prs: "open PRs",
+  discussions: "proposals",
+}
+
+/** Says out loud whether the board is showing everything upstream has.
+ *
+ *  Every count here is checked against GitHub's own totalCount by the fetcher,
+ *  so "all rows shown" is a verified statement, not an assumption — and a
+ *  shortfall (or a section that fell back to cache) is stated in the header
+ *  instead of looking like a shorter upstream. */
+function CoverageBadge({ data }: { data: Data }) {
+  const cov = data.coverage_check
+  const sources = cov ? Object.entries(cov.sources) : []
+  const short = sources.filter(([, c]) => c.shown < c.upstream)
+  const detail = sources
+    .map(([k, c]) => `${SOURCE_LABELS[k] ?? k}: ${c.shown}/${c.upstream}`)
+    .join(" · ")
+
+  if (data.partial || short.length > 0) {
+    const missing = short.reduce((n, [, c]) => n + (c.upstream - c.shown), 0)
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded border border-red-600/40 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:border-red-400/40 dark:text-red-400"
+        title={
+          (missing
+            ? `${missing} row(s) missing upstream of this snapshot. `
+            : "A section fell back to its last cached fetch. ") + detail
+        }
+      >
+        <TriangleAlert className="h-3 w-3" />
+        {missing ? `${missing} rows missing` : "cached data"}
+      </span>
+    )
+  }
+  if (!sources.length) return null
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+      title={`Verified against GitHub's own totals — ${detail}`}
+    >
+      <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-400" />
+      all rows shown
+    </span>
+  )
 }
 
 export default function App() {
@@ -113,6 +160,7 @@ export default function App() {
                 updated {formatGeneratedAt(data.generated_at)}
               </span>
             )}
+            {data && <CoverageBadge data={data} />}
             <ThemeToggle />
             <a
               href={WEBSITE_URL}
