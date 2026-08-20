@@ -77,7 +77,10 @@ function CoverageBadge({ data }: { data: Data }) {
       className="inline-flex items-center gap-1 text-xs text-muted-foreground"
       title={`Verified against GitHub's own totals — ${detail}`}
     >
-      <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-400" />
+      {/* Monochrome: white on dark, near-black on light. The green read as a
+          status light competing with the table's own pass/fail colours — here
+          the icon just marks the line, and only the problem states take colour. */}
+      <CheckCircle2 className="h-3 w-3 text-foreground" />
       all rows shown
     </span>
   )
