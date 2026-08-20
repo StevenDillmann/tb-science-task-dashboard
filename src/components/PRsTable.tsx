@@ -364,12 +364,22 @@ export function PRsTable({
   externalField,
   externalState,
   onExternalFieldConsumed,
+  urlPrefix = "",
+  defaultState = "open",
 }: {
   prs: PR[]
   externalField?: string | null
   externalState?: "open" | "merged" | "closed" | null
   onExternalFieldConsumed?: () => void
+  /** Namespaces this table's URL params. Two tabs render this component, and
+   *  without a prefix they'd share `state`, `q`, `field`… — switching tabs
+   *  would silently carry the other tab's filters over. */
+  urlPrefix?: string
+  /** Task PRs default to `open` (the review queue). Fixes default to `all`:
+   *  most fixes are merged, so an `open` default hides nearly all of them. */
+  defaultState?: PRState | "all"
 }) {
+  const k = (name: string) => `${urlPrefix}${name}`
   const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([
     // Newest first — sort by PR number descending. Avoids ties between PRs
@@ -391,23 +401,23 @@ export function PRsTable({
   })
   // Filters are bound to URL query params so a filtered view is shareable and
   // survives reload / back-forward. `pr` holds the opened PR's number.
-  const [search, setSearch] = useUrlState("q", "")
-  const [state, setState] = useUrlState<PRState | "all">("state", "open")
-  const [activeNum, setActiveNum] = useUrlState<number | null>("pr", null, numberCodec)
+  const [search, setSearch] = useUrlState(k("q"), "")
+  const [state, setState] = useUrlState<PRState | "all">(k("state"), defaultState)
+  const [activeNum, setActiveNum] = useUrlState<number | null>(k("pr"), null, numberCodec)
   // Multi-select filters (OR within a column); `ball` (Action) stays single.
-  const [field, setField] = useUrlState<string[]>("field", [], stringArrayCodec)
-  const [stage, setStage] = useUrlState<string[]>("stage", [], stringArrayCodec)
-  const [ball, setBall] = useUrlState<string | null>("ball", null)
-  const [author, setAuthor] = useUrlState<string[]>("author", [], stringArrayCodec)
-  const [dri, setDri] = useUrlState<string[]>("dri", [], stringArrayCodec)
-  const [ci, setCi] = useUrlState<string[]>("ci", [], stringArrayCodec)
+  const [field, setField] = useUrlState<string[]>(k("field"), [], stringArrayCodec)
+  const [stage, setStage] = useUrlState<string[]>(k("stage"), [], stringArrayCodec)
+  const [ball, setBall] = useUrlState<string | null>(k("ball"), null)
+  const [author, setAuthor] = useUrlState<string[]>(k("author"), [], stringArrayCodec)
+  const [dri, setDri] = useUrlState<string[]>(k("dri"), [], stringArrayCodec)
+  const [ci, setCi] = useUrlState<string[]>(k("ci"), [], stringArrayCodec)
   // Filter by the linked proposal's review status (or "none" = no linked proposal).
-  const [propStatus, setPropStatus] = useUrlState<string[]>("prop_status", [], stringArrayCodec)
+  const [propStatus, setPropStatus] = useUrlState<string[]>(k("prop_status"), [], stringArrayCodec)
   // Author-fit filter: fit verdicts + "coi" (COI disclosed).
-  const [fit, setFit] = useUrlState<string[]>("fit", [], stringArrayCodec)
+  const [fit, setFit] = useUrlState<string[]>(k("fit"), [], stringArrayCodec)
   // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
   // on the Task column, since that's where the chips render.
-  const [tags, setTags] = useUrlState<string[]>("tags", [], stringArrayCodec)
+  const [tags, setTags] = useUrlState<string[]>(k("tags"), [], stringArrayCodec)
   // Which task rows have their fix subrows open. Deliberately NOT in the URL:
   // it's a transient reading gesture, not a view worth sharing.
   const [expanded, setExpanded] = useState<ExpandedState>({})

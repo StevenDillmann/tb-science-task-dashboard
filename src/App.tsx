@@ -317,6 +317,10 @@ export default function App() {
               <TabsContent value="fixes" className="mt-6">
                 <PRsTable
                   prs={visibleFixes}
+                  // Own URL namespace, and `all` by default: most fixes are
+                  // merged, so an `open` default would hide nearly every one.
+                  urlPrefix="fix_"
+                  defaultState="all"
                   externalField={tab === "fixes" ? forcedField : null}
                   externalState={tab === "fixes" ? forcedPRState : null}
                   onExternalFieldConsumed={() => {
