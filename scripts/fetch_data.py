@@ -829,6 +829,7 @@ PR_QUERY = """
 query($owner:String!,$name:String!,$first:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
     pullRequests(states:__STATES__,first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+      totalCount
       pageInfo{ hasNextPage endCursor }
       nodes{
         number title url isDraft state mergedAt closedAt createdAt updatedAt
@@ -1500,6 +1501,7 @@ DISCUSSION_QUERY = """
 query($owner:String!,$name:String!,$first:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
     discussions(first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+      totalCount
       pageInfo{ hasNextPage endCursor }
       nodes{
         number title url body closed closedAt createdAt updatedAt
@@ -1626,6 +1628,7 @@ def paged(
     max_pages: int | None = None,
     stop: Callable[[dict[str, Any]], bool] | None = None,
     require_complete: bool = False,
+    stats: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Page a GraphQL connection, newest-first.
 
@@ -1634,7 +1637,9 @@ def paged(
     unchanged since the cache, so we drop the tail and return immediately.
     `extra_vars` supplies query variables beyond owner/name/cursor (e.g. first).
     `require_complete` turns a binding page cap into an IncompleteFetch instead
-    of a quiet truncation — see the open-PR fetch.
+    of a quiet truncation — see the open-PR fetch. `stats` receives the
+    connection's `totalCount`, so callers can VERIFY they ended up with
+    everything rather than trusting the paging loop.
     """
     out: list[dict[str, Any]] = []
     cursor: str | None = None
@@ -1647,6 +1652,8 @@ def paged(
             variables["cursor"] = cursor
         data = graphql(query, variables)
         block = data["data"]["repository"][key]
+        if stats is not None and "total_count" not in stats and "totalCount" in block:
+            stats["total_count"] = block["totalCount"]
         for node in block["nodes"]:
             if stop and stop(node):
                 return out
@@ -1679,6 +1686,12 @@ DISC_PAGE = 25
 # every PR ever seen and the payload would grow without limit. 40 cold-start
 # pages of PR_PAGE fill exactly this window.
 CLOSED_HISTORY = 400
+
+
+# Filled in by the fetches: source -> {"shown": kept, "upstream": totalCount}.
+# Surfaced in the payload so the dashboard can SHOW that it is complete rather
+# than leaving the reader to trust it.
+COVERAGE: dict[str, dict[str, int]] = {}
 
 
 class IncompleteFetch(GHError):
@@ -1723,6 +1736,7 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     """
     stale = False
     fresh: list[dict[str, Any]] = []
+    open_stats: dict[str, Any] = {}
     try:
         # NO page cap: every open PR has to be on the board. A cap here silently
         # dropped the tail once already — 254 open PRs upstream against a
@@ -1732,6 +1746,7 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         fresh += paged(
             PR_QUERY.replace("__STATES__", "[OPEN]"), "pullRequests",
             extra_vars={"first": PR_PAGE}, max_pages=None, require_complete=True,
+            stats=open_stats,
         )
     except GHError as e:
         if not base:
@@ -1765,8 +1780,25 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         open_nodes + closed_nodes[:CLOSED_HISTORY],
         key=lambda n: n.get("updatedAt") or "", reverse=True,
     )
+    # Completeness is CHECKED, not assumed: compare what we kept against the
+    # count GitHub itself reports. This catches any future way of losing rows —
+    # a reintroduced cap, an early-stop bug, a cache that drops nodes — instead
+    # of trusting that the paging loop did its job. Flagged rather than raised:
+    # a short list is still worth showing, but it must show as `stale` so the
+    # UI badge and the CI log both say so.
+    open_total = open_stats.get("total_count")
+    open_kept = sum(1 for n in kept if n.get("state") == "OPEN")
+    if open_total is not None:
+        COVERAGE["open_prs"] = {"shown": open_kept, "upstream": open_total}
+    if open_total is not None and open_kept < open_total:
+        sys.stderr.write(
+            f"INCOMPLETE: kept {open_kept} open PRs but GitHub reports "
+            f"{open_total}. Data is short by {open_total - open_kept}.\n"
+        )
+        stale = True
     sys.stderr.write(
-        f"PRs: {len(fresh)} fetched fresh, {len(base)} cached, {len(kept)} kept.\n"
+        f"PRs: {len(fresh)} fetched fresh, {len(base)} cached, {len(kept)} kept "
+        f"({open_kept}/{open_total if open_total is not None else '?'} open).\n"
     )
     return kept, ("stale" if stale else "ok")
 
@@ -1777,19 +1809,67 @@ def fetch_discussions(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     Unlike PRs, everything the dashboard reads off a discussion (comments, the
     rubric-review comment, labels, close state) bumps its updatedAt, so a pure
     incremental early-stop is safe — no open/closed split needed.
+
+    NO page cap, for the same reason the open-PR fetch has none: DISC_PAGE (25)
+    times a 20-page budget capped this at 500 while the repo held 910 task
+    proposals, so 410 were missing from the Proposals tab AND from the pool a
+    PR's `linked_proposal` is resolved against — a PR whose proposal fell off
+    the end silently lost its provenance. A cold run pages the lot; warm runs
+    early-stop at the first unchanged node, so it stays cheap.
     """
+    disc_stats: dict[str, Any] = {}
     try:
         changed = paged(
             DISCUSSION_QUERY, "discussions",
-            extra_vars={"first": DISC_PAGE}, max_pages=20, stop=_unchanged(base),
+            extra_vars={"first": DISC_PAGE}, max_pages=None,
+            stop=_unchanged(base), require_complete=True, stats=disc_stats,
         )
     except GHError as e:
         if not base:
             raise
         sys.stderr.write(f"discussion fetch failed ({e}); keeping cached discussions.\n")
         return merge_nodes(base, []), "stale"
-    sys.stderr.write(f"Discussions: {len(changed)} fetched fresh, {len(base)} cached.\n")
-    return merge_nodes(base, changed), "ok"
+    merged = merge_nodes(base, changed)
+    # Same checked invariant as the PR fetch: the incremental early-stop makes
+    # `changed` legitimately shorter than the total, so the comparison is against
+    # the MERGED set (cache + fresh) — which must account for every discussion
+    # GitHub reports, or a PR's linked proposal can silently go missing.
+    total = disc_stats.get("total_count")
+    status = "ok"
+    if total is not None and len(merged) < total:
+        # SELF-HEAL, don't just complain. The incremental early-stop halts at the
+        # first unchanged node, so it can never reach a tail the cache never had:
+        # a cache truncated by the old 20-page budget would stay 500 long
+        # forever, even with the cap removed. One full pass (no early-stop)
+        # repairs it; the next run is incremental again.
+        sys.stderr.write(
+            f"Discussions short ({len(merged)}/{total}) — the incremental scan "
+            f"can't reach what the cache never had; doing one full pass.\n"
+        )
+        try:
+            merged = merge_nodes(
+                merged,
+                paged(
+                    DISCUSSION_QUERY, "discussions",
+                    extra_vars={"first": DISC_PAGE}, max_pages=None,
+                    require_complete=True, stats=disc_stats,
+                ),
+            )
+        except GHError as e:
+            sys.stderr.write(f"full discussion pass failed ({e}).\n")
+    if total is not None:
+        COVERAGE["discussions"] = {"shown": len(merged), "upstream": total}
+    if total is not None and len(merged) < total:
+        sys.stderr.write(
+            f"INCOMPLETE: kept {len(merged)} discussions but GitHub reports "
+            f"{total}. Data is short by {total - len(merged)}.\n"
+        )
+        status = "stale"
+    sys.stderr.write(
+        f"Discussions: {len(changed)} fetched fresh, {len(base)} cached, "
+        f"{len(merged)}/{total if total is not None else '?'} total.\n"
+    )
+    return merged, status
 
 
 def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
@@ -2328,6 +2408,15 @@ def main() -> int:
         # section fell back to the last cached fetch. The UI can surface a badge.
         "fetch_status": fetch_status,
         "partial": any(v != "ok" for v in fetch_status.values()),
+        # Per-source completeness, each measured against GitHub's own
+        # totalCount: `complete` false means rows are missing, and the UI says
+        # so instead of quietly showing a short list.
+        "coverage_check": {
+            "complete": all(
+                c["shown"] >= c["upstream"] for c in COVERAGE.values()
+            ),
+            "sources": COVERAGE,
+        },
         "taxonomy": taxonomy,
         "field_labels": field_labels,
         "field_to_domain": field_to_domain,
