@@ -130,8 +130,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SITE: https://stevendillmann.github.io/tb-science-task-dashboard
-          UPSTREAM_OWNER: harbor-framework
-          UPSTREAM_NAME: terminal-bench-science
+          UPSTREAM: harbor-framework/terminal-bench-science
         run: |
           set -euo pipefail
           curl -fsSL --retry 3 "$SITE/data.json?cb=$(date +%s)" -o deployed.json
@@ -139,42 +138,53 @@ jobs:
           import json, os, subprocess, sys
 
           data = json.load(open("deployed.json"))
-          owner, name = os.environ["UPSTREAM_OWNER"], os.environ["UPSTREAM_NAME"]
+          up = os.environ["UPSTREAM"]
 
-          def gql(query):
-              out = subprocess.run(
-                  ["gh", "api", "graphql", "-f", f"query={query}"],
-                  capture_output=True, text=True, check=True,
-              ).stdout
-              return json.loads(out)["data"]["repository"]
+          # Compare LIKE WITH LIKE. `repository.pullRequests.totalCount` counts
+          # every open PR in the repo — task fixes, docs, unlabeled — while the
+          # snapshot's `prs` holds only `new task` rows, so that comparison is
+          # guaranteed to look short. Each set is counted upstream by the same
+          # label that defines it here.
+          query = f"""{{
+            open_tasks: search(query:"repo:{up} is:pr is:open label:\\"new task\\"", type:ISSUE, first:1){{issueCount}}
+            fixes: search(query:"repo:{up} is:pr label:\\"task fix\\"", type:ISSUE, first:1){{issueCount}}
+            repository(owner:"{up.split('/')[0]}",name:"{up.split('/')[1]}"){{
+              discussions(first:1){{totalCount}}
+            }}
+          }}"""
+          d = json.loads(subprocess.run(
+              ["gh", "api", "graphql", "-f", f"query={query}"],
+              capture_output=True, text=True, check=True,
+          ).stdout)["data"]
 
-          totals = gql(
-              f'{{repository(owner:"{owner}",name:"{name}"){{'
-              "pullRequests(states:[OPEN],first:1){totalCount} "
-              "discussions(first:1){totalCount} }}"
-          )
-          upstream = {
-              "open_prs": totals["pullRequests"]["totalCount"],
-              "discussions": totals["discussions"]["totalCount"],
-          }
-          # Open PRs are counted from the rows themselves rather than from the
-          # snapshot's own bookkeeping — an independent measurement is the whole
-          # point of checking from out here.
-          shown = {"open_prs": sum(1 for p in data["prs"] if p["state"] == "open")}
           cov = (data.get("coverage_check") or {}).get("sources") or {}
-          if "discussions" in cov:
-              shown["discussions"] = cov["discussions"]["shown"]
+          checks = {
+              # Counted from the rows themselves — an independent measurement is
+              # the whole point of checking from out here.
+              "open task rows": (
+                  sum(1 for p in data["prs"] if p["state"] == "open"),
+                  d["open_tasks"]["issueCount"],
+              ),
+              "task fixes": (
+                  len(data.get("fixes") or []),
+                  d["fixes"]["issueCount"],
+              ),
+              # Discussions have no label to count by, so this one leans on the
+              # snapshot's own bookkeeping; it still catches a stale deploy.
+              "discussions": (
+                  (cov.get("discussions") or {}).get("shown"),
+                  d["repository"]["discussions"]["totalCount"],
+              ),
+          }
 
-          problems = []
-          # A PR opened or closed between the snapshot and now is normal drift,
+          # A PR opened or closed between the snapshot and now is ordinary drift,
           # not data loss; only a real shortfall is worth waking someone for.
           TOLERANCE = 5
-          for key, want in upstream.items():
-              have = shown.get(key)
-              if have is None:
-                  continue
-              if have < want - TOLERANCE:
-                  problems.append(f"{key}: showing {have}, upstream has {want}")
+          problems = [
+              f"{name}: showing {have}, upstream has {want}"
+              for name, (have, want) in checks.items()
+              if have is not None and have < want - TOLERANCE
+          ]
           if data.get("partial"):
               problems.append(f"fetch fell back to cache: {data.get('fetch_status')}")
 
@@ -182,6 +192,6 @@ jobs:
               for p in problems:
                   print(f"::error::Dashboard is missing data — {p}")
               sys.exit(1)
-          print("Coverage OK: " + ", ".join(f"{k} {shown[k]}/{upstream[k]}"
-                                            for k in shown))
+          print("Coverage OK: " + ", ".join(
+              f"{n} {h}/{w}" for n, (h, w) in checks.items() if h is not None))
           PY
