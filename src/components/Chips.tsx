@@ -95,11 +95,16 @@ export function DomainChip({ domain }: { domain: Domain | null }) {
 export function FieldChip({
   subfield,
   fallback,
+  multiTask,
   onClick,
   active,
 }: {
   subfield: string | null
   fallback: string | null
+  /** Number of task directories a repo-wide `task fix` touches. Rendered in
+   *  place of a field when there is none, so the blank reads as deliberate
+   *  rather than as missing data. */
+  multiTask?: number
   onClick?: () => void
   active?: boolean
 }) {
@@ -121,6 +126,17 @@ export function FieldChip({
     body = (
       <Badge variant="outline" className="whitespace-nowrap text-muted-foreground">
         {fallback}
+      </Badge>
+    )
+  } else if (multiTask && multiTask > 1) {
+    // Not domain-coloured: the point is that this fix belongs to no one domain.
+    return (
+      <Badge
+        variant="outline"
+        className="whitespace-nowrap text-muted-foreground"
+        title={`Touches ${multiTask} tasks across several fields`}
+      >
+        multi-task
       </Badge>
     )
   } else {

@@ -137,6 +137,11 @@ export type PR = {
   // (the task is outside the fetched window, or upstream moved its directory) —
   // the fix is still listed in the Task Fixes tab.
   fix_of?: number[]
+  // Set on a `task fix` spanning several task directories: how many it touches.
+  // Such a row deliberately carries NO domain/subfield/field — one arbitrary tag
+  // would claim the fix for whichever task sorts first in the diff — so the
+  // field cell shows a `multi-task` chip instead of an empty one.
+  multi_task?: number
 }
 
 export type ProposalState = "open" | "closed"

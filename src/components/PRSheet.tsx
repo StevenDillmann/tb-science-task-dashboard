@@ -161,7 +161,7 @@ function Body({ pr, fixOf }: { pr: PR; fixOf: PR | null }) {
         <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2">
           <span className="inline-flex items-center gap-1.5">
             <UserCell user={pr.author} />
-            <FieldChip subfield={pr.subfield} fallback={pr.field} />
+            <FieldChip subfield={pr.subfield} fallback={pr.field} multiTask={pr.multi_task} />
           </span>
           <LabeledChip label="Stage">
             <StageChip stage={pr.review_stage} action={pr.ball_in_court} reviewers={pr.reviewers} />

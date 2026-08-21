@@ -687,7 +687,11 @@ export function PRsTable({
           />
         ),
         cell: ({ row }) => (
-          <FieldChip subfield={row.original.subfield} fallback={row.original.field} />
+          <FieldChip
+            subfield={row.original.subfield}
+            fallback={row.original.field}
+            multiTask={row.original.multi_task}
+          />
         ),
       },
       {
