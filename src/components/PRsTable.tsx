@@ -375,8 +375,8 @@ export function PRsTable({
    *  without a prefix they'd share `state`, `q`, `field`… — switching tabs
    *  would silently carry the other tab's filters over. */
   urlPrefix?: string
-  /** Task PRs default to `open` (the review queue). Fixes default to `all`:
-   *  most fixes are merged, so an `open` default hides nearly all of them. */
+  /** Both tabs default to `open` — the review queue in one, the fixes still
+   *  needing review in the other. Merged/closed history is a pill click away. */
   defaultState?: PRState | "all"
 }) {
   const k = (name: string) => `${urlPrefix}${name}`

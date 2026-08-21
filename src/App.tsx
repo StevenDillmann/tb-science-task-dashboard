@@ -324,10 +324,11 @@ export default function App() {
               <TabsContent value="fixes" className="mt-6">
                 <PRsTable
                   prs={visibleFixes}
-                  // Own URL namespace, and `all` by default: most fixes are
-                  // merged, so an `open` default would hide nearly every one.
+                  // Own URL namespace so this tab's filters don't leak into the
+                  // Task Pull Requests tab. State default is the component's
+                  // `open` — the tab's job is the fixes still needing review;
+                  // landed and abandoned ones are one click away on the pill.
                   urlPrefix="fix_"
-                  defaultState="all"
                   externalField={tab === "fixes" ? forcedField : null}
                   externalState={tab === "fixes" ? forcedPRState : null}
                   onExternalFieldConsumed={() => {
