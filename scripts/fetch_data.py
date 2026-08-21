@@ -1156,7 +1156,10 @@ def find_linked_proposal(
 ) -> dict[str, Any] | None:
     """Find the source proposal a PR references. Tries, in order:
 
-    1. A `discussions/<N>` URL anywhere in title or body.
+    1. A `discussions/<N>` URL anywhere in title or body. `pr_body` must
+       therefore include the RAW markdown — GitHub's rendered `bodyText` has
+       already collapsed such links to a bare `#N`, and route 2 then reads that
+       N as a task-proposal number and picks an unrelated proposal.
     2. A `task proposal #N` style mention (matches by task-proposal number).
     3. A `#N` reference within ~300 chars after the first `Task Proposal`
        mention — N matched against discussion numbers, then proposal numbers.
@@ -2054,8 +2057,18 @@ def build_prs(
         oracle_trials = parse_trial_results(comments, want_oracle=True)
         rubric = parse_rubric_review(comments)
         cheat = parse_cheat_results(comments)
+        # Raw markdown FIRST, then the rendered text. `bodyText` collapses a
+        # `…/discussions/782` link to the bare `#782` GitHub shows, which
+        # destroys the only unambiguous signal we have: with the URL gone the
+        # number reads as a task-proposal number and resolves to whichever
+        # proposal happens to carry 782 in ITS title. #844 linked "Endpoint-
+        # Complete Nested-Ablation Effect Bounds" that way. The markdown keeps
+        # the URL, so route 1 can win.
         linked = find_linked_proposal(
-            n["title"], n.get("bodyText") or "", proposals_by_num, proposals_by_discussion
+            n["title"],
+            f"{n.get('body') or ''}\n{n.get('bodyText') or ''}",
+            proposals_by_num,
+            proposals_by_discussion,
         )
         linked_proposal = (
             {
