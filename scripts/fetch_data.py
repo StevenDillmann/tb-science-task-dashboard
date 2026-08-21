@@ -2174,6 +2174,17 @@ def build_prs(
                     dirs.append(d)
         fix_dirs[n["number"]] = dirs
         row = build_row(n, labels, task_dir_hint=dirs[0] if dirs else None)
+        # A fix spanning several tasks gets NO field tag. `build_row` derives one
+        # from the FIRST `tasks/<domain>/<field>/…` path in the diff, which for a
+        # repo-wide fix (a spell-check pass, a toolchain pin) is whichever task
+        # sorts first — it reads as "this belongs to geosciences" when three
+        # other domains are equally affected. Blank is honest; `multi_task`
+        # carries the count so the UI can say so instead of showing a gap.
+        if len(dirs) > 1:
+            row["domain"] = None
+            row["subfield"] = None
+            row["field"] = None
+            row["multi_task"] = len(dirs)
         row["fix_of"] = []
         fix_rows.append(row)
 
