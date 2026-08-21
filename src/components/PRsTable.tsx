@@ -477,6 +477,24 @@ export function PRsTable({
     })
   }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
 
+  // Fix subrows obey the state pill too. Without this, `State: merged` shows
+  // merged task rows with open and closed fixes hanging under them — the filter
+  // promises one thing and the rows show another. Narrowing here (rather than
+  // dropping unmerged fixes in the fetcher) keeps `all` as the full archive, and
+  // both the `N fixes` chip and `getSubRows` read this same object, so the count
+  // can never disagree with the rows it expands to.
+  const rows = useMemo(
+    () =>
+      state === "all"
+        ? filtered
+        : filtered.map((p) =>
+            p.fix_rows?.some((f) => f.state !== state)
+              ? { ...p, fix_rows: p.fix_rows.filter((f) => f.state === state) }
+              : p,
+          ),
+    [filtered, state],
+  )
+
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
   const stateFiltered = useMemo(
@@ -1080,7 +1098,7 @@ export function PRsTable({
   )
 
   const table = useReactTable({
-    data: filtered,
+    data: rows,
     columns,
     state: { sorting, expanded },
     onSortingChange: setSorting,
@@ -1088,7 +1106,8 @@ export function PRsTable({
     // A task's `task fix` PRs are its subrows. They are DISPLAY-ONLY: `filtered`
     // is computed over the top-level `prs` (see the memo above), so a fix can
     // never pull its parent into a filter the parent doesn't match, and never
-    // lands in the row count or any aggregate.
+    // lands in the row count or any aggregate. The state pill is the one filter
+    // they do follow — applied in the `rows` memo, not here.
     getSubRows: (row) => row.fix_rows,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -1148,7 +1167,7 @@ export function PRsTable({
         />
         <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} />
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {filtered.length === 1 ? "row" : "rows"}
+          {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>
         <a
           href="https://github.com/harbor-framework/terminal-bench-science/blob/main/CONTRIBUTING.md"

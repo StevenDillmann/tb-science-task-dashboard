@@ -130,8 +130,10 @@ export type PR = {
   labels: string[]
   // `task fix` PRs touching this task's directory. Full rows, so an expanded
   // fix subrow fills the same columns as its parent. Display-only: they are
-  // nested inside the parent and so never reach the filters, the row count,
-  // or any aggregate.
+  // nested inside the parent and so never pull it into a filter it doesn't
+  // match, and never reach the row count or any aggregate. The one filter they
+  // follow is the state pill — a `merged` view shows only merged fixes, so the
+  // rows can't contradict it; `all` shows the complete history.
   fix_rows: PR[]
   // On a `task fix` row: the task PRs it fixes. Empty when no task row matches
   // (the task is outside the fetched window, or upstream moved its directory) —
