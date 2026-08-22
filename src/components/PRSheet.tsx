@@ -186,6 +186,21 @@ function Body({ pr, fixOf }: { pr: PR; fixOf: PR | null }) {
             </LabeledChip>
           )}
           <TrialsChip trials={pr.trials} />
+          {pr.oracle_trials && pr.oracle_trials.has_rollup && pr.oracle_trials.total > 0 && (
+            <LabeledChip label="Oracle run">
+              <CostTimeChip
+                ratePct={Math.round(
+                  (pr.oracle_trials.passed / pr.oracle_trials.total) * 100,
+                )}
+                rateTone="pass"
+                rateTitle={`${pr.oracle_trials.passed}/${pr.oracle_trials.total} passed`}
+                costUsd={pr.oracle_trials.avg_cost_usd}
+                runtimeSecs={pr.oracle_trials.avg_runtime_secs}
+                costTrials={pr.oracle_trials.cost_trials}
+                runtimeTrials={pr.oracle_trials.runtime_trials}
+              />
+            </LabeledChip>
+          )}
           {/* No label wrapper: the row inside already reads ORACLE. */}
           <TrialsChip trials={pr.oracle_trials} />
           <a
