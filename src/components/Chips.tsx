@@ -912,7 +912,8 @@ export function CoiBadge({ coi, fromProposal }: { coi: string; fromProposal?: bo
 
 /** Blended trial roll-up shown under the trial dots: an optional pass/cheat
  *  rate, then average runtime · cost (fixed units — minutes & dollars — matching
- *  the /run comment). Each metric carries its own denominator in the tooltip. */
+ *  the /run comment). Cost is left off entirely when none was reported, as on
+ *  an oracle run. Each metric carries its own denominator in the tooltip. */
 export function CostTimeChip({
   costUsd,
   runtimeSecs,
@@ -965,8 +966,12 @@ export function CostTimeChip({
         <>
           <Clock className="h-3 w-3 shrink-0" />
           {time ?? "—"}
-          <span className="opacity-40">·</span>
-          {cost ?? "—"}
+          {cost != null && (
+            <>
+              <span className="opacity-40">·</span>
+              {cost}
+            </>
+          )}
         </>
       )}
     </span>
