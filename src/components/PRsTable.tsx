@@ -947,8 +947,9 @@ export function PRsTable({
       },
       {
         accessorKey: "oracle_trials",
-        // Narrow: the cell is a dot or two, with no model label.
-        size: 72,
+        // Room for the runtime roll-up above the dots. Still narrower than the
+        // trials and cheat columns, which also carry a model label and a cost.
+        size: 150,
         // `/run agents=oracle` — the reference solution through the trial
         // harness. Its own column rather than a row inside FRONTIER TRIALS: it
         // is not an agent result, and mixing the two made the newest oracle run
@@ -985,6 +986,17 @@ export function PRsTable({
           const t = row.original.oracle_trials
           return (
             <div className="flex flex-col gap-1">
+              {t && t.has_rollup && t.total > 0 && (
+                <CostTimeChip
+                  ratePct={Math.round((t.passed / t.total) * 100)}
+                  rateTone="pass"
+                  rateTitle={`${t.passed}/${t.total} passed`}
+                  costUsd={t.avg_cost_usd}
+                  runtimeSecs={t.avg_runtime_secs}
+                  costTrials={t.cost_trials}
+                  runtimeTrials={t.runtime_trials}
+                />
+              )}
               <TrialsChip trials={t} showModelLabel={false} />
             </div>
           )
