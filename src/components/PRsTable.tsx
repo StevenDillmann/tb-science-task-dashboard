@@ -483,23 +483,22 @@ export function PRsTable({
     })
   }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
 
-  // Fix subrows obey the state pill too. Without this, `State: merged` shows
-  // merged task rows with open and closed fixes hanging under them — the filter
-  // promises one thing and the rows show another. Narrowing here (rather than
-  // dropping unmerged fixes in the fetcher) keeps `all` as the full archive, and
-  // both the `N fixes` chip and `getSubRows` read this same object, so the count
-  // can never disagree with the rows it expands to.
-  const rows = useMemo(
-    () =>
-      state === "all"
-        ? filtered
-        : filtered.map((p) =>
-            p.fix_rows?.some((f) => f.state !== state)
-              ? { ...p, fix_rows: p.fix_rows.filter((f) => f.state === state) }
-              : p,
-          ),
-    [filtered, state],
-  )
+  // Fix subrows obey the state pill too — otherwise the filter promises one
+  // thing and the rows show another. `merged` is the one view that admits a
+  // second state: a landed task with a fix still open is live work on that task
+  // and belongs in sight, while an abandoned fix carries no signal. Narrowing
+  // here (rather than dropping fixes in the fetcher) keeps `all` as the full
+  // archive, and both the `N fixes` chip and `getSubRows` read this same object,
+  // so the count can never disagree with the rows it expands to.
+  const rows = useMemo(() => {
+    if (state === "all") return filtered
+    const shown: PRState[] = state === "merged" ? ["merged", "open"] : [state]
+    return filtered.map((p) =>
+      p.fix_rows?.some((f) => !shown.includes(f.state))
+        ? { ...p, fix_rows: p.fix_rows.filter((f) => shown.includes(f.state)) }
+        : p,
+    )
+  }, [filtered, state])
 
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
