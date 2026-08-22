@@ -123,12 +123,14 @@ const BALL_OPTIONS = [
   },
 ]
 
-// Sort choices for the Frontier Trials column (pass rate / avg cost / runtime).
-// The oracle runs once and reports no cost, so pass rate is the only axis
-// worth sorting it by.
+// Sort choices for the Oracle column (pass rate / runtime). No cost axis:
+// upstream renders the reward in the oracle cells rather than a cost, so every
+// oracle row reports none.
 const ORACLE_SORT_OPTIONS = [
   { value: "pass:desc", label: "oracle pass (high → low)" },
   { value: "pass:asc", label: "oracle pass (low → high)" },
+  { value: "time:desc", label: "runtime (high → low)" },
+  { value: "time:asc", label: "runtime (low → high)" },
 ]
 
 const TRIAL_SORT_OPTIONS = [
@@ -160,6 +162,7 @@ function prSortText(
   sorting: SortingState,
   trialMetric: string | null,
   cheatMetric: string | null,
+  oracleMetric: string | null,
 ): { label: string; detail: string; isDefault: boolean } {
   const s = sorting[0]
   const isDefault = !s || (s.id === "number" && s.desc === true)
@@ -185,6 +188,7 @@ function prSortText(
     case "ball_in_court": label = "Action"; detail = s.desc ? "longest waiting" : "shortest waiting"; break
     case "trials": label = "Frontier trials"; detail = `${metricWord(trialMetric)} (${dir})`; break
     case "cheat": label = "Cheat trials"; detail = `${metricWord(cheatMetric)} (${dir})`; break
+    case "oracle_trials": label = "Oracle"; detail = `${metricWord(oracleMetric)} (${dir})`; break
     default: label = s.id; detail = dir
   }
   return { label, detail, isDefault }
@@ -391,6 +395,8 @@ export function PRsTable({
   const [trialMetric, setTrialMetric] = useState<"cost" | "time" | "pass" | null>(null)
   // Same, for the Cheat Trials column (success rate / cost / runtime).
   const [cheatMetric, setCheatMetric] = useState<"cost" | "time" | "success" | null>(null)
+  // Same, for the Oracle column — pass rate or runtime, there being no cost.
+  const [oracleMetric, setOracleMetric] = useState<"time" | "pass" | null>(null)
   // Which column's filter popover is open — lifted here so it survives the
   // header re-render that each multi-select toggle triggers (otherwise the
   // popover would snap shut after every pick).
@@ -954,15 +960,20 @@ export function PRsTable({
         // harness. Its own column rather than a row inside FRONTIER TRIALS: it
         // is not an agent result, and mixing the two made the newest oracle run
         // read as the newest agent run.
+        // Sort by oracle pass rate or average runtime (the ⏱ toggle). Rows with
+        // no reported value for the active metric sort last.
         sortingFn: (a, b) => {
           const pick = (r: typeof a) => {
             const t = r.original.oracle_trials
+            if (oracleMetric === "time") return t?.avg_runtime_secs ?? -1
             return t && t.total ? t.passed / t.total : -1
           }
           return pick(a) - pick(b)
         },
         header: () => {
           const cur = sorting[0]?.id === "oracle_trials" ? sorting[0] : null
+          const sortValue =
+            oracleMetric && cur ? `${oracleMetric}:${cur.desc ? "desc" : "asc"}` : null
           return (
             <ColumnFilter
               title="ORACLE"
@@ -970,14 +981,17 @@ export function PRsTable({
               onChange={() => {}}
               options={[]}
               sortOptions={ORACLE_SORT_OPTIONS}
-              sortValue={cur ? `pass:${cur.desc ? "desc" : "asc"}` : null}
-              onSortChange={(v) =>
-                setSorting(
-                  v
-                    ? [{ id: "oracle_trials", desc: v.endsWith(":desc") }]
-                    : [{ id: "number", desc: true }],
-                )
-              }
+              sortValue={sortValue}
+              onSortChange={(v) => {
+                if (!v) {
+                  setOracleMetric(null)
+                  setSorting([{ id: "number", desc: true }])
+                  return
+                }
+                const [metric, dir] = v.split(":")
+                setOracleMetric(metric as "time" | "pass")
+                setSorting([{ id: "oracle_trials", desc: dir === "desc" }])
+              }}
               {...openProps("oracle_trials")}
             />
           )
@@ -1106,7 +1120,7 @@ export function PRsTable({
         ),
       },
     ],
-    [field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, sorting, openCol],
+    [field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -1142,6 +1156,7 @@ export function PRsTable({
     sorting,
     trialMetric,
     cheatMetric,
+    oracleMetric,
   )
 
   // Per-state totals (ignoring other filters) drive the toggle counts so the
