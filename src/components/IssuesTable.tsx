@@ -435,24 +435,18 @@ export function IssuesTable({
         cell: ({ row }) => {
           const i = row.original
           const ta = i.task_author && i.task_author.login !== i.author.login ? i.task_author : null
-          if (!ta)
-            return (
-              <UserCell
-                user={i.author}
-                onClick={() => setAuthor(toggleVal(author, i.author.login))}
-                active={author.includes(i.author.login)}
-              />
-            )
-          // A report about someone else's task: who filed it, and whose task it is.
+          // Compact labelled lines: ISSUE BY always; TASK BY when the issue is
+          // about someone else's task.
           return (
             <span className="flex min-w-0 flex-col gap-1">
               <UserCell
                 user={i.author}
                 tag="issue by"
+                compact
                 onClick={() => setAuthor(toggleVal(author, i.author.login))}
                 active={author.includes(i.author.login)}
               />
-              <UserCell user={ta} tag="task by" />
+              {ta && <UserCell user={ta} tag="task by" compact />}
             </span>
           )
         },
@@ -483,6 +477,7 @@ export function IssuesTable({
                   user={a}
                   role={a.role}
                   reserveRole={anyRole}
+                  compact
                   onClick={() => setAssignee(toggleVal(assignee, a.login))}
                   active={assignee.includes(a.login)}
                 />

@@ -777,17 +777,16 @@ export function PRsTable({
           />
         ),
         cell: ({ row }) => {
+          if (variant !== "fixes") return <UserCell user={row.original.author} />
+          // Fixes tab: compact labelled lines. FIX BY always; TASK BY when the
+          // task's author is someone else.
           const taskAuthors = (row.original.task_authors ?? []).filter(
             (a) => a.login !== row.original.author.login,
           )
-          if (!taskAuthors.length) return <UserCell user={row.original.author} />
-          // A fix by someone other than the task's author: show both, the
-          // task author as a labelled second line so it's clear who owns the
-          // task being changed.
           return (
             <span className="flex min-w-0 flex-col gap-1">
-              <UserCell user={row.original.author} tag="fix by" />
-              <UserCell user={taskAuthors[0]} tag="task by" />
+              <UserCell user={row.original.author} tag="fix by" compact />
+              {taskAuthors[0] && <UserCell user={taskAuthors[0]} tag="task by" compact />}
             </span>
           )
         },
@@ -810,7 +809,7 @@ export function PRsTable({
         cell: ({ row }) => (
           // Reviewers link to their GitHub; filtering by reviewer is via the
           // column-header dropdown only (not by clicking a row entry).
-          <ReviewersCell reviewers={row.original.reviewers} />
+          <ReviewersCell reviewers={row.original.reviewers} compact={variant === "fixes"} />
         ),
       },
       {

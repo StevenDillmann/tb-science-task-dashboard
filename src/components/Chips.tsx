@@ -1081,6 +1081,7 @@ export function UserCell({
   status,
   role,
   tag,
+  compact,
   reserveRole,
 }: {
   user: { login: string; avatar_url: string | null } | null
@@ -1092,31 +1093,41 @@ export function UserCell({
   role?: ReviewerRole
   /** Free-text label in the same slot as `role` — "fix by", "task by", "issue by". */
   tag?: string
+  /** Small one-line rendering (label + name, no avatar) used by the Fixes and
+   *  Issues tabs, whose AUTHOR/REVIEWER columns share the PRs tab's widths. */
+  compact?: boolean
   /** Reserve the role-label slot even when this row has no role, so siblings
    *  with roles keep avatars aligned. */
   reserveRole?: boolean
 }) {
   if (!user) return <span className="text-muted-foreground">—</span>
+  const isCompact = !!(compact || (tag && !role))
+  const label = role ? (ROLE_LABEL[role] ?? role) : (tag ?? "")
   const inner = (
     <span className="inline-flex max-w-full min-w-0 items-center gap-2 align-middle">
-      {/* A free-text tag ("fix by", "task by", "issue by") sits INLINE before the
-          name. The PRs and Fixes tabs share one 195px AUTHOR width, so these
-          lines drop the avatar and use the smaller text to fit a full handle. */}
-      {tag && !role && (
+      {/* Compact: a label ("fix by" / "task by" / "issue by", or the slot role)
+          inline before a small name, no avatar. The Fixes and Issues tabs use
+          this so their AUTHOR/REVIEWER columns fit the PRs tab's widths. The
+          label has a fixed width so names line up down the cell. */}
+      {isCompact && (
         <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
-          <span className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground uppercase">{tag}</span>
+          {/* Reviewer cells (280px) get a fixed label width so names align;
+              author tags (195px column) size to their text so a full handle fits. */}
+          {(label || reserveRole) && (
+            <span className={cn("shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground uppercase", (role || reserveRole) && "w-14")}>{label}</span>
+          )}
           <span className="min-w-0 truncate text-xs group-hover:underline">{user.login}</span>
           {status && <ReviewStatusIcon status={status} />}
         </span>
       )}
       {/* Reserve the fixed-width label slot whenever the cell has roles, so
           avatars share one left edge even on rows whose own role is blank. */}
-      {!(tag && !role) && (role || reserveRole) && (
+      {!isCompact && (role || reserveRole) && (
         <span className="-mr-1 w-16 shrink-0 whitespace-nowrap text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
           {role ? (ROLE_LABEL[role] ?? role) : ""}
         </span>
       )}
-      {!(tag && !role) && (
+      {!isCompact && (
         <>
           {user.avatar_url ? (
             <img
@@ -1177,8 +1188,11 @@ export function ReviewersCell({
   reviewers,
   onClick,
   activeLogin,
+  compact,
 }: {
   reviewers: Reviewer[]
+  /** Small label+name lines without avatars (Fixes and Issues tabs). */
+  compact?: boolean
   /** Optional click handler (e.g. to filter by that reviewer). */
   onClick?: (login: string) => void
   /** Login currently used as a filter, for highlight. */
@@ -1198,6 +1212,7 @@ export function ReviewersCell({
           status={u.status}
           role={u.role}
           reserveRole={anyRole}
+          compact={compact}
           onClick={onClick ? () => onClick(u.login) : undefined}
           active={activeLogin === u.login}
         />
