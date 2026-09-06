@@ -177,7 +177,6 @@ function sortText(sorting: SortingState): { label: string; detail: string; isDef
   switch (s.id) {
     case "number": return { label: "Order", detail: s.desc ? "newest" : "oldest", isDefault }
     case "title": return { label: "Title", detail: s.desc ? "Z→A" : "A→Z", isDefault }
-    case "task": return { label: "Task", detail: s.desc ? "Z→A" : "A→Z", isDefault }
     case "posted": return { label: "Posted", detail: s.desc ? "oldest" : "newest", isDefault }
     default: return { label: s.id, detail: s.desc ? "desc" : "asc", isDefault }
   }
@@ -364,7 +363,24 @@ export function IssuesTable({
           return (
             <div className="flex flex-col gap-1">
               <span className="font-medium">{i.title}</span>
-              <span className="flex flex-wrap gap-1">
+              <span className="flex flex-wrap items-center gap-2">
+                {i.slug && (
+                  i.task_dir ? (
+                    <a
+                      href={`https://github.com/${UPSTREAM}/tree/main/${i.task_dir}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      title={i.task_dir}
+                      className="inline-flex max-w-full min-w-0 items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      <span className="truncate">{i.slug}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="font-mono text-[11px] text-muted-foreground" title="Not found on main">{i.slug}</span>
+                  )
+                )}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -472,38 +488,6 @@ export function IssuesTable({
                 />
               ))}
             </span>
-          )
-        },
-      },
-      {
-        id: "task",
-        accessorFn: (i) => i.slug ?? "",
-        size: 130,
-        header: ({ column }) => (
-          <button
-            className="inline-flex items-center gap-1"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            TASK <ArrowUpDown className="h-3 w-3" />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const i = row.original
-          if (!i.slug) return <span className="text-muted-foreground">—</span>
-          return i.task_dir ? (
-            <a
-              href={`https://github.com/${UPSTREAM}/tree/main/${i.task_dir}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              title={i.task_dir}
-              className="inline-flex max-w-full items-center gap-1 font-mono text-xs hover:underline"
-            >
-              <span className="truncate">{i.slug}</span>
-              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-            </a>
-          ) : (
-            <span className="truncate font-mono text-xs" title="Not found on main">{i.slug}</span>
           )
         },
       },
