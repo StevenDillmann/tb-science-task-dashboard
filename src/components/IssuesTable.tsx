@@ -316,8 +316,7 @@ export function IssuesTable({
       {
         accessorKey: "number",
         header: "#",
-        // Wider than the PRs tab's 70: "not planned" is the longest state pill.
-        size: 85,
+        size: 70,
         cell: ({ row }) => {
           const i = row.original
           return (
@@ -338,7 +337,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "title",
-        size: 230,
+        size: 260,
         // The Type facet hangs off this header, the way Tags does on the PRs
         // tab: the chip lives in the cell, the filter in the header.
         header: () => {
@@ -384,7 +383,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "subfield",
-        size: 160,
+        size: 185,
         header: () => (
           <FieldColumnFilter
             selected={field}
@@ -405,8 +404,8 @@ export function IssuesTable({
       },
       {
         id: "author",
-        // ISSUE BY / TASK BY label + avatar + longest handle: the REVIEWER width.
-        size: 280,
+        // Same as the PRs tab.
+        size: 230,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
