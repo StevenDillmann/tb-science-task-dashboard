@@ -271,8 +271,7 @@ const STATE_TEXT_TONE: Record<PillTone, string> = {
   approved: "text-green-700 dark:text-green-400",
   closed: "text-red-700 dark:text-red-400",
   declined: "text-red-700 dark:text-red-400",
-  // A closed fix whose problem another fix then solved: not a failure, so no
-  // red — it reads as history.
+  // Neutral: a duplicate issue is neither done nor refused.
   superseded: "text-muted-foreground",
 }
 

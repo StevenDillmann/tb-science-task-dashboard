@@ -579,8 +579,7 @@ export function PRsTable({
     () => [
       {
         accessorKey: "number",
-        // The Fixes tab's longest pill is "superseded"; the PRs tab's is "merged".
-        size: variant === "fixes" ? 85 : 70,
+        size: 70,
         header: "#",
         cell: ({ row }) => {
           // On a fix subrow, say which task PR it belongs to. It goes here
@@ -618,13 +617,7 @@ export function PRsTable({
                 <ExternalLink className="h-3 w-3" />
               </a>
               <span className="inline-flex flex-col items-start leading-tight">
-                {row.original.state === "closed" && row.original.superseded_by ? (
-                  <span title={`Closed without merging; the problem was addressed by #${row.original.superseded_by}, which merged later`}>
-                    <StatePill tone="superseded" label="superseded" />
-                  </span>
-                ) : (
-                  <StatePill tone={row.original.state} label={row.original.state} />
-                )}
+                <StatePill tone={row.original.state} label={row.original.state} />
                 {/* Click jumps the pill to that bucket. */}
                 <SetPill
                   set={row.original.set}

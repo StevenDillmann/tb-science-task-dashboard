@@ -2565,18 +2565,8 @@ def build_prs(
                     fix["task_authors"].append(parent["author"])
     for row in rows:
         row["fix_rows"].sort(key=lambda f: f["number"])
-        # A closed fix is either abandoned or superseded: if another fix of the
-        # same task MERGED after it closed, the problem was addressed by that
-        # one, and the closed row should read "superseded", not "abandoned".
-        merged_after = [(f["merged_at"], f["number"]) for f in row["fix_rows"] if f["state"] == "merged" and f.get("merged_at")]
-        for f in row["fix_rows"]:
-            if f["state"] == "closed" and f.get("closed_at"):
-                later = sorted(n for m, n in merged_after if m > f["closed_at"])
-                if later and not f.get("superseded_by"):
-                    f["superseded_by"] = later[0]
     for fix in fix_rows:
         fix.setdefault("task_authors", [])
-        fix.setdefault("superseded_by", None)
     return rows, sorted(fix_rows, key=lambda f: -f["number"])
 
 

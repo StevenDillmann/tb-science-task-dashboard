@@ -159,10 +159,6 @@ export type PR = {
   // On a `task fix` row: the authors of the task PR(s) it fixes — the people
   // to loop in, usually not the fix's own author.
   task_authors?: User[]
-  // On a CLOSED `task fix` row: the number of a fix of the same task that
-  // merged after this one closed. Set means "superseded" (the problem got
-  // addressed by that PR); null means abandoned.
-  superseded_by?: number | null
   // On a `task fix` row: the task PRs it fixes. Empty when no task row matches
   // (the task is outside the fetched window, or upstream moved its directory) —
   // the fix is still listed in the Task Fixes tab.
