@@ -79,3 +79,10 @@
 .prose-tb th { @apply bg-muted font-semibold; }
 .prose-tb strong { @apply font-semibold; }
 .prose-tb img { @apply my-3 max-w-full rounded; }
+
+/* Reserve the vertical scrollbar's width at all times. Short tabs (Task Fixes
+   with two open rows) have no scrollbar while long ones do, so without this the
+   layout jumps sideways by the scrollbar width on every tab switch. */
+html {
+  scrollbar-gutter: stable;
+}
