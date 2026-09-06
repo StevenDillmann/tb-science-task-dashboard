@@ -364,6 +364,17 @@ export function IssuesTable({
             <div className="flex flex-col gap-1">
               <span className="font-medium">{i.title}</span>
               <span className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setKind(toggleVal(kind, i.kind))
+                  }}
+                  className={cn("rounded-sm", kind.includes(i.kind) && "ring-2 ring-offset-1 ring-foreground/30")}
+                  title={kind.includes(i.kind) ? "Click to clear filter" : "Click to filter by this type"}
+                >
+                  <KindChip kind={i.kind} />
+                </button>
                 {i.slug && (
                   i.task_dir ? (
                     <a
@@ -381,17 +392,6 @@ export function IssuesTable({
                     <span className="font-mono text-[11px] text-muted-foreground" title="Not found on main">{i.slug}</span>
                   )
                 )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setKind(toggleVal(kind, i.kind))
-                  }}
-                  className={cn("rounded-sm", kind.includes(i.kind) && "ring-2 ring-offset-1 ring-foreground/30")}
-                  title={kind.includes(i.kind) ? "Click to clear filter" : "Click to filter by this type"}
-                >
-                  <KindChip kind={i.kind} />
-                </button>
               </span>
             </div>
           )
