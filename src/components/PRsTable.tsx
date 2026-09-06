@@ -1223,10 +1223,7 @@ export function PRsTable({
   const table = useReactTable({
     data: rows,
     columns,
-    // Whose-court-and-how-long is the review queue's column; a repair PR's
-    // reviewer state is already visible in REVIEWER and STAGE, so the Fixes tab
-    // spends the width elsewhere.
-    state: { sorting, expanded, columnVisibility: variant === "fixes" ? { ball_in_court: false } : {} },
+    state: { sorting, expanded },
     onSortingChange: setSorting,
     onExpandedChange: setExpanded,
     // A task's `task fix` PRs are its subrows. They are DISPLAY-ONLY: `filtered`
