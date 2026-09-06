@@ -405,7 +405,7 @@ export function IssuesTable({
       {
         id: "author",
         // Same as the PRs tab.
-        size: 230,
+        size: 250,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -531,7 +531,7 @@ export function IssuesTable({
       },
       {
         id: "linked",
-        size: 120,
+        size: 110,
         header: () => (
           <span title="Pull requests that reference this issue — for a task fix, the repair PR">
             LINKED PR

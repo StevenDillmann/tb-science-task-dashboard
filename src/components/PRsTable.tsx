@@ -764,7 +764,7 @@ export function PRsTable({
         accessorKey: "author",
         // Fits a FIX BY / TASK BY label + avatar + the longest handle
         // (AllenGrahamHart). One width on every tab so the tables line up.
-        size: 230,
+        size: 250,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
