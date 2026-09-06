@@ -1102,7 +1102,7 @@ export function UserCell({
       {/* Reserve the fixed-width label slot whenever the cell has roles, so
           avatars share one left edge even on rows whose own role is blank. */}
       {(role || tag || reserveRole) && (
-        <span className={cn("-mr-1 shrink-0 text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase", role || reserveRole ? "w-16" : "w-12")}>
+        <span className={cn("-mr-1 shrink-0 whitespace-nowrap text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase", role || reserveRole ? "w-16" : "w-14")}>
           {role ? (ROLE_LABEL[role] ?? role) : (tag ?? "")}
         </span>
       )}
