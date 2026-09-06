@@ -1111,10 +1111,11 @@ export function UserCell({
           label has a fixed width so names line up down the cell. */}
       {isCompact && (
         <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
-          {/* Reviewer cells (280px) get a fixed label width so names align;
-              author tags (195px column) size to their text so a full handle fits. */}
+          {/* Fixed-width, left-aligned label so the names line up down the cell.
+              50px holds the longest label (TECHNICAL) at 9px and leaves room in
+              the 195px AUTHOR column for a 15-character handle. */}
           {(label || reserveRole) && (
-            <span className={cn("shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground uppercase", (role || reserveRole) && "w-14")}>{label}</span>
+            <span className="w-[50px] shrink-0 whitespace-nowrap text-left text-[9px] font-medium tracking-wide text-muted-foreground uppercase">{label}</span>
           )}
           <span className="min-w-0 truncate text-xs group-hover:underline">{user.login}</span>
           {status && <ReviewStatusIcon status={status} />}
