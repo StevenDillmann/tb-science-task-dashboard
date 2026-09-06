@@ -241,6 +241,8 @@ export type Issue = {
   set?: TaskSet | null
   /** The original task PR the routing workflow traced the task to. */
   task_pr: number | null
+  /** Author of the task this issue is about (from its task PR), or null. */
+  task_author?: User | null
   domain: Domain | null
   subfield: string | null
   /** The form's Category dropdown, verbatim. Null for free-form issues. */

@@ -2207,6 +2207,22 @@ def build_issues(
     return sorted(rows, key=lambda r: -r["number"])
 
 
+def attach_task_authors(issues: list[dict[str, Any]], prs: list[dict[str, Any]]) -> None:
+    """Give each task-related issue the author of the task it's about, from the
+    task's PR (merged preferred), matched by slug."""
+    by_slug: dict[str, dict[str, Any]] = {}
+    for p in prs:
+        if not p.get("task_dir"):
+            continue
+        slug = p["task_dir"].split("/")[-1]
+        cur = by_slug.get(slug)
+        if cur is None or (p["state"] == "merged" and cur["state"] != "merged"):
+            by_slug[slug] = p
+    for i in issues:
+        pr = by_slug.get(i.get("slug") or "")
+        i["task_author"] = pr["author"] if pr else None
+
+
 def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
     """Group task directories that are the SAME task under different paths.
 
@@ -2789,6 +2805,7 @@ def main() -> int:
     prs, fixes = build_prs(
         pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre, issues, task_sets
     )
+    attach_task_authors(issues, prs)
     proposals = build_proposals(
         discussion_nodes, now, [p["title"] for p in prs], field_to_domain
     )

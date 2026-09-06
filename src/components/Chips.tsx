@@ -1080,6 +1080,7 @@ export function UserCell({
   active,
   status,
   role,
+  tag,
   reserveRole,
 }: {
   user: { login: string; avatar_url: string | null } | null
@@ -1089,6 +1090,8 @@ export function UserCell({
   status?: ReviewState
   /** When set, render a small slot-role tag (domain/technical/final). */
   role?: ReviewerRole
+  /** Free-text label in the same slot as `role` — "fix by", "task by", "issue by". */
+  tag?: string
   /** Reserve the role-label slot even when this row has no role, so siblings
    *  with roles keep avatars aligned. */
   reserveRole?: boolean
@@ -1098,9 +1101,9 @@ export function UserCell({
     <span className="inline-flex max-w-full min-w-0 items-center gap-2 align-middle">
       {/* Reserve the fixed-width label slot whenever the cell has roles, so
           avatars share one left edge even on rows whose own role is blank. */}
-      {(role || reserveRole) && (
+      {(role || tag || reserveRole) && (
         <span className="-mr-1 w-16 shrink-0 text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-          {role ? (ROLE_LABEL[role] ?? role) : ""}
+          {role ? (ROLE_LABEL[role] ?? role) : (tag ?? "")}
         </span>
       )}
       {user.avatar_url ? (

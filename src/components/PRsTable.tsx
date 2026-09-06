@@ -762,8 +762,9 @@ export function PRsTable({
       },
       {
         accessorKey: "author",
-        // Comfortably fits the longest handle (AllenGrahamHart) + avatar.
-        size: 195,
+        // Fits the longest handle (AllenGrahamHart) + avatar; the Fixes tab adds a
+        // FIX BY / TASK BY label in front, so it takes the REVIEWER column's width.
+        size: variant === "fixes" ? 280 : 195,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -784,12 +785,8 @@ export function PRsTable({
           // task being changed.
           return (
             <span className="flex min-w-0 flex-col gap-0.5">
-              <UserCell user={row.original.author} />
-              {/* Caption on its own line so the handle keeps the full column width. */}
-              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase" title="Author of the task being fixed">
-                task by
-              </span>
-              <UserCell user={taskAuthors[0]} />
+              <UserCell user={row.original.author} tag="fix by" />
+              <UserCell user={taskAuthors[0]} tag="task by" />
             </span>
           )
         },

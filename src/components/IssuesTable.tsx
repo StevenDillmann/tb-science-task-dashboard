@@ -338,7 +338,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "title",
-        size: 265,
+        size: 230,
         // The Type facet hangs off this header, the way Tags does on the PRs
         // tab: the chip lives in the cell, the filter in the header.
         header: () => {
@@ -405,8 +405,8 @@ export function IssuesTable({
       },
       {
         id: "author",
-        // Same as the PRs tab — fits the longest handle (AllenGrahamHart).
-        size: 195,
+        // ISSUE BY / TASK BY label + avatar + longest handle: the REVIEWER width.
+        size: 280,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -417,13 +417,30 @@ export function IssuesTable({
             {...openProps("author")}
           />
         ),
-        cell: ({ row }) => (
-          <UserCell
-            user={row.original.author}
-            onClick={() => setAuthor(toggleVal(author, row.original.author.login))}
-            active={author.includes(row.original.author.login)}
-          />
-        ),
+        cell: ({ row }) => {
+          const i = row.original
+          const ta = i.task_author && i.task_author.login !== i.author.login ? i.task_author : null
+          if (!ta)
+            return (
+              <UserCell
+                user={i.author}
+                onClick={() => setAuthor(toggleVal(author, i.author.login))}
+                active={author.includes(i.author.login)}
+              />
+            )
+          // A report about someone else's task: who filed it, and whose task it is.
+          return (
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <UserCell
+                user={i.author}
+                tag="issue by"
+                onClick={() => setAuthor(toggleVal(author, i.author.login))}
+                active={author.includes(i.author.login)}
+              />
+              <UserCell user={ta} tag="task by" />
+            </span>
+          )
+        },
       },
       {
         id: "assignees",
@@ -462,7 +479,7 @@ export function IssuesTable({
       {
         id: "task",
         accessorFn: (i) => i.slug ?? "",
-        size: 140,
+        size: 130,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
@@ -515,7 +532,7 @@ export function IssuesTable({
       },
       {
         id: "linked",
-        size: 135,
+        size: 120,
         header: () => (
           <span title="Pull requests that reference this issue — for a task fix, the repair PR">
             LINKED PR
