@@ -75,10 +75,7 @@ export function Pipeline() {
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#038F99]">
             Terminal-Bench-Science 0.2
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-[#038F99]/80">
-            Pull request deadline
-          </div>
-          <div className="text-xs font-semibold text-[#038F99]">Oct 5, 2026</div>
+          <div className="text-xs font-semibold text-[#038F99]">Deadline: Oct 5, 2026</div>
         </div>
       </div>
     </section>
