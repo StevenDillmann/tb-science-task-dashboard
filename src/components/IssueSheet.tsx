@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet"
 import type { Issue } from "@/lib/data"
 import { formatExactDateTime, formatRelativeTime } from "@/lib/utils"
-import { FieldChip, StatePill, UserCell } from "./Chips"
+import { FieldChip, IssueStatePill, StatePill, UserCell } from "./Chips"
 import { KindChip } from "./IssuesTable"
 
 const UPSTREAM = "harbor-framework/terminal-bench-science"
@@ -38,7 +38,7 @@ export function IssueSheet({
                 {issue.title}
               </SheetTitle>
               <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
-                <StatePill tone={issue.state === "open" ? "open" : "merged"} label={issue.state} />
+                <IssueStatePill state={issue.state} reason={issue.state_reason} />
                 <KindChip kind={issue.kind} />
                 <span className="inline-flex items-center gap-1.5">
                   <UserCell user={issue.author} />

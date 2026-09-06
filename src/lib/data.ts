@@ -135,6 +135,7 @@ export type PR = {
     title: string
     url: string
     state: "open" | "closed"
+    state_reason?: "completed" | "not_planned" | "duplicate" | "reopened" | null
     kind: "task fix" | "task" | "infra"
   }>
   body: string
@@ -155,6 +156,13 @@ export type PR = {
   // but not abandoned ones, `open`/`closed` show their own state, and `all`
   // shows the complete history.
   fix_rows: PR[]
+  // On a `task fix` row: the authors of the task PR(s) it fixes — the people
+  // to loop in, usually not the fix's own author.
+  task_authors?: User[]
+  // On a CLOSED `task fix` row: the number of a fix of the same task that
+  // merged after this one closed. Set means "superseded" (the problem got
+  // addressed by that PR); null means abandoned.
+  superseded_by?: number | null
   // On a `task fix` row: the task PRs it fixes. Empty when no task row matches
   // (the task is outside the fetched window, or upstream moved its directory) —
   // the fix is still listed in the Task Fixes tab.
@@ -224,6 +232,9 @@ export type Issue = {
   title: string
   url: string
   state: "open" | "closed"
+  /** GitHub's close reason: completed (done), not_planned (won't do),
+   *  duplicate. Null while open. */
+  state_reason?: "completed" | "not_planned" | "duplicate" | "reopened" | null
   kind: IssueKind
   author: User
   /** Task directory (from the form, or a tasks/ path in the body), resolved

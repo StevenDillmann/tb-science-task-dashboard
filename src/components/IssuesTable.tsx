@@ -21,7 +21,7 @@ import { DOMAIN_LABELS, type Domain, type Issue, type IssueKind } from "@/lib/da
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
-import { BallChip, FieldChip, HumanReviewChip, StatePill, UserCell } from "./Chips"
+import { BallChip, FieldChip, HumanReviewChip, IssueStatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
@@ -323,7 +323,7 @@ export function IssuesTable({
                 {i.number}
                 <ExternalLink className="h-3 w-3" />
               </a>
-              <StatePill tone={i.state === "open" ? "open" : "merged"} label={i.state} />
+              <IssueStatePill state={i.state} reason={i.state_reason} />
             </span>
           )
         },

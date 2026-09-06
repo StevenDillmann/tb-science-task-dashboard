@@ -1015,7 +1015,7 @@ query($owner:String!,$name:String!,$first:Int!,$cursor:String){
       totalCount
       pageInfo{ hasNextPage endCursor }
       nodes{
-        number title url state createdAt updatedAt closedAt body
+        number title url state stateReason createdAt updatedAt closedAt body
         author{ login ... on User { avatarUrl } }
         labels(first:30){ nodes{ name } }
         assignees(first:10){ nodes{ login avatarUrl } }
@@ -1261,6 +1261,7 @@ def find_linked_issues(
             "title": issue["title"],
             "url": issue["url"],
             "state": issue["state"],
+            "state_reason": issue.get("state_reason"),
             "kind": issue["kind"],
         })
     return out
@@ -2175,6 +2176,9 @@ def build_issues(
             "title": n["title"],
             "url": n["url"],
             "state": "open" if n.get("state") == "OPEN" else "closed",
+            # GitHub's close reason: "completed" (done) vs "not_planned"
+            # (won't do) vs "duplicate". Null while open.
+            "state_reason": ((n.get("stateReason") or "").lower() or None) if n.get("state") != "OPEN" else None,
             "kind": kind,
             "author": {
                 "login": author.get("login") or "ghost",
@@ -2554,8 +2558,25 @@ def build_prs(
                     parent["fix_rows"].append(fix)
                 if parent["number"] not in fix["fix_of"]:
                     fix["fix_of"].append(parent["number"])
+                # Who wrote the task being fixed — usually not the fix's author,
+                # and the person a reviewer most wants to loop in.
+                fix.setdefault("task_authors", [])
+                if all(a["login"] != parent["author"]["login"] for a in fix["task_authors"]):
+                    fix["task_authors"].append(parent["author"])
     for row in rows:
         row["fix_rows"].sort(key=lambda f: f["number"])
+        # A closed fix is either abandoned or superseded: if another fix of the
+        # same task MERGED after it closed, the problem was addressed by that
+        # one, and the closed row should read "superseded", not "abandoned".
+        merged_after = [(f["merged_at"], f["number"]) for f in row["fix_rows"] if f["state"] == "merged" and f.get("merged_at")]
+        for f in row["fix_rows"]:
+            if f["state"] == "closed" and f.get("closed_at"):
+                later = sorted(n for m, n in merged_after if m > f["closed_at"])
+                if later and not f.get("superseded_by"):
+                    f["superseded_by"] = later[0]
+    for fix in fix_rows:
+        fix.setdefault("task_authors", [])
+        fix.setdefault("superseded_by", None)
     return rows, sorted(fix_rows, key=lambda f: -f["number"])
 
 

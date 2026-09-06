@@ -261,7 +261,7 @@ export function BallChip({
 
 // Subtle lifecycle marker under the # — just small muted lowercase text,
 // faintly tinted by state. No dot, no filled badge, so it recedes.
-type PillTone = "open" | "merged" | "closed" | "approved" | "declined"
+type PillTone = "open" | "merged" | "closed" | "approved" | "declined" | "superseded"
 
 // Same palette as the review-status glyphs: green = done, amber = active/open,
 // grey = closed/declined.
@@ -271,12 +271,27 @@ const STATE_TEXT_TONE: Record<PillTone, string> = {
   approved: "text-green-700 dark:text-green-400",
   closed: "text-red-700 dark:text-red-400",
   declined: "text-red-700 dark:text-red-400",
+  // A closed fix whose problem another fix then solved: not a failure, so no
+  // red — it reads as history.
+  superseded: "text-muted-foreground",
 }
 
 export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
   return (
     <span className={cn("text-[10px] lowercase", STATE_TEXT_TONE[tone])}>{label}</span>
   )
+}
+
+/** An issue's state as a pill: open (amber), closed as completed (green),
+ *  closed as not planned (red), duplicate (muted). GitHub records the close
+ *  reason; "closed" alone would hide the difference between done and won't-do. */
+export function IssueStatePill({ state, reason }: { state: "open" | "closed"; reason?: string | null }) {
+  if (state === "open") return <StatePill tone="open" label="open" />
+  if (reason === "not_planned")
+    return <span title="Closed as not planned"><StatePill tone="closed" label="not planned" /></span>
+  if (reason === "duplicate")
+    return <span title="Closed as a duplicate"><StatePill tone="superseded" label="duplicate" /></span>
+  return <span title="Closed as completed"><StatePill tone="merged" label="completed" /></span>
 }
 
 /** Which set a merged task landed in. Rendered on its own line under the

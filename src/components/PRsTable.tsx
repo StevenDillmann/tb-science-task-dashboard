@@ -617,7 +617,13 @@ export function PRsTable({
                 <ExternalLink className="h-3 w-3" />
               </a>
               <span className="inline-flex flex-col items-start leading-tight">
-                <StatePill tone={row.original.state} label={row.original.state} />
+                {row.original.state === "closed" && row.original.superseded_by ? (
+                  <span title={`Closed without merging; the problem was addressed by #${row.original.superseded_by}, which merged later`}>
+                    <StatePill tone="superseded" label="superseded" />
+                  </span>
+                ) : (
+                  <StatePill tone={row.original.state} label={row.original.state} />
+                )}
                 {/* Click jumps the pill to that bucket. */}
                 <SetPill
                   set={row.original.set}
@@ -760,7 +766,28 @@ export function PRsTable({
             {...openProps("author")}
           />
         ),
-        cell: ({ row }) => <UserCell user={row.original.author} />,
+        cell: ({ row }) => {
+          const taskAuthors = (row.original.task_authors ?? []).filter(
+            (a) => a.login !== row.original.author.login,
+          )
+          if (!taskAuthors.length) return <UserCell user={row.original.author} />
+          // A fix by someone other than the task's author: show both, the
+          // task author as a labelled second line so it's clear who owns the
+          // task being changed.
+          return (
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <UserCell user={row.original.author} />
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="w-16 shrink-0 text-[10px] font-medium tracking-wider text-muted-foreground uppercase" title="Author of the task being fixed">
+                  task by
+                </span>
+                <span className="min-w-0 flex-1">
+                  <UserCell user={taskAuthors[0]} />
+                </span>
+              </span>
+            </span>
+          )
+        },
       },
       {
         accessorKey: "dri",
@@ -1094,8 +1121,13 @@ export function PRsTable({
                     #{i.number}
                     <ExternalLink className="h-3 w-3" />
                   </a>
-                  {/* open = still pending a fix · closed = resolved */}
-                  <HumanReviewChip status={i.state === "closed" ? "approved" : "pending"} compact />
+                  {/* open = pending a fix · completed = green · not planned = red */}
+                  <HumanReviewChip
+                    status={
+                      i.state === "open" ? "pending" : i.state_reason === "not_planned" ? "rejected" : "approved"
+                    }
+                    compact
+                  />
                 </span>
               ))}
             </span>
@@ -1189,7 +1221,10 @@ export function PRsTable({
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting, expanded },
+    // Whose-court-and-how-long is the review queue's column; a repair PR's
+    // reviewer state is already visible in REVIEWER and STAGE, so the Fixes tab
+    // spends the width elsewhere.
+    state: { sorting, expanded, columnVisibility: variant === "fixes" ? { ball_in_court: false } : {} },
     onSortingChange: setSorting,
     onExpandedChange: setExpanded,
     // A task's `task fix` PRs are its subrows. They are DISPLAY-ONLY: `filtered`
