@@ -308,7 +308,8 @@ export function IssuesTable({
       {
         accessorKey: "number",
         header: "#",
-        size: 70,
+        // Wider than the PRs tab's 70: "not planned" is the longest state pill.
+        size: 85,
         cell: ({ row }) => {
           const i = row.original
           return (
@@ -454,7 +455,7 @@ export function IssuesTable({
       {
         id: "task",
         accessorFn: (i) => i.slug ?? "",
-        size: 150,
+        size: 140,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
@@ -485,7 +486,7 @@ export function IssuesTable({
       },
       {
         id: "category",
-        size: 120,
+        size: 115,
         header: () => (
           <ColumnFilter
             title="CATEGORY"
