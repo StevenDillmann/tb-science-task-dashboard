@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Pipeline } from "@/components/Pipeline"
 import { PRsTable } from "@/components/PRsTable"
 import { ProposalsTable } from "@/components/ProposalsTable"
+import { IssuesTable } from "@/components/IssuesTable"
 import { StatsView } from "@/components/StatsView"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
@@ -39,6 +40,7 @@ function formatGeneratedAt(iso: string): string {
 const SOURCE_LABELS: Record<string, string> = {
   open_prs: "open PRs",
   discussions: "proposals",
+  issues: "issues",
 }
 
 /** Says out loud whether the board is showing everything upstream has.
@@ -113,6 +115,9 @@ export default function App() {
     () => (data ? (data.fixes ?? []).filter((p) => !p.is_draft) : []),
     [data],
   )
+
+  // Upstream issues — task problems (form-filed or free-form) plus infra.
+  const issues = useMemo(() => data?.issues ?? [], [data])
 
   useEffect(() => {
     loadData()
@@ -294,6 +299,12 @@ export default function App() {
                     {visibleFixes.length}
                   </Badge>
                 </TabsTrigger>
+                <TabsTrigger value="issues">
+                  Task Issues
+                  <Badge variant="secondary" className="ml-2">
+                    {issues.length}
+                  </Badge>
+                </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
 
@@ -329,12 +340,20 @@ export default function App() {
                   // `open` — the tab's job is the fixes still needing review;
                   // landed and abandoned ones are one click away on the pill.
                   urlPrefix="fix_"
+                  variant="fixes"
                   externalField={tab === "fixes" ? forcedField : null}
                   externalState={tab === "fixes" ? forcedPRState : null}
                   onExternalFieldConsumed={() => {
                     setForcedField(null)
                     setForcedPRState(null)
                   }}
+                />
+              </TabsContent>
+              <TabsContent value="issues" className="mt-6">
+                <IssuesTable
+                  issues={issues}
+                  externalField={tab === "issues" ? forcedField : null}
+                  onExternalFieldConsumed={() => setForcedField(null)}
                 />
               </TabsContent>
               <TabsContent value="stats" className="mt-6">

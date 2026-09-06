@@ -119,6 +119,16 @@ export type PR = {
     url: string
     status: "approved" | "rejected" | "pending"
   } | null
+  /** Task Issue(s) a repair PR says it fixes ("Fixes #123"). The fix-side
+   *  counterpart of `linked_proposal`; shown in the Task Fixes tab's ISSUE
+   *  column. Empty on new-task PRs. */
+  linked_issues?: Array<{
+    number: number
+    title: string
+    url: string
+    state: "open" | "closed"
+    kind: "task fix" | "task" | "infra"
+  }>
   body: string
   head_sha: string | null
   task_dir: string | null
@@ -192,6 +202,44 @@ export type Proposal = {
   labels: string[]
 }
 
+/** An assignee on an issue, tagged with the slot the routing workflow assigned
+ *  them for (null for someone assigned by hand). */
+export type IssueAssignee = User & { role: ReviewerRole }
+
+/** How an issue was classified upstream-side (see build_issues):
+ *  `task fix` — filed through the task-fix form; `task` — about a specific
+ *  merged task but filed free-form; `infra` — everything else. */
+export type IssueKind = "task fix" | "task" | "infra"
+
+export type Issue = {
+  number: number
+  title: string
+  url: string
+  state: "open" | "closed"
+  kind: IssueKind
+  author: User
+  /** Task directory (from the form, or a tasks/ path in the body), resolved
+   *  against the live tree. Null for infra issues. */
+  task_dir: string | null
+  slug: string | null
+  /** The original task PR the routing workflow traced the task to. */
+  task_pr: number | null
+  domain: Domain | null
+  subfield: string | null
+  /** The form's Category dropdown, verbatim. Null for free-form issues. */
+  category: string | null
+  assignees: IssueAssignee[]
+  /** PRs that cross-reference this issue — normally the repair PR. */
+  linked_prs: Array<{ number: number; state: string; url: string | null }>
+  age_days: number
+  updated_days: number
+  created_at: string
+  updated_at: string
+  closed_at: string | null
+  labels: string[]
+  body: string
+}
+
 export type Coverage = Record<
   string,
   Record<string, { merged: number; in_review: number; proposed: number }>
@@ -208,6 +256,8 @@ export type Stats = {
   pending_proposals: number
   needs_reviewer: number
   needs_author: number
+  open_issues?: number
+  open_task_issues?: number
 }
 
 /** Per-source completeness, each count measured against GitHub's own
@@ -234,6 +284,8 @@ export type Data = {
   /** Every `task fix` PR as its own row. Also nested on the task rows they
    *  touch as `fix_rows`; unmatched fixes appear only here. */
   fixes: PR[]
+  /** Every issue, classified and resolved to its task where it concerns one. */
+  issues?: Issue[]
   proposals: Proposal[]
   coverage: Coverage
   stats: Stats

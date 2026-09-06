@@ -370,6 +370,7 @@ export function PRsTable({
   onExternalFieldConsumed,
   urlPrefix = "",
   defaultState = "open",
+  variant = "tasks",
 }: {
   prs: PR[]
   externalField?: string | null
@@ -382,6 +383,9 @@ export function PRsTable({
   /** Both tabs default to `open` — the review queue in one, the fixes still
    *  needing review in the other. Merged/closed history is a pill click away. */
   defaultState?: PRState | "all"
+  /** `tasks` (new-task PRs, linked to a proposal) or `fixes` (repair PRs,
+   *  linked to the Task Issue they fix). Swaps the PROPOSAL column for ISSUE. */
+  variant?: "tasks" | "fixes"
 }) {
   const k = (name: string) => `${urlPrefix}${name}`
   const { field_labels } = useTaxonomy()
@@ -1041,6 +1045,40 @@ export function PRsTable({
           )
         },
       },
+      ...(variant === "fixes"
+        ? ([
+      {
+        id: "linked_issues",
+        size: 130,
+        header: () => <span title="The Task Issue this repair PR says it fixes (Fixes #N)">ISSUE</span>,
+        cell: ({ row }) => {
+          const li = row.original.linked_issues ?? []
+          if (!li.length) return <span className="text-xs text-muted-foreground">—</span>
+          return (
+            <span className="flex flex-col gap-0.5">
+              {li.map((i) => (
+                <span key={i.number} className="inline-flex items-center gap-1.5">
+                  <a
+                    href={i.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={i.title}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    #{i.number}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {/* open = still pending a fix · closed = resolved */}
+                  <HumanReviewChip status={i.state === "closed" ? "approved" : "pending"} compact />
+                </span>
+              ))}
+            </span>
+          )
+        },
+      },
+        ] as ColumnDef<PR>[])
+        : ([
       {
         accessorKey: "linked_proposal",
         size: 130,
@@ -1076,6 +1114,7 @@ export function PRsTable({
           )
         },
       },
+        ] as ColumnDef<PR>[])),
       {
         accessorKey: "updated_days",
         size: 100,
@@ -1119,7 +1158,7 @@ export function PRsTable({
         ),
       },
     ],
-    [field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
+    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
   )
 
   const table = useReactTable({

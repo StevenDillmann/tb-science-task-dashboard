@@ -120,6 +120,21 @@ function Body({ pr, fixOf }: { pr: PR; fixOf: PR | null }) {
             )}
           </div>
         )}
+        {(pr.linked_issues ?? []).map((i) => (
+          <div key={i.number} className="pt-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Fixes issue</span>{" "}
+            <a
+              href={i.url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[11px] font-semibold text-muted-foreground hover:underline underline-offset-2"
+            >
+              #{i.number}
+            </a>
+            <span className="ml-2 italic">— {i.title}</span>
+            <span className="ml-2">({i.state})</span>
+          </div>
+        ))}
         {fixOf && (
           <div className="pt-1 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Fixes task</span>{" "}

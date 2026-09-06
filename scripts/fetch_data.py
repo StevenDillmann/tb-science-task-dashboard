@@ -210,6 +210,7 @@ def save_raw_cache(
     path: str | None,
     pr_nodes: list[dict[str, Any]],
     discussion_nodes: list[dict[str, Any]],
+    issue_nodes: list[dict[str, Any]] | None = None,
 ) -> None:
     """Atomically persist the raw nodes we ended up using this run."""
     if not path:
@@ -222,6 +223,7 @@ def save_raw_cache(
                 "version": CACHE_VERSION,
                 "pr_nodes": pr_nodes,
                 "discussion_nodes": discussion_nodes,
+                "issue_nodes": issue_nodes or [],
             },
             f,
         )
@@ -945,6 +947,45 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
 """
 
 
+# ISSUES (the Task Issues tab). Every issue in the upstream tracker, classified
+# by build_issues into three kinds:
+#   `task fix` — filed through the task-fix.yml form (label `task fix`). The
+#                form's Task dropdown lands in the body as a `### Task` section
+#                holding the task path; the routing workflow (task-fix-issue.yml)
+#                assigns the task's original domain/technical reviewers and
+#                records who in a hidden `<!-- task-fix-reviewers: {...} -->`
+#                marker comment.
+#   `task`     — about a specific merged task but filed without the form
+#                (a task slug in the title or a tasks/ path in the body).
+#   `infra`    — everything else: CI, workflows, tooling, docs.
+# Distinct from `task fix` PRs, which are the repairs themselves; a
+# cross-reference links an issue to the repair PR(s) that mention it.
+ISSUE_QUERY = """
+query($owner:String!,$name:String!,$first:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    issues(first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+      totalCount
+      pageInfo{ hasNextPage endCursor }
+      nodes{
+        number title url state createdAt updatedAt closedAt body
+        author{ login ... on User { avatarUrl } }
+        labels(first:30){ nodes{ name } }
+        assignees(first:10){ nodes{ login avatarUrl } }
+        comments(first:100){ nodes{ body createdAt author{ login } } }
+        timelineItems(first:50, itemTypes:[CROSS_REFERENCED_EVENT]){
+          nodes{
+            ... on CrossReferencedEvent {
+              source{ ... on PullRequest { number state url } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
 def backfill_pr_files(nodes: list[dict[str, Any]]) -> None:
     """Ensure every PR node carries its COMPLETE file list.
 
@@ -1146,6 +1187,35 @@ PROPOSAL_SECTION_RE = re.compile(
 )
 HASH_NUM_RE = re.compile(r"#(\d+)")
 PLAIN_NUM_RE = re.compile(r"task\s+proposal\s*#?\s*(\d+)", re.IGNORECASE)
+
+
+# A repair PR names the issue it fixes with a closing keyword ("Fixes #123")
+# or an issue URL. Only numbers that resolve to a known ISSUE count — "Fixes
+# #629" pointing at a PR is a different thing and is dropped.
+LINKED_ISSUE_RE = re.compile(
+    r"(?:\b(?:fix(?:e[sd])?|close[sd]?|resolve[sd]?)\b\s*:?\s*#(\d+))"
+    r"|(?:github\.com/[^/\s]+/[^/\s]+/issues/(\d+))",
+    re.IGNORECASE,
+)
+
+
+def find_linked_issues(
+    body: str, issues_by_number: dict[int, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for m in LINKED_ISSUE_RE.finditer(body or ""):
+        num = int(m.group(1) or m.group(2))
+        issue = issues_by_number.get(num)
+        if not issue or any(o["number"] == num for o in out):
+            continue
+        out.append({
+            "number": num,
+            "title": issue["title"],
+            "url": issue["url"],
+            "state": issue["state"],
+            "kind": issue["kind"],
+        })
+    return out
 
 
 def find_linked_proposal(
@@ -1897,6 +1967,190 @@ def fetch_discussions(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     return merged, status
 
 
+ISSUE_PAGE = 25
+
+
+def fetch_issues(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    """Fetch issue nodes incrementally, merged over `base`.
+
+    Everything shown for an issue (assignees, the routing comment, close state,
+    cross-references) bumps its updatedAt, so the discussion-style early-stop is
+    safe. Never fatal: this is a secondary section, so a failed fetch — even on
+    a cold start — degrades to whatever the cache holds and flags the run
+    `stale` rather than aborting the whole dashboard.
+    """
+    stats: dict[str, Any] = {}
+    try:
+        changed = paged(
+            ISSUE_QUERY, "issues",
+            extra_vars={"first": ISSUE_PAGE}, max_pages=None,
+            stop=_unchanged(base), require_complete=True, stats=stats,
+        )
+    except GHError as e:
+        sys.stderr.write(f"issue fetch failed ({e}); keeping cached issues.\n")
+        return merge_nodes(base, []), "stale"
+    merged = merge_nodes(base, changed)
+    total = stats.get("total_count")
+    if total is not None:
+        COVERAGE["issues"] = {"shown": len(merged), "upstream": total}
+    sys.stderr.write(
+        f"Issues: {len(changed)} fetched fresh, {len(base)} cached, "
+        f"{len(merged)}/{total if total is not None else '?'} total.\n"
+    )
+    return merged, ("ok" if total is None or len(merged) >= total else "stale")
+
+
+# The task-fix.yml form renders its dropdown/text fields as `### <label>`
+# sections; the title prefix is the fallback for issues filed without the form.
+ISSUE_TASK_RE = re.compile(r"^###\s*Task\s*\n+\s*([^\n]+)", re.MULTILINE)
+ISSUE_CATEGORY_RE = re.compile(r"^###\s*Category\s*\n+\s*([^\n]+)", re.MULTILINE)
+TASK_FIX_TITLE_RE = re.compile(r"^\s*\[TASK FIX\]\s*([A-Za-z0-9._-]+)\s*:", re.IGNORECASE)
+# Written by upstream task-fix-issue.yml when it assigns the original reviewers.
+TASK_FIX_REVIEWERS_RE = re.compile(r"<!--\s*task-fix-reviewers:\s*(\{.*?\})\s*-->", re.DOTALL)
+
+
+def _slug_in_text(text: str, slugs: dict[str, tuple[str, str]]) -> str | None:
+    """The longest known task slug appearing as a whole token in `text`."""
+    low = text.lower()
+    best: str | None = None
+    for slug in slugs:
+        if len(slug) < 6 and slug not in ("qsm",):
+            # A very short slug ("pde") would match inside ordinary words.
+            continue
+        if re.search(rf"(?<![A-Za-z0-9-]){re.escape(slug.lower())}(?![A-Za-z0-9-])", low):
+            if best is None or len(slug) > len(best):
+                best = slug
+    return best
+
+
+def build_issues(
+    nodes: list[dict[str, Any]],
+    now: datetime,
+    taxonomy: dict[str, dict[str, list[str]]],
+    task_locations: dict[str, tuple[str, str]],
+) -> list[dict[str, Any]]:
+    """One row per issue, classified (`task fix` / `task` / `infra`) and, where
+    it concerns a task, resolved to that task."""
+    rows: list[dict[str, Any]] = []
+    for n in nodes:
+        labels = [lab["name"] for lab in n.get("labels", {}).get("nodes", []) or []]
+        body = n.get("body") or ""
+        title = n.get("title") or ""
+        is_fix = "task fix" in labels
+
+        task_dir: str | None = None
+        slug: str | None = None
+        # 1. The form's Task dropdown.
+        m = ISSUE_TASK_RE.search(body)
+        raw = (m.group(1).strip() if m else "").strip("`\"' ")
+        if raw.startswith("tasks/"):
+            parts = [x for x in raw.split("/") if x]
+            if len(parts) >= 4:
+                task_dir = "/".join(parts[:4])
+                slug = parts[3]
+        # 2. The form's title prefix.
+        if not slug:
+            mt = TASK_FIX_TITLE_RE.search(title)
+            slug = mt.group(1) if mt else None
+        # 3. Free-form issues: a known slug in the TITLE ("duan-thesis: incorrect
+        #    task instruction"). Title only — a tasks/ path in the body is as
+        #    likely to be an example in an infra report as the subject.
+        if not slug:
+            slug = _slug_in_text(title, task_locations)
+        # Labels first (the two issue forms), the title heuristic only for
+        # legacy free-form issues filed before blank issues were disabled.
+        if is_fix:
+            kind = "task fix"
+        elif "infra" in labels:
+            kind = "infra"
+        else:
+            kind = "task" if slug else "infra"
+        # The form path can predate a move; the live tree wins.
+        if slug and slug in task_locations:
+            d, f = task_locations[slug]
+            task_dir = f"tasks/{d}/{f}/{slug}"
+        domain, subfield = (
+            field_from_pr_files([f"{task_dir}/task.toml"], taxonomy, task_locations)
+            if task_dir else (None, None)
+        )
+
+        mc = ISSUE_CATEGORY_RE.search(body)
+        category = mc.group(1).strip() if mc else None
+        if category in ("", "_No response_"):
+            category = None
+
+        # Slot roles for the assignees, from the routing workflow's marker.
+        roles: dict[str, str] = {}
+        task_pr: int | None = None
+        for c in reversed(n.get("comments", {}).get("nodes", []) or []):
+            mm = TASK_FIX_REVIEWERS_RE.search(c.get("body") or "")
+            if not mm:
+                continue
+            try:
+                payload = json.loads(mm.group(1))
+            except json.JSONDecodeError:
+                payload = {}
+            for slot in ("domain", "technical"):
+                h = payload.get(slot)
+                if h:
+                    roles[str(h).lower()] = slot
+            if isinstance(payload.get("pr"), int):
+                task_pr = payload["pr"]
+            break
+        role_order = {"domain": 0, "technical": 1, None: 2}
+        assignees = sorted(
+            (
+                {
+                    "login": a["login"],
+                    "avatar_url": a.get("avatarUrl"),
+                    "role": roles.get(a["login"].lower()),
+                }
+                for a in (n.get("assignees", {}).get("nodes", []) or [])
+            ),
+            key=lambda a: (role_order[a["role"]], a["login"].lower()),
+        )
+
+        linked: list[dict[str, Any]] = []
+        for ev in n.get("timelineItems", {}).get("nodes", []) or []:
+            src = (ev or {}).get("source") or {}
+            num = src.get("number")
+            if num and all(x["number"] != num for x in linked):
+                linked.append({
+                    "number": num,
+                    "state": (src.get("state") or "").lower(),
+                    "url": src.get("url"),
+                })
+
+        author = n.get("author") or {}
+        rows.append({
+            "number": n["number"],
+            "title": n["title"],
+            "url": n["url"],
+            "state": "open" if n.get("state") == "OPEN" else "closed",
+            "kind": kind,
+            "author": {
+                "login": author.get("login") or "ghost",
+                "avatar_url": author.get("avatarUrl"),
+            },
+            "task_dir": task_dir,
+            "slug": slug,
+            "task_pr": task_pr,
+            "domain": domain,
+            "subfield": subfield,
+            "category": category,
+            "assignees": assignees,
+            "linked_prs": linked,
+            "age_days": age_days(n["createdAt"], now),
+            "updated_days": age_days(n["updatedAt"], now),
+            "created_at": n["createdAt"],
+            "updated_at": n["updatedAt"],
+            "closed_at": n.get("closedAt"),
+            "labels": labels,
+            "body": body,
+        })
+    return sorted(rows, key=lambda r: -r["number"])
+
+
 def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
     """Group task directories that are the SAME task under different paths.
 
@@ -1957,8 +2211,10 @@ def build_prs(
     field_to_domain: dict[str, str],
     task_locations: dict[str, tuple[str, str]] | None = None,
     proposals: list[dict[str, Any]] | None = None,
+    issues: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Returns (task rows, `task fix` rows)."""
+    issues_by_number = {i["number"]: i for i in (issues or [])}
     proposals_by_num: dict[int, dict[str, Any]] = {}
     proposals_by_discussion: dict[int, dict[str, Any]] = {}
     for p in proposals or []:
@@ -2142,6 +2398,9 @@ def build_prs(
             "rubric": rubric,
             "cheat": cheat,
             "linked_proposal": linked_proposal,
+            # The Task Issue(s) a repair PR says it fixes — the fix-side
+            # counterpart of `linked_proposal` on a new-task PR.
+            "linked_issues": find_linked_issues(n.get("body") or "", issues_by_number),
             "body": n.get("body") or "",
             "head_sha": n.get("headRefOid"),
             "task_dir": task_dir,
@@ -2407,6 +2666,7 @@ def main() -> int:
     cache = load_raw_cache(args.cache)
     base_pr_nodes = cache.get("pr_nodes", []) or []
     base_discussion_nodes = cache.get("discussion_nodes", []) or []
+    base_issue_nodes = cache.get("issue_nodes", []) or []
 
     tree = fetch_tree()
     taxonomy, field_labels, field_to_domain = discover_taxonomy(tree)
@@ -2429,18 +2689,24 @@ def main() -> int:
     # failure still propagates and aborts the run.
     pr_nodes, prs_status = fetch_prs(base_pr_nodes)
     discussion_nodes, proposals_status = fetch_discussions(base_discussion_nodes)
-    fetch_status = {"prs": prs_status, "proposals": proposals_status}
+    issue_nodes, issues_status = fetch_issues(base_issue_nodes)
+    fetch_status = {
+        "prs": prs_status,
+        "proposals": proposals_status,
+        "issues": issues_status,
+    }
 
     # Persist whatever we ended up with (fresh + carried-over cache) so the next
     # run has a warm base to fetch incrementally against — even after a stale run.
-    save_raw_cache(args.cache, pr_nodes, discussion_nodes)
+    save_raw_cache(args.cache, pr_nodes, discussion_nodes, issue_nodes)
 
     # Build proposals first so we can backreference them when linking PRs.
     # We pass an empty pr_titles list initially since has_pr can still update
     # after PR build, but the PR's linked_proposal points back here.
     proposals_pre = build_proposals(discussion_nodes, now, [], field_to_domain)
+    issues = build_issues(issue_nodes, now, taxonomy, task_locations)
     prs, fixes = build_prs(
-        pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre
+        pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre, issues
     )
     proposals = build_proposals(
         discussion_nodes, now, [p["title"] for p in prs], field_to_domain
@@ -2471,6 +2737,9 @@ def main() -> int:
         # on the task rows they touch as `fix_rows`; a fix that matches no task
         # row is visible here and only here.
         "fixes": fixes,
+        # Every issue (the Task Issues tab), classified `task fix` / `task` /
+        # `infra` and resolved to its task where it concerns one.
+        "issues": issues,
         "proposals": proposals,
         "coverage": coverage,
         "stats": {
@@ -2484,6 +2753,10 @@ def main() -> int:
             "pending_proposals": sum(1 for p in proposals if p["status"] == "pending"),
             "needs_reviewer": sum(1 for p in prs if p["ball_in_court"] == "reviewer"),
             "needs_author": sum(1 for p in prs if p["ball_in_court"] == "author"),
+            "open_issues": sum(1 for i in issues if i["state"] == "open"),
+            "open_task_issues": sum(
+                1 for i in issues if i["state"] == "open" and i["kind"] != "infra"
+            ),
         },
     }
 
