@@ -579,7 +579,8 @@ export function PRsTable({
     () => [
       {
         accessorKey: "number",
-        size: 70,
+        // The Fixes tab's longest pill is "superseded"; the PRs tab's is "merged".
+        size: variant === "fixes" ? 85 : 70,
         header: "#",
         cell: ({ row }) => {
           // On a fix subrow, say which task PR it belongs to. It goes here
@@ -777,14 +778,11 @@ export function PRsTable({
           return (
             <span className="flex min-w-0 flex-col gap-0.5">
               <UserCell user={row.original.author} />
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="w-16 shrink-0 text-[10px] font-medium tracking-wider text-muted-foreground uppercase" title="Author of the task being fixed">
-                  task by
-                </span>
-                <span className="min-w-0 flex-1">
-                  <UserCell user={taskAuthors[0]} />
-                </span>
+              {/* Caption on its own line so the handle keeps the full column width. */}
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase" title="Author of the task being fixed">
+                task by
               </span>
+              <UserCell user={taskAuthors[0]} />
             </span>
           )
         },
