@@ -73,7 +73,7 @@ export function Pipeline() {
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#038F99]">
             Pull request deadline
           </div>
-          <div className="text-xs font-semibold text-[#038F99]">Aug 17, 2026</div>
+          <div className="text-xs font-semibold text-[#038F99]">Oct 5, 2026</div>
         </div>
       </div>
     </section>
