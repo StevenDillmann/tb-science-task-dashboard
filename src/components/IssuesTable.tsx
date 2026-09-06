@@ -477,7 +477,6 @@ export function IssuesTable({
                   user={a}
                   role={a.role}
                   reserveRole={anyRole}
-                  compact
                   onClick={() => setAssignee(toggleVal(assignee, a.login))}
                   active={assignee.includes(a.login)}
                 />

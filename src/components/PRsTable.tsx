@@ -809,7 +809,7 @@ export function PRsTable({
         cell: ({ row }) => (
           // Reviewers link to their GitHub; filtering by reviewer is via the
           // column-header dropdown only (not by clicking a row entry).
-          <ReviewersCell reviewers={row.original.reviewers} compact={variant === "fixes"} />
+          <ReviewersCell reviewers={row.original.reviewers} />
         ),
       },
       {
