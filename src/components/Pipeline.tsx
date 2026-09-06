@@ -67,7 +67,7 @@ export function Pipeline() {
           <Step
             icon={Crown}
             label="Reviewer & maintainer status"
-            detail="Extra authorship credit & area chair candidacy"
+            detail="Extra authorship credit"
             href={REVIEWER_POOL_URL}
           />
         </div>
