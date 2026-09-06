@@ -21,7 +21,7 @@ import { DOMAIN_LABELS, type Domain, type Issue, type IssueKind } from "@/lib/da
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
-import { BallChip, FieldChip, HumanReviewChip, IssueStatePill, UserCell } from "./Chips"
+import { FieldChip, HumanReviewChip, IssueStatePill, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
@@ -170,7 +170,6 @@ function sortText(sorting: SortingState): { label: string; detail: string; isDef
     case "title": return { label: "Title", detail: s.desc ? "Z→A" : "A→Z", isDefault }
     case "task": return { label: "Task", detail: s.desc ? "Z→A" : "A→Z", isDefault }
     case "posted": return { label: "Posted", detail: s.desc ? "oldest" : "newest", isDefault }
-    case "action": return { label: "Action", detail: s.desc ? "longest waiting" : "shortest waiting", isDefault }
     default: return { label: s.id, detail: s.desc ? "desc" : "asc", isDefault }
   }
 }
@@ -331,7 +330,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "title",
-        size: 230,
+        size: 265,
         // The Type facet hangs off this header, the way Tags does on the PRs
         // tab: the chip lives in the cell, the filter in the header.
         header: () => {
@@ -507,38 +506,8 @@ export function IssuesTable({
         },
       },
       {
-        id: "action",
-        accessorFn: (i) => (i.state !== "open" ? -1 : i.assignees.length ? i.updated_days : i.age_days),
-        size: 95,
-        header: ({ column }) => (
-          <button
-            className="inline-flex items-center gap-1"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            title="Whose move it is, and for how long"
-          >
-            ACTION <ArrowUpDown className="h-3 w-3" />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const i = row.original
-          if (i.state !== "open") return <span className="text-muted-foreground">—</span>
-          // Assigned: the ball is with the reviewer(s), aged from the last
-          // activity. Unassigned: it still needs an owner, aged from filing.
-          if (i.assignees.length) return <BallChip ball="reviewer" days={i.updated_days} />
-          return (
-            <span className="inline-flex flex-col items-start gap-0.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wider text-amber-600 uppercase dark:text-amber-400">
-                <CircleDot className="h-3 w-3" />
-                unassigned
-              </span>
-              <span className="font-mono text-[10px] text-muted-foreground">{i.age_days}d</span>
-            </span>
-          )
-        },
-      },
-      {
         id: "linked",
-        size: 100,
+        size: 135,
         header: () => (
           <span title="Pull requests that reference this issue — for a task fix, the repair PR">
             LINKED PR

@@ -69,9 +69,12 @@ export function Pipeline() {
             href={REVIEWER_POOL_URL}
           />
         </div>
-        <div className="ml-auto rounded-md border border-[#038F99]/30 bg-[#038F99]/10 px-4 py-2 text-right">
+        <div className="ml-auto whitespace-nowrap rounded-md border border-[#038F99]/30 bg-[#038F99]/10 px-4 py-2 text-right">
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#038F99]">
-            Terminal-Bench-Science 0.2 · PR deadline
+            Terminal-Bench-Science 0.2
+          </div>
+          <div className="text-[10px] uppercase tracking-wider text-[#038F99]/80">
+            Pull request deadline
           </div>
           <div className="text-xs font-semibold text-[#038F99]">Oct 5, 2026</div>
         </div>
