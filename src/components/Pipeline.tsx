@@ -39,8 +39,10 @@ export function Pipeline() {
         </a>
         .
       </p>
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
+      <div className="flex items-center gap-x-6 gap-y-3">
+        {/* The steps wrap within their own box (min-w-0 flex-1) so the deadline
+            card stays on this row instead of dropping below them. */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-2 text-sm">
           <Step
             icon={Send}
             label="Propose"
@@ -69,7 +71,7 @@ export function Pipeline() {
             href={REVIEWER_POOL_URL}
           />
         </div>
-        <div className="ml-auto whitespace-nowrap rounded-md border border-[#038F99]/30 bg-[#038F99]/10 px-4 py-2 text-right">
+        <div className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-[#038F99]/30 bg-[#038F99]/10 px-4 py-2 text-right">
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#038F99]">
             Terminal-Bench-Science 0.2
           </div>
