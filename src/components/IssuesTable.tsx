@@ -21,7 +21,7 @@ import { DOMAIN_LABELS, type Domain, type Issue, type IssueKind } from "@/lib/da
 import { useTaxonomy } from "@/lib/taxonomy"
 import { cn } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
-import { FieldChip, HumanReviewChip, IssueStatePill, UserCell } from "./Chips"
+import { FieldChip, HumanReviewChip, UserCell } from "./Chips"
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
@@ -110,9 +110,16 @@ const CATEGORY_SHORT: Record<string, string> = {
 }
 const shortCategory = (c: string | null) => (c ? (CATEGORY_SHORT[c] ?? c) : null)
 
-type StateFilter = "open" | "closed"
+/** Pill buckets. GitHub closes an issue as completed (done) or not planned
+ *  (won't do); the pill shows them as Completed (green) and Closed (red). */
+type StateFilter = "open" | "completed" | "closed"
 
-/** Same pill as the PRs tab, minus the merged bucket issues don't have. */
+function bucketOf(i: Issue): StateFilter {
+  if (i.state === "open") return "open"
+  return i.state_reason === "not_planned" || i.state_reason === "duplicate" ? "closed" : "completed"
+}
+
+/** Same pill as the PRs tab, with Completed / Closed in place of Merged / Closed. */
 function StateToggle({
   value,
   onChange,
@@ -127,12 +134,14 @@ function StateToggle({
   const items: { value: StateFilter | "all"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
     { value: "open", label: "Open", count: counts.open },
+    { value: "completed", label: "Completed", count: counts.completed },
     { value: "closed", label: "Closed", count: counts.closed },
   ]
   const activeTone: Record<string, string> = {
     all: "bg-accent text-accent-foreground",
     open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-    closed: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+    completed: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+    closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
   }
   return (
     <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
@@ -216,15 +225,15 @@ export function IssuesTable({
   }, [externalField, onExternalFieldConsumed])
 
   const stateCounts = useMemo(() => {
-    const c: Record<StateFilter, number> = { open: 0, closed: 0 }
-    for (const i of issues) c[i.state] += 1
+    const c: Record<StateFilter, number> = { open: 0, completed: 0, closed: 0 }
+    for (const i of issues) c[bucketOf(i)] += 1
     return c
   }, [issues])
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return issues.filter((i) => {
-      if (state !== "all" && i.state !== state) return false
+      if (state !== "all" && bucketOf(i) !== state) return false
       if (kind.length && !kind.includes(i.kind)) return false
       if (field.length) {
         const ok = field.some((f) =>
@@ -262,7 +271,7 @@ export function IssuesTable({
   // Column-filter counts follow the state pill only, so picking one value never
   // hides the others.
   const stateFiltered = useMemo(
-    () => (state === "all" ? issues : issues.filter((i) => i.state === state)),
+    () => (state === "all" ? issues : issues.filter((i) => bucketOf(i) === state)),
     [issues, state],
   )
   const kindOptions = useMemo(() => {
@@ -323,7 +332,6 @@ export function IssuesTable({
                 {i.number}
                 <ExternalLink className="h-3 w-3" />
               </a>
-              <IssueStatePill state={i.state} reason={i.state_reason} />
             </span>
           )
         },
