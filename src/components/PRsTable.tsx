@@ -284,30 +284,44 @@ const CI_OPTIONS = [
 
 /** Pill-shaped All / Open / Merged / Closed switcher — same shape language as
  * the theme toggle, just with text + count instead of icons. */
+/** The pill's buckets. `merged` means merged INTO THE MAIN SET; a merged task
+ *  that now sits in lite/ or archive/ is its own bucket, so "Merged" is the
+ *  benchmark and the other two are one click away. */
+export type PRBucket = PRState | "lite" | "archived"
+
+export function bucketOf(p: PR): PRBucket {
+  if (p.state === "merged" && (p.set === "lite" || p.set === "archived")) return p.set
+  return p.state
+}
+
 function StateToggle({
   value,
   onChange,
   counts,
   total,
 }: {
-  value: PRState | "all"
-  onChange: (v: PRState | "all") => void
-  counts: Record<PRState, number>
+  value: PRBucket | "all"
+  onChange: (v: PRBucket | "all") => void
+  counts: Record<PRBucket, number>
   total: number
 }) {
-  const items: { value: PRState | "all"; label: string; count: number }[] = [
+  const items: { value: PRBucket | "all"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
     { value: "open", label: "Open", count: counts.open ?? 0 },
     { value: "merged", label: "Merged", count: counts.merged ?? 0 },
     { value: "closed", label: "Closed", count: counts.closed ?? 0 },
+    { value: "lite", label: "Lite", count: counts.lite ?? 0 },
+    { value: "archived", label: "Archived", count: counts.archived ?? 0 },
   ]
   // Active highlight matches the state-pill palette: open=amber, merged=green,
-  // closed=grey, all=neutral accent.
+  // closed=grey, all=neutral accent; lite in the brand teal, archived muted.
   const activeTone: Record<string, string> = {
     all: "bg-accent text-accent-foreground",
     open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
     merged: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
     closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+    lite: "bg-[#038F99]/15 text-[#036f78] dark:bg-[#038F99]/25 dark:text-[#4fc3cc]",
+    archived: "bg-muted text-foreground",
   }
   return (
     <div className="inline-flex items-center rounded-full border p-1" role="radiogroup" aria-label="State">
@@ -383,7 +397,7 @@ export function PRsTable({
   urlPrefix?: string
   /** Both tabs default to `open` — the review queue in one, the fixes still
    *  needing review in the other. Merged/closed history is a pill click away. */
-  defaultState?: PRState | "all"
+  defaultState?: PRBucket | "all"
   /** `tasks` (new-task PRs, linked to a proposal) or `fixes` (repair PRs,
    *  linked to the Task Issue they fix). Swaps the PROPOSAL column for ISSUE. */
   variant?: "tasks" | "fixes"
@@ -413,7 +427,7 @@ export function PRsTable({
   // Filters are bound to URL query params so a filtered view is shareable and
   // survives reload / back-forward. `pr` holds the opened PR's number.
   const [search, setSearch] = useUrlState(k("q"), "")
-  const [state, setState] = useUrlState<PRState | "all">(k("state"), defaultState)
+  const [state, setState] = useUrlState<PRBucket | "all">(k("state"), defaultState)
   const [activeNum, setActiveNum] = useUrlState<number | null>(k("pr"), null, numberCodec)
   // Multi-select filters (OR within a column); `ball` (Action) stays single.
   const [field, setField] = useUrlState<string[]>(k("field"), [], stringArrayCodec)
@@ -429,8 +443,6 @@ export function PRsTable({
   // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
   // on the Task column, since that's where the chips render.
   const [tags, setTags] = useUrlState<string[]>(k("tags"), [], stringArrayCodec)
-  // Which set a merged task is in on main now (main / lite / archived).
-  const [taskSet, setTaskSet] = useUrlState<string[]>(k("set"), [], stringArrayCodec)
   // Which task rows have their fix subrows open. Deliberately NOT in the URL:
   // it's a transient reading gesture, not a view worth sharing.
   const [expanded, setExpanded] = useState<ExpandedState>({})
@@ -453,8 +465,7 @@ export function PRsTable({
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
-      if (state !== "all" && p.state !== state) return false
-      if (taskSet.length && !taskSet.includes(p.set ?? "")) return false
+      if (state !== "all" && bucketOf(p) !== state) return false
       if (field.length) {
         // `__domain:<slug>` matches any item in that domain; a plain slug
         // matches by subfield. A PR passes if it matches ANY selected entry.
@@ -489,7 +500,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, taskSet])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
 
   // Fix subrows obey the state pill too — otherwise the filter promises one
   // thing and the rows show another. `merged` is the one view that admits a
@@ -500,7 +511,9 @@ export function PRsTable({
   // so the count can never disagree with the rows it expands to.
   const rows = useMemo(() => {
     if (state === "all") return filtered
-    const shown: PRState[] = state === "merged" ? ["merged", "open"] : [state]
+    // Lite and archived tasks are landed tasks too: their open fixes stay in sight.
+    const shown: PRState[] =
+      state === "merged" || state === "lite" || state === "archived" ? ["merged", "open"] : [state]
     return filtered.map((p) =>
       p.fix_rows?.some((f) => !shown.includes(f.state))
         ? { ...p, fix_rows: p.fix_rows.filter((f) => shown.includes(f.state)) }
@@ -511,7 +524,7 @@ export function PRsTable({
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
   const stateFiltered = useMemo(
-    () => (state === "all" ? prs : prs.filter((p) => p.state === state)),
+    () => (state === "all" ? prs : prs.filter((p) => bucketOf(p) === state)),
     [prs, state],
   )
   const fieldCounts = useMemo(() => {
@@ -526,16 +539,6 @@ export function PRsTable({
   }, [stateFiltered])
   // Tag options come straight from the data, so a label upstream adds later
   // shows up as a filter choice without a code change. Most-common first.
-  const setOptions = useMemo(() => {
-    const c: Record<string, number> = {}
-    for (const p of prs) if (p.set) c[p.set] = (c[p.set] ?? 0) + 1
-    const order: Array<{ value: string; label: string; title: string }> = [
-      { value: "main", label: "main", title: "In the benchmark (tasks/)" },
-      { value: "lite", label: "lite", title: "Lite set (lite/)" },
-      { value: "archived", label: "archived", title: "Retired (archive/)" },
-    ]
-    return order.filter((o) => c[o.value]).map((o) => ({ value: o.value, label: o.label, count: c[o.value] }))
-  }, [prs])
   const tagOptions = useMemo(() => {
     const c: Record<string, number> = {}
     for (const p of stateFiltered) {
@@ -577,19 +580,7 @@ export function PRsTable({
       {
         accessorKey: "number",
         size: 70,
-        // The Set facet hangs off the # header: main / lite / archived is a
-        // property of where a merged task landed, shown under the number.
-        header: () => (
-          <ColumnFilter
-            title="#"
-            heading="Set"
-            options={setOptions}
-            selected={taskSet}
-            onToggle={(v) => setTaskSet(toggleVal(taskSet, v))}
-            onClearAll={() => setTaskSet([])}
-            {...openProps("set")}
-          />
-        ),
+        header: "#",
         cell: ({ row }) => {
           // On a fix subrow, say which task PR it belongs to. It goes here
           // rather than in the title so every column stays aligned with the
@@ -627,10 +618,11 @@ export function PRsTable({
               </a>
               <span className="inline-flex flex-col items-start leading-tight">
                 <StatePill tone={row.original.state} label={row.original.state} />
+                {/* Click jumps the pill to that bucket. */}
                 <SetPill
                   set={row.original.set}
-                  onClick={() => setTaskSet(toggleVal(taskSet, row.original.set ?? ""))}
-                  active={!!row.original.set && taskSet.includes(row.original.set)}
+                  onClick={() => setState(state === row.original.set ? "all" : (row.original.set as PRBucket))}
+                  active={state === row.original.set}
                 />
               </span>
             </span>
@@ -1191,7 +1183,7 @@ export function PRsTable({
         ),
       },
     ],
-    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, taskSet, setOptions, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
+    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, state, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -1213,7 +1205,6 @@ export function PRsTable({
   })
 
   const anyChip = !!(
-    taskSet.length ||
     field.length ||
     stage.length ||
     ball ||
@@ -1234,8 +1225,8 @@ export function PRsTable({
   // Per-state totals (ignoring other filters) drive the toggle counts so the
   // numbers stay stable as you select inside a state.
   const stateCounts = useMemo(() => {
-    const c: Record<PRState, number> = { open: 0, closed: 0, merged: 0 }
-    for (const p of prs) c[p.state] = (c[p.state] ?? 0) + 1
+    const c: Record<PRBucket, number> = { open: 0, closed: 0, merged: 0, lite: 0, archived: 0 }
+    for (const p of prs) c[bucketOf(p)] += 1
     return c
   }, [prs])
 
@@ -1344,9 +1335,6 @@ export function PRsTable({
               {tags.length > 0 && (
                 <FilterChip label="Tags" value={tags.join(", ")} onClear={() => setTags([])} />
               )}
-              {taskSet.length > 0 && (
-                <FilterChip label="Set" value={taskSet.join(", ")} onClear={() => setTaskSet([])} />
-              )}
               <button
                 type="button"
                 className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
@@ -1360,7 +1348,6 @@ export function PRsTable({
                   setPropStatus([])
                   setFit([])
                   setTags([])
-                  setTaskSet([])
                 }}
               >
                 Clear all filters
