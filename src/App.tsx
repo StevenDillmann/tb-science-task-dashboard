@@ -359,7 +359,9 @@ export default function App() {
               <TabsContent value="stats" className="mt-6">
                 <StatsView
                   proposals={data.proposals}
-                  prs={visiblePRs}
+                  // Statistics describe the MAIN set: a task that landed in
+                  // lite/ or archive/ is a merged PR but not a benchmark task.
+                  prs={visiblePRs.filter((p) => p.set !== "lite" && p.set !== "archived")}
                   onPickField={(pick) => {
                     setForcedField(pick.field)
                     if (pick.kind === "proposals") {

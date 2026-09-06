@@ -49,6 +49,30 @@ REVIEWER_ASSOCIATIONS = {"COLLABORATOR", "MEMBER", "OWNER"}
 
 TASK_PROPOSAL_CATEGORY = "Task Proposals"
 
+# Where a merged task can live on main, and the "set" the dashboard shows for it.
+# `tasks/` ships as the benchmark, `lite/` is the lite set (tasks judged too easy
+# for the main set but well built), `archive/` is retired. Both `lite/` and
+# `archive/` are expected to mirror the tasks/<domain>/<field>/<slug> nesting;
+# a flat archive/<slug> (the two tasks archived before nesting) is tolerated.
+TASK_ROOTS = {"tasks": "main", "lite": "lite", "archive": "archived"}
+
+
+def split_task_path(path: str) -> tuple[str, str | None, str | None, str, str] | None:
+    """(set, domain, field, slug, task_dir) for a path inside a task directory, else None.
+
+    Accepts `tasks/<d>/<f>/<slug>/…`, the same under `lite/` and `archive/`,
+    and flat `archive/<slug>/…` (domain and field unknown).
+    """
+    parts = path.split("/")
+    if not parts or parts[0] not in TASK_ROOTS:
+        return None
+    root = TASK_ROOTS[parts[0]]
+    if len(parts) >= 5 and parts[1] in DOMAIN_LABEL_SET:
+        return root, parts[1], parts[2], parts[3], "/".join(parts[:4])
+    if root == "archived" and len(parts) >= 3:
+        return root, None, None, parts[1], "/".join(parts[:2])
+    return None
+
 # Matches the structured "## Scientific Domain" section in proposal bodies.
 SCIENTIFIC_DOMAIN_RE = re.compile(
     r"##\s*Scientific\s+Domain\s*\n+([^\n]+)", re.IGNORECASE
@@ -724,8 +748,32 @@ def build_task_location_map(tree: list[dict[str, Any]]) -> dict[str, tuple[str, 
         if entry.get("type") != "tree":
             continue
         parts = entry.get("path", "").split("/")
-        if len(parts) == 4 and parts[0] == "tasks":
+        if len(parts) == 4 and parts[0] in TASK_ROOTS and parts[1] in DOMAIN_LABEL_SET:
             out[parts[3]] = (parts[1], parts[2])
+    return out
+
+
+def build_task_set_map(tree: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    """slug -> {"set": main|lite|archived, "dir": current directory} from the live tree.
+
+    The set is where the task's task.toml sits on main RIGHT NOW, so a task that
+    moved (a release swap, a lite demotion) reads as its new home on the next
+    rebuild without anyone tagging anything.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for entry in tree:
+        path = entry.get("path", "")
+        if entry.get("type") != "blob" or not path.endswith("/task.toml"):
+            continue
+        hit = split_task_path(path)
+        if not hit:
+            continue
+        set_name, _d, _f, slug, task_dir = hit
+        if slug == "hello-world":
+            continue
+        # A task present in two roots at once (mid-move) reads as main first.
+        if slug not in out or set_name == "main":
+            out[slug] = {"set": set_name, "dir": task_dir}
     return out
 
 
@@ -758,7 +806,7 @@ def field_from_pr_files(
     """
     for p in files:
         parts = p.split("/")
-        if len(parts) < 3 or parts[0] != "tasks":
+        if len(parts) < 3 or parts[0] not in TASK_ROOTS:
             continue
         domain, subfield = parts[1], parts[2]
         if domain in taxonomy and subfield in taxonomy.get(domain, {}):
@@ -766,14 +814,14 @@ def field_from_pr_files(
     if task_locations:
         for p in files:
             parts = p.split("/")
-            if len(parts) < 4 or parts[0] != "tasks":
+            if len(parts) < 4 or parts[0] not in TASK_ROOTS:
                 continue
             loc = task_locations.get(parts[3])
             if loc and loc[0] in taxonomy and loc[1] in taxonomy.get(loc[0], {}):
                 return loc
     for p in files:
         parts = p.split("/")
-        if len(parts) < 3 or parts[0] != "tasks":
+        if len(parts) < 3 or parts[0] not in TASK_ROOTS:
             continue
         alias = LEGACY_SUBFIELD_ALIASES.get((parts[1], parts[2]))
         if alias and alias[0] in taxonomy and alias[1] in taxonomy.get(alias[0], {}):
@@ -2028,7 +2076,9 @@ def build_issues(
     now: datetime,
     taxonomy: dict[str, dict[str, list[str]]],
     task_locations: dict[str, tuple[str, str]],
+    task_sets: dict[str, dict[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
+    task_sets = task_sets or {}
     """One row per issue, classified (`task fix` / `task` / `infra`) and, where
     it concerns a task, resolved to that task."""
     rows: list[dict[str, Any]] = []
@@ -2043,11 +2093,9 @@ def build_issues(
         # 1. The form's Task dropdown.
         m = ISSUE_TASK_RE.search(body)
         raw = (m.group(1).strip() if m else "").strip("`\"' ")
-        if raw.startswith("tasks/"):
-            parts = [x for x in raw.split("/") if x]
-            if len(parts) >= 4:
-                task_dir = "/".join(parts[:4])
-                slug = parts[3]
+        hit = split_task_path(raw + "/x") if raw else None  # `/x`: treat the dir as a path inside it
+        if hit:
+            task_dir, slug = hit[4], hit[3]
         # 2. The form's title prefix.
         if not slug:
             mt = TASK_FIX_TITLE_RE.search(title)
@@ -2066,13 +2114,13 @@ def build_issues(
         else:
             kind = "task" if slug else "infra"
         # The form path can predate a move; the live tree wins.
-        if slug and slug in task_locations:
-            d, f = task_locations[slug]
-            task_dir = f"tasks/{d}/{f}/{slug}"
+        if slug and slug in task_sets:
+            task_dir = task_sets[slug]["dir"]
         domain, subfield = (
             field_from_pr_files([f"{task_dir}/task.toml"], taxonomy, task_locations)
             if task_dir else (None, None)
         )
+        task_set = task_sets.get(slug, {}).get("set") if slug else None
 
         mc = ISSUE_CATEGORY_RE.search(body)
         category = mc.group(1).strip() if mc else None
@@ -2134,6 +2182,7 @@ def build_issues(
             },
             "task_dir": task_dir,
             "slug": slug,
+            "set": task_set,
             "task_pr": task_pr,
             "domain": domain,
             "subfield": subfield,
@@ -2184,9 +2233,9 @@ def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
     for n in nodes:
         by_dir: dict[str, set[str]] = {}
         for f in n.get("files", {}).get("nodes", []) or []:
-            parts = (f.get("path") or "").split("/")
-            if len(parts) >= 5 and parts[0] == "tasks":
-                by_dir.setdefault("/".join(parts[:4]), set()).add(f.get("changeType") or "")
+            hit = split_task_path(f.get("path") or "")
+            if hit:
+                by_dir.setdefault(hit[4], set()).add(f.get("changeType") or "")
         renamed = [d for d, c in by_dir.items() if "RENAMED" in c]
         gone = [
             d
@@ -2212,9 +2261,11 @@ def build_prs(
     task_locations: dict[str, tuple[str, str]] | None = None,
     proposals: list[dict[str, Any]] | None = None,
     issues: list[dict[str, Any]] | None = None,
+    task_sets: dict[str, dict[str, str]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Returns (task rows, `task fix` rows)."""
     issues_by_number = {i["number"]: i for i in (issues or [])}
+    task_sets = task_sets or {}
     proposals_by_num: dict[int, dict[str, Any]] = {}
     proposals_by_discussion: dict[int, dict[str, Any]] = {}
     for p in proposals or []:
@@ -2247,16 +2298,16 @@ def build_prs(
         for f in file_nodes:
             path = f.get("path", "")
             if f.get("changeType") == "ADDED" and path.endswith("/task.toml"):
-                parts = path.split("/")
-                if len(parts) == 5 and parts[0] == "tasks":
-                    task_dir = "/".join(parts[:4])
+                hit = split_task_path(path)
+                if hit:
+                    task_dir = hit[4]
                     break
         if not task_dir:
             for path in files:
                 if path.endswith("/task.toml"):
-                    parts = path.split("/")
-                    if len(parts) == 5 and parts[0] == "tasks":
-                        task_dir = "/".join(parts[:4])
+                    hit = split_task_path(path)
+                    if hit:
+                        task_dir = hit[4]
                         break
         # A fix PR that touches no task.toml at all still belongs to a task.
         task_dir = task_dir or task_dir_hint
@@ -2398,6 +2449,11 @@ def build_prs(
             "rubric": rubric,
             "cheat": cheat,
             "linked_proposal": linked_proposal,
+            # Which set the task is in on main right now (main / lite /
+            # archived), by slug — so a task that moved after its PR merged
+            # still reads correctly. Null for a task not on main (open/closed
+            # PR, or a merged task whose directory has since been deleted).
+            "set": (task_sets.get(task_dir.split("/")[-1], {}).get("set") if task_dir else None),
             # The Task Issue(s) a repair PR says it fixes — the fix-side
             # counterpart of `linked_proposal` on a new-task PR.
             "linked_issues": find_linked_issues(n.get("body") or "", issues_by_number),
@@ -2439,11 +2495,9 @@ def build_prs(
         # each of them.
         dirs: list[str] = []
         for path in files:
-            parts = path.split("/")
-            if len(parts) >= 5 and parts[0] == "tasks":
-                d = "/".join(parts[:4])
-                if d not in dirs:
-                    dirs.append(d)
+            hit = split_task_path(path)
+            if hit and hit[4] not in dirs:
+                dirs.append(hit[4])
         fix_dirs[n["number"]] = dirs
         row = build_row(n, labels, task_dir_hint=dirs[0] if dirs else None)
         # A fix spanning several tasks gets NO field tag. `build_row` derives one
@@ -2671,6 +2725,7 @@ def main() -> int:
     tree = fetch_tree()
     taxonomy, field_labels, field_to_domain = discover_taxonomy(tree)
     task_locations = build_task_location_map(tree)
+    task_sets = build_task_set_map(tree)
     merged_counts = count_merged_tasks(tree)
 
     if not taxonomy:
@@ -2704,9 +2759,9 @@ def main() -> int:
     # We pass an empty pr_titles list initially since has_pr can still update
     # after PR build, but the PR's linked_proposal points back here.
     proposals_pre = build_proposals(discussion_nodes, now, [], field_to_domain)
-    issues = build_issues(issue_nodes, now, taxonomy, task_locations)
+    issues = build_issues(issue_nodes, now, taxonomy, task_locations, task_sets)
     prs, fixes = build_prs(
-        pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre, issues
+        pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre, issues, task_sets
     )
     proposals = build_proposals(
         discussion_nodes, now, [p["title"] for p in prs], field_to_domain
@@ -2744,7 +2799,11 @@ def main() -> int:
         "coverage": coverage,
         "stats": {
             "open_prs": sum(1 for p in prs if p["state"] == "open"),
-            "merged_prs": sum(1 for p in prs if p["state"] == "merged"),
+            # Statistics are about the MAIN set: lite and archived tasks are
+            # merged PRs, but not benchmark tasks.
+            "merged_prs": sum(1 for p in prs if p["state"] == "merged" and p.get("set") not in ("lite", "archived")),
+            "lite_tasks": sum(1 for p in prs if p.get("set") == "lite"),
+            "archived_tasks": sum(1 for p in prs if p.get("set") == "archived"),
             "closed_prs": sum(1 for p in prs if p["state"] == "closed"),
             "open_proposals": sum(1 for p in proposals if p["state"] == "open"),
             "closed_proposals": sum(1 for p in proposals if p["state"] == "closed"),

@@ -23,6 +23,11 @@ export type Domain =
 
 export type PRState = "open" | "closed" | "merged"
 
+/** Where a merged task lives on main right now: `tasks/` (the benchmark),
+ *  `lite/` (well built but too easy for the main set), or `archive/`
+ *  (retired). Null for a task not on main. */
+export type TaskSet = "main" | "lite" | "archived"
+
 /** One `/run` result set: the per-model trial grid plus its roll-up. */
 export type TrialRun = {
     passed: number
@@ -112,6 +117,9 @@ export type PR = {
     avg_runtime_secs: number | null
     runtime_trials: number
   } | null
+  /** Which set the task is in on main now (by slug), or null. Set on the
+   *  task PR and on the fix PRs that touch it. */
+  set?: TaskSet | null
   linked_proposal: {
     proposal_number: number | null
     discussion_number: number
@@ -222,6 +230,8 @@ export type Issue = {
    *  against the live tree. Null for infra issues. */
   task_dir: string | null
   slug: string | null
+  /** Which set the task is in (main / lite / archived), or null. */
+  set?: TaskSet | null
   /** The original task PR the routing workflow traced the task to. */
   task_pr: number | null
   domain: Domain | null
@@ -248,6 +258,8 @@ export type Coverage = Record<
 export type Stats = {
   open_prs: number
   merged_prs: number
+  lite_tasks?: number
+  archived_tasks?: number
   closed_prs: number
   open_proposals: number
   closed_proposals: number

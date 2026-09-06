@@ -48,6 +48,7 @@ import {
   HumanReviewChip,
   RubricChip,
   StageChip,
+  SetPill,
   StatePill,
   TagChip,
   TrialsChip,
@@ -428,6 +429,8 @@ export function PRsTable({
   // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
   // on the Task column, since that's where the chips render.
   const [tags, setTags] = useUrlState<string[]>(k("tags"), [], stringArrayCodec)
+  // Which set a merged task is in on main now (main / lite / archived).
+  const [taskSet, setTaskSet] = useUrlState<string[]>(k("set"), [], stringArrayCodec)
   // Which task rows have their fix subrows open. Deliberately NOT in the URL:
   // it's a transient reading gesture, not a view worth sharing.
   const [expanded, setExpanded] = useState<ExpandedState>({})
@@ -451,6 +454,7 @@ export function PRsTable({
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
       if (state !== "all" && p.state !== state) return false
+      if (taskSet.length && !taskSet.includes(p.set ?? "")) return false
       if (field.length) {
         // `__domain:<slug>` matches any item in that domain; a plain slug
         // matches by subfield. A PR passes if it matches ANY selected entry.
@@ -485,7 +489,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, taskSet])
 
   // Fix subrows obey the state pill too — otherwise the filter promises one
   // thing and the rows show another. `merged` is the one view that admits a
@@ -522,6 +526,16 @@ export function PRsTable({
   }, [stateFiltered])
   // Tag options come straight from the data, so a label upstream adds later
   // shows up as a filter choice without a code change. Most-common first.
+  const setOptions = useMemo(() => {
+    const c: Record<string, number> = {}
+    for (const p of prs) if (p.set) c[p.set] = (c[p.set] ?? 0) + 1
+    const order: Array<{ value: string; label: string; title: string }> = [
+      { value: "main", label: "main", title: "In the benchmark (tasks/)" },
+      { value: "lite", label: "lite", title: "Lite set (lite/)" },
+      { value: "archived", label: "archived", title: "Retired (archive/)" },
+    ]
+    return order.filter((o) => c[o.value]).map((o) => ({ value: o.value, label: o.label, count: c[o.value] }))
+  }, [prs])
   const tagOptions = useMemo(() => {
     const c: Record<string, number> = {}
     for (const p of stateFiltered) {
@@ -563,7 +577,19 @@ export function PRsTable({
       {
         accessorKey: "number",
         size: 70,
-        header: "#",
+        // The Set facet hangs off the # header: main / lite / archived is a
+        // property of where a merged task landed, shown under the number.
+        header: () => (
+          <ColumnFilter
+            title="#"
+            heading="Set"
+            options={setOptions}
+            selected={taskSet}
+            onToggle={(v) => setTaskSet(toggleVal(taskSet, v))}
+            onClearAll={() => setTaskSet([])}
+            {...openProps("set")}
+          />
+        ),
         cell: ({ row }) => {
           // On a fix subrow, say which task PR it belongs to. It goes here
           // rather than in the title so every column stays aligned with the
@@ -599,7 +625,14 @@ export function PRsTable({
                 {row.original.number}
                 <ExternalLink className="h-3 w-3" />
               </a>
-              <StatePill tone={row.original.state} label={row.original.state} />
+              <span className="inline-flex flex-col items-start leading-tight">
+                <StatePill tone={row.original.state} label={row.original.state} />
+                <SetPill
+                  set={row.original.set}
+                  onClick={() => setTaskSet(toggleVal(taskSet, row.original.set ?? ""))}
+                  active={!!row.original.set && taskSet.includes(row.original.set)}
+                />
+              </span>
             </span>
           )
         },
@@ -1158,7 +1191,7 @@ export function PRsTable({
         ),
       },
     ],
-    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
+    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, taskSet, setOptions, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
   )
 
   const table = useReactTable({
@@ -1180,6 +1213,7 @@ export function PRsTable({
   })
 
   const anyChip = !!(
+    taskSet.length ||
     field.length ||
     stage.length ||
     ball ||
@@ -1310,6 +1344,9 @@ export function PRsTable({
               {tags.length > 0 && (
                 <FilterChip label="Tags" value={tags.join(", ")} onClear={() => setTags([])} />
               )}
+              {taskSet.length > 0 && (
+                <FilterChip label="Set" value={taskSet.join(", ")} onClear={() => setTaskSet([])} />
+              )}
               <button
                 type="button"
                 className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
@@ -1323,6 +1360,7 @@ export function PRsTable({
                   setPropStatus([])
                   setFit([])
                   setTags([])
+                  setTaskSet([])
                 }}
               >
                 Clear all filters

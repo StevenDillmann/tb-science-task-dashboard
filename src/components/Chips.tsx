@@ -24,6 +24,7 @@ import {
   type Reviewer,
   type ReviewerRole,
   type ReviewState,
+  TaskSet,
 } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 
@@ -275,6 +276,24 @@ const STATE_TEXT_TONE: Record<PillTone, string> = {
 export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
   return (
     <span className={cn("text-[10px] lowercase", STATE_TEXT_TONE[tone])}>{label}</span>
+  )
+}
+
+/** Which set a merged task landed in. Rendered on its own line under the
+ *  state pill ("merged" / "lite"); the main set is the default and says
+ *  nothing, so the qualifier only appears when it carries information. */
+export function SetPill({ set, onClick, active }: { set: TaskSet | null | undefined; onClick?: () => void; active?: boolean }) {
+  if (!set || set === "main") return null
+  const tone = set === "lite"
+    ? "text-[#038F99] dark:text-[#4fc3cc]"
+    : "text-muted-foreground"
+  const title = set === "lite"
+    ? "In the lite set (lite/): well built, but too easy for the main benchmark"
+    : "Archived (archive/): retired from the benchmark"
+  return (
+    <Clickable onClick={onClick} active={active} title={title}>
+      <span className={cn("text-[10px] lowercase", tone)}>{set}</span>
+    </Clickable>
   )
 }
 
