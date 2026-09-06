@@ -53,8 +53,8 @@ TASK_PROPOSAL_CATEGORY = "Task Proposals"
 # Where a merged task can live on main, and the "set" the dashboard shows for it.
 # `tasks/` ships as the benchmark, `lite/` is the lite set (tasks judged too easy
 # for the main set but well built), `archive/` is retired. Both `lite/` and
-# `archive/` are expected to mirror the tasks/<domain>/<field>/<slug> nesting;
-# a flat archive/<slug> (the two tasks archived before nesting) is tolerated.
+# `archive/` are flat (lite/<slug>, archive/<slug>); the nested form is also
+# accepted in case a task is ever moved with its domain/field path intact.
 TASK_ROOTS = {"tasks": "main", "lite": "lite", "archive": "archived"}
 
 
@@ -70,7 +70,9 @@ def split_task_path(path: str) -> tuple[str, str | None, str | None, str, str] |
     root = TASK_ROOTS[parts[0]]
     if len(parts) >= 5 and parts[1] in DOMAIN_LABEL_SET:
         return root, parts[1], parts[2], parts[3], "/".join(parts[:4])
-    if root == "archived" and len(parts) >= 3:
+    # lite/ and archive/ are FLAT (lite/<slug>, archive/<slug>): no domain or
+    # field in the path — those come from the task's own PR row.
+    if root in ("lite", "archived") and len(parts) >= 3:
         return root, None, None, parts[1], "/".join(parts[:2])
     return None
 
@@ -2569,6 +2571,12 @@ def build_prs(
         row["fix_rows"].sort(key=lambda f: f["number"])
     for fix in fix_rows:
         fix.setdefault("task_authors", [])
+        # A fix to a task in a flat root (lite/<slug>, archive/<slug>) has no
+        # domain/field in its paths: inherit them from the task it fixes.
+        if not fix.get("subfield") and fix["fix_of"]:
+            parent = rows_by_num.get(fix["fix_of"][0])
+            if parent and parent.get("subfield") and len(fix["fix_of"]) == 1:
+                fix["domain"], fix["subfield"], fix["field"] = parent["domain"], parent["subfield"], parent.get("field")
         # A fix's set is its TASK's set, shown for information only: the fix
         # itself is bucketed by its own merge state. A fix spanning tasks in
         # different sets (or matching no task) carries none.
