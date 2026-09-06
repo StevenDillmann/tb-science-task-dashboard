@@ -1098,26 +1098,46 @@ export function UserCell({
 }) {
   if (!user) return <span className="text-muted-foreground">—</span>
   const inner = (
-    <span className="inline-flex max-w-full min-w-0 items-center gap-2 align-middle">
+    <span className={cn("inline-flex max-w-full min-w-0 align-middle", tag && !role ? "flex-col items-start gap-0" : "items-center gap-2")}>
+      {/* A free-text tag is a caption ABOVE the name, so the handle keeps the
+          column's full width (the PRs and Fixes tabs share one AUTHOR width). */}
+      {tag && !role && (
+        <span className="whitespace-nowrap text-[10px] font-medium tracking-wider text-muted-foreground uppercase">{tag}</span>
+      )}
+      {tag && !role ? (
+        <span className="inline-flex max-w-full min-w-0 items-center gap-2">
+          {user.avatar_url ? (
+            <img src={user.avatar_url} alt="" className="h-5 w-5 shrink-0 rounded-full" loading="lazy" />
+          ) : (
+            <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
+          )}
+          <span className="min-w-0 truncate text-sm group-hover:underline">{user.login}</span>
+          {status && <ReviewStatusIcon status={status} />}
+        </span>
+      ) : null}
       {/* Reserve the fixed-width label slot whenever the cell has roles, so
           avatars share one left edge even on rows whose own role is blank. */}
-      {(role || tag || reserveRole) && (
-        <span className={cn("-mr-1 shrink-0 whitespace-nowrap text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase", role || reserveRole ? "w-16" : "w-14")}>
-          {role ? (ROLE_LABEL[role] ?? role) : (tag ?? "")}
+      {!(tag && !role) && (role || reserveRole) && (
+        <span className="-mr-1 w-16 shrink-0 whitespace-nowrap text-left text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+          {role ? (ROLE_LABEL[role] ?? role) : ""}
         </span>
       )}
-      {user.avatar_url ? (
-        <img
-          src={user.avatar_url}
-          alt=""
-          className="h-5 w-5 shrink-0 rounded-full"
-          loading="lazy"
-        />
-      ) : (
-        <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
+      {!(tag && !role) && (
+        <>
+          {user.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt=""
+              className="h-5 w-5 shrink-0 rounded-full"
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
+          )}
+          <span className="min-w-0 truncate text-sm group-hover:underline">{user.login}</span>
+          {status && <ReviewStatusIcon status={status} />}
+        </>
       )}
-      <span className="min-w-0 truncate text-sm group-hover:underline">{user.login}</span>
-      {status && <ReviewStatusIcon status={status} />}
     </span>
   )
   const titleSuffix = status ? ` · ${REVIEW_STATUS_LABEL[status]}` : ""

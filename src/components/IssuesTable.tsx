@@ -405,7 +405,7 @@ export function IssuesTable({
       {
         id: "author",
         // Same as the PRs tab.
-        size: 250,
+        size: 195,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -429,7 +429,7 @@ export function IssuesTable({
             )
           // A report about someone else's task: who filed it, and whose task it is.
           return (
-            <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="flex min-w-0 flex-col gap-1">
               <UserCell
                 user={i.author}
                 tag="issue by"
@@ -533,8 +533,8 @@ export function IssuesTable({
         id: "linked",
         size: 110,
         header: () => (
-          <span title="Pull requests that reference this issue — for a task fix, the repair PR">
-            LINKED PR
+          <span title="The pull request that fixes this issue (any PR that references it, e.g. “Fixes #123”)">
+            FIX PR
           </span>
         ),
         // Same shape as the PRs tab's PROPOSAL cell: mono #number link plus a

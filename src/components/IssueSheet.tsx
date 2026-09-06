@@ -111,7 +111,7 @@ export function IssueSheet({
                   </dd>
                   {issue.linked_prs.length > 0 && (
                     <>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Linked PR</dt>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fix PR</dt>
                       <dd className="flex flex-col gap-0.5">
                         {issue.linked_prs.map((p) => (
                           <a
