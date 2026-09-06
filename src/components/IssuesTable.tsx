@@ -330,7 +330,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "title",
-        size: 265,
+        size: 230,
         // The Type facet hangs off this header, the way Tags does on the PRs
         // tab: the chip lives in the cell, the filter in the header.
         header: () => {
@@ -376,7 +376,7 @@ export function IssuesTable({
       },
       {
         accessorKey: "subfield",
-        size: 165,
+        size: 160,
         header: () => (
           <FieldColumnFilter
             selected={field}
@@ -397,7 +397,8 @@ export function IssuesTable({
       },
       {
         id: "author",
-        size: 170,
+        // Same as the PRs tab — fits the longest handle (AllenGrahamHart).
+        size: 195,
         header: () => (
           <ColumnFilter
             title="AUTHOR"
@@ -418,7 +419,8 @@ export function IssuesTable({
       },
       {
         id: "assignees",
-        size: 200,
+        // Same as the PRs tab's REVIEWER: role label + avatar + longest handle.
+        size: 280,
         header: () => (
           <ColumnFilter
             title="REVIEWER"
@@ -452,7 +454,7 @@ export function IssuesTable({
       {
         id: "task",
         accessorFn: (i) => i.slug ?? "",
-        size: 170,
+        size: 150,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
@@ -483,7 +485,7 @@ export function IssuesTable({
       },
       {
         id: "category",
-        size: 130,
+        size: 120,
         header: () => (
           <ColumnFilter
             title="CATEGORY"
@@ -506,7 +508,7 @@ export function IssuesTable({
       {
         id: "action",
         accessorFn: (i) => (i.state !== "open" ? -1 : i.assignees.length ? i.updated_days : i.age_days),
-        size: 100,
+        size: 95,
         header: ({ column }) => (
           <button
             className="inline-flex items-center gap-1"
@@ -535,7 +537,7 @@ export function IssuesTable({
       },
       {
         id: "linked",
-        size: 110,
+        size: 100,
         header: () => (
           <span title="Pull requests that reference this issue — for a task fix, the repair PR">
             LINKED PR
@@ -574,7 +576,7 @@ export function IssuesTable({
       {
         id: "posted",
         accessorKey: "age_days",
-        size: 100,
+        size: 90,
         header: ({ column }) => (
           <button
             className="inline-flex items-start gap-1 text-left"

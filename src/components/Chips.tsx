@@ -278,7 +278,7 @@ const STATE_TEXT_TONE: Record<PillTone, string> = {
 
 export function StatePill({ tone, label }: { tone: PillTone; label: string }) {
   return (
-    <span className={cn("text-[10px] lowercase", STATE_TEXT_TONE[tone])}>{label}</span>
+    <span className={cn("whitespace-nowrap text-[10px] lowercase", STATE_TEXT_TONE[tone])}>{label}</span>
   )
 }
 
