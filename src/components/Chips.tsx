@@ -1098,23 +1098,17 @@ export function UserCell({
 }) {
   if (!user) return <span className="text-muted-foreground">—</span>
   const inner = (
-    <span className={cn("inline-flex max-w-full min-w-0 align-middle", tag && !role ? "flex-col items-start gap-0" : "items-center gap-2")}>
-      {/* A free-text tag is a caption ABOVE the name, so the handle keeps the
-          column's full width (the PRs and Fixes tabs share one AUTHOR width). */}
+    <span className="inline-flex max-w-full min-w-0 items-center gap-2 align-middle">
+      {/* A free-text tag ("fix by", "task by", "issue by") sits INLINE before the
+          name. The PRs and Fixes tabs share one 195px AUTHOR width, so these
+          lines drop the avatar and use the smaller text to fit a full handle. */}
       {tag && !role && (
-        <span className="whitespace-nowrap text-[10px] font-medium tracking-wider text-muted-foreground uppercase">{tag}</span>
-      )}
-      {tag && !role ? (
-        <span className="inline-flex max-w-full min-w-0 items-center gap-2">
-          {user.avatar_url ? (
-            <img src={user.avatar_url} alt="" className="h-5 w-5 shrink-0 rounded-full" loading="lazy" />
-          ) : (
-            <div className="h-5 w-5 shrink-0 rounded-full bg-muted" />
-          )}
-          <span className="min-w-0 truncate text-sm group-hover:underline">{user.login}</span>
+        <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
+          <span className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground uppercase">{tag}</span>
+          <span className="min-w-0 truncate text-xs group-hover:underline">{user.login}</span>
           {status && <ReviewStatusIcon status={status} />}
         </span>
-      ) : null}
+      )}
       {/* Reserve the fixed-width label slot whenever the cell has roles, so
           avatars share one left edge even on rows whose own role is blank. */}
       {!(tag && !role) && (role || reserveRole) && (
