@@ -2536,6 +2536,7 @@ def build_prs(
     # exact-string match silently loses the link.
     rows_by_dir: dict[str, list[dict[str, Any]]] = {}
     rows_by_slug: dict[str, list[dict[str, Any]]] = {}
+    rows_by_num = {row["number"]: row for row in rows}
     for row in rows:
         if row["task_dir"]:
             rows_by_dir.setdefault(row["task_dir"], []).append(row)
@@ -2567,6 +2568,11 @@ def build_prs(
         row["fix_rows"].sort(key=lambda f: f["number"])
     for fix in fix_rows:
         fix.setdefault("task_authors", [])
+        # A fix's set is its TASK's set, shown for information only: the fix
+        # itself is bucketed by its own merge state. A fix spanning tasks in
+        # different sets (or matching no task) carries none.
+        parent_sets = {rows_by_num[n]["set"] for n in fix["fix_of"] if n in rows_by_num}
+        fix["set"] = parent_sets.pop() if len(parent_sets) == 1 else None
     return rows, sorted(fix_rows, key=lambda f: -f["number"])
 
 

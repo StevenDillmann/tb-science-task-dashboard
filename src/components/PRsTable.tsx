@@ -289,8 +289,11 @@ const CI_OPTIONS = [
  *  benchmark and the other two are one click away. */
 export type PRBucket = PRState | "lite" | "archived"
 
-export function bucketOf(p: PR): PRBucket {
-  if (p.state === "merged" && (p.set === "lite" || p.set === "archived")) return p.set
+export function bucketOf(p: PR, variant: "tasks" | "fixes" = "tasks"): PRBucket {
+  // A fix PR is bucketed by its own merge state. Its task's set is shown as
+  // information under the number, but a repair to an archived task is still
+  // a merged (or open, or closed) repair.
+  if (variant === "tasks" && p.state === "merged" && (p.set === "lite" || p.set === "archived")) return p.set
   return p.state
 }
 
@@ -299,19 +302,26 @@ function StateToggle({
   onChange,
   counts,
   total,
+  sets = true,
 }: {
   value: PRBucket | "all"
   onChange: (v: PRBucket | "all") => void
   counts: Record<PRBucket, number>
   total: number
+  /** Show the Lite / Archived buckets (task PRs only). */
+  sets?: boolean
 }) {
   const items: { value: PRBucket | "all"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
     { value: "open", label: "Open", count: counts.open ?? 0 },
     { value: "merged", label: "Merged", count: counts.merged ?? 0 },
     { value: "closed", label: "Closed", count: counts.closed ?? 0 },
-    { value: "lite", label: "Lite", count: counts.lite ?? 0 },
-    { value: "archived", label: "Archived", count: counts.archived ?? 0 },
+    ...(sets
+      ? [
+          { value: "lite" as const, label: "Lite", count: counts.lite ?? 0 },
+          { value: "archived" as const, label: "Archived", count: counts.archived ?? 0 },
+        ]
+      : []),
   ]
   // Active highlight matches the state-pill palette: open=amber, merged=green,
   // closed=grey, all=neutral accent; lite in the brand teal, archived muted.
@@ -465,7 +475,7 @@ export function PRsTable({
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
-      if (state !== "all" && bucketOf(p) !== state) return false
+      if (state !== "all" && bucketOf(p, variant) !== state) return false
       if (field.length) {
         // `__domain:<slug>` matches any item in that domain; a plain slug
         // matches by subfield. A PR passes if it matches ANY selected entry.
@@ -500,7 +510,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, variant])
 
   // Fix subrows obey the state pill too — otherwise the filter promises one
   // thing and the rows show another. `merged` is the one view that admits a
@@ -524,8 +534,8 @@ export function PRsTable({
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
   const stateFiltered = useMemo(
-    () => (state === "all" ? prs : prs.filter((p) => bucketOf(p) === state)),
-    [prs, state],
+    () => (state === "all" ? prs : prs.filter((p) => bucketOf(p, variant) === state)),
+    [prs, state, variant],
   )
   const fieldCounts = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.subfield)
@@ -621,8 +631,12 @@ export function PRsTable({
                 {/* Click jumps the pill to that bucket. */}
                 <SetPill
                   set={row.original.set}
-                  onClick={() => setState(state === row.original.set ? "all" : (row.original.set as PRBucket))}
-                  active={state === row.original.set}
+                  onClick={
+                    variant === "tasks"
+                      ? () => setState(state === row.original.set ? "all" : (row.original.set as PRBucket))
+                      : undefined
+                  }
+                  active={variant === "tasks" && state === row.original.set}
                 />
               </span>
             </span>
@@ -1252,9 +1266,9 @@ export function PRsTable({
   // numbers stay stable as you select inside a state.
   const stateCounts = useMemo(() => {
     const c: Record<PRBucket, number> = { open: 0, closed: 0, merged: 0, lite: 0, archived: 0 }
-    for (const p of prs) c[bucketOf(p)] += 1
+    for (const p of prs) c[bucketOf(p, variant)] += 1
     return c
-  }, [prs])
+  }, [prs, variant])
 
   // Receive filters from Stats and apply them.
   useEffect(() => {
@@ -1281,7 +1295,7 @@ export function PRsTable({
           placeholder="Search"
           className="max-w-sm"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} sets={variant === "tasks"} />
         <span className="text-xs text-muted-foreground">
           {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>
