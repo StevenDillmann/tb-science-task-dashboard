@@ -2260,7 +2260,7 @@ def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
 
     for n in nodes:
         by_dir: dict[str, set[str]] = {}
-        for f in n.get("files", {}).get("nodes", []) or []:
+        for f in (n.get("files") or {}).get("nodes", []) or []:
             hit = split_task_path(f.get("path") or "")
             if hit:
                 by_dir.setdefault(hit[4], set()).add(f.get("changeType") or "")
@@ -2314,7 +2314,7 @@ def build_prs(
         fix's task directory: a fix usually touches an EXISTING task.toml rather
         than adding one, so the ADDED-file detection below finds nothing.
         """
-        file_nodes = n.get("files", {}).get("nodes", []) or []
+        file_nodes = (n.get("files") or {}).get("nodes", []) or []
         files = [f["path"] for f in file_nodes]
 
         # Priority 1: file paths in the PR. Priority 2: title prefix.
@@ -2517,7 +2517,7 @@ def build_prs(
         labels = [lab["name"] for lab in n["labels"]["nodes"]]
         if "task fix" not in labels:
             continue
-        files = [f["path"] for f in (n.get("files", {}).get("nodes", []) or [])]
+        files = [f["path"] for f in ((n.get("files") or {}).get("nodes", []) or [])]
         # EVERY task directory the fix touches, not just the first: a repo-wide
         # fix (e.g. a spell-check pass) spans several tasks and belongs under
         # each of them.
