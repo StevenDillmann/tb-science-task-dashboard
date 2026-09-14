@@ -1049,8 +1049,13 @@ def backfill_pr_files(nodes: list[dict[str, Any]]) -> None:
     """
     backfilled = 0
     for n in nodes:
-        conn = n.get("files", {})
-        page = conn.get("pageInfo", {}) or {}
+        # `.get("files", {})` is not enough: the default only applies when the
+        # key is ABSENT, and GraphQL returns `"files": null` outright for some
+        # PRs (a deleted head repo is the usual cause). That null then crashed
+        # the whole fetch with AttributeError on the next line, taking every
+        # rebuild down with it.
+        conn = n.get("files") or {}
+        page = conn.get("pageInfo") or {}
         cursor = page.get("endCursor") if page.get("hasNextPage") else None
         if not cursor:
             # A node cached before files carried pageInfo can't say whether it
