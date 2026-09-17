@@ -438,3 +438,6 @@ dist/
 # Claude Code local config
 .claude/
 *.tsbuildinfo
+
+# Harbor run artifacts (trajectories, may contain redacted secrets)
+jobs/

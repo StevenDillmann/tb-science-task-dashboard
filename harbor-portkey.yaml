@@ -1,0 +1,30 @@
+# Run the Claude Code agent through a Portkey gateway (Anthropic provider).
+#
+# Usage:
+#   harbor run -c harbor-portkey.yaml --env-file .env                 # full dataset
+#   harbor run -c harbor-portkey.yaml --env-file .env -p ./sometask   # one local task
+#
+# Secrets live in .env (gitignored) and are injected via the ${...} templates
+# below. Because these values are templates, Harbor persists them verbatim into
+# jobs/*/config.json and lock.json — the resolved key is NEVER written to disk.
+#
+# NOTE: ANTHROPIC_BASE_URL is intentionally NOT set here. The claude-code adapter
+# reads it from the process environment, which `--env-file` populates
+# (load_dotenv(..., override=True)). Keep it in .env.
+
+n_concurrent_trials: 4
+
+environment:
+  type: docker
+
+agents:
+  - name: claude-code
+    model_name: claude-opus-4-1
+    env:
+      # Portkey authenticates off the x-portkey-api-key custom header, so this
+      # token only needs to be non-empty to satisfy the CLI's boot auth check.
+      ANTHROPIC_AUTH_TOKEN: ${PORTKEY_API_KEY}
+      ANTHROPIC_CUSTOM_HEADERS: ${PORTKEY_HEADERS}
+
+datasets:
+  - name: terminal-bench/terminal-bench-2

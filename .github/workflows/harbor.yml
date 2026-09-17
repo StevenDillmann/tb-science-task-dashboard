@@ -1,0 +1,105 @@
+name: Harbor Eval (Portkey)
+
+# Manually-triggered so it never runs (or bills Portkey/Anthropic) on its own.
+# Runs the Claude Code agent over a Terminal-Bench dataset, routed through a
+# Portkey gateway. Credentials come from repo Secrets/Variables:
+#   Secret    PORTKEY_API_KEY   — your Portkey API key
+#   Variable  PORTKEY_PROVIDER  — Portkey provider slug (e.g. "anthropic")
+#   Variable  HARBOR_MODEL      — default model (e.g. "claude-opus-4-1")
+#   Variable  HARBOR_DATASET    — default dataset (e.g. "terminal-bench/terminal-bench-2")
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model (blank → repo var HARBOR_MODEL)"
+        required: false
+        default: ""
+      dataset:
+        description: "Dataset name[@version] (blank → repo var HARBOR_DATASET)"
+        required: false
+        default: ""
+      task_filter:
+        description: "Only run tasks matching this glob (blank → all tasks)"
+        required: false
+        default: ""
+      n_concurrent:
+        description: "Concurrent trials"
+        required: false
+        default: "4"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harbor-eval
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    env:
+      # Portkey routing. ANTHROPIC_BASE_URL must be in the process env — the
+      # claude-code adapter reads it from there, not from --ae.
+      ANTHROPIC_BASE_URL: https://api.portkey.ai
+      PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+      PORTKEY_PROVIDER: ${{ vars.PORTKEY_PROVIDER }}
+      # Run selection: dispatch input wins, else fall back to the repo variable.
+      MODEL: ${{ inputs.model || vars.HARBOR_MODEL }}
+      DATASET: ${{ inputs.dataset || vars.HARBOR_DATASET }}
+      TASK_FILTER: ${{ inputs.task_filter }}
+      N_CONCURRENT: ${{ inputs.n_concurrent }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install Harbor
+        run: |
+          uv tool install harbor==0.15.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Portkey authenticates off the x-portkey-api-key header and routes to the
+      # named provider. Written to the env as a real newline-separated value; the
+      # committed config references it as ${PORTKEY_HEADERS}, so the key is never
+      # persisted into jobs/ artifacts.
+      - name: Assemble Portkey headers
+        run: |
+          {
+            echo 'PORTKEY_HEADERS<<PKEOF'
+            printf 'x-portkey-api-key: %s\n' "$PORTKEY_API_KEY"
+            printf 'x-portkey-provider: @%s\n' "$PORTKEY_PROVIDER"
+            echo 'PKEOF'
+          } >> "$GITHUB_ENV"
+
+      # Patch only the scalar fields from repo variables/inputs. The agent block
+      # and its ${...} env templates in harbor-portkey.yaml are left untouched —
+      # passing -a/-m on the CLI would wipe them.
+      - name: Apply model / dataset / concurrency
+        run: |
+          python3 - <<'PY'
+          import os, yaml
+          cfg = yaml.safe_load(open("harbor-portkey.yaml"))
+          if os.environ.get("MODEL"):
+              cfg["agents"][0]["model_name"] = os.environ["MODEL"]
+          if os.environ.get("DATASET"):
+              cfg["datasets"] = [{"name": os.environ["DATASET"]}]
+          if os.environ.get("N_CONCURRENT"):
+              cfg["n_concurrent_trials"] = int(os.environ["N_CONCURRENT"])
+          yaml.safe_dump(cfg, open("harbor-portkey.yaml", "w"), sort_keys=False)
+          print(open("harbor-portkey.yaml").read())
+          PY
+
+      - name: Run Harbor through Portkey
+        run: |
+          filter=()
+          [ -n "$TASK_FILTER" ] && filter=(-i "$TASK_FILTER")
+          harbor run -c harbor-portkey.yaml "${filter[@]}"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harbor-jobs
+          path: jobs/
+          if-no-files-found: ignore
