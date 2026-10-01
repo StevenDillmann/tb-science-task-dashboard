@@ -391,6 +391,7 @@ function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, nu
 export function PRsTable({
   prs,
   externalField,
+  hideIdleFilters = false,
   externalState,
   onExternalFieldConsumed,
   urlPrefix = "",
@@ -399,6 +400,10 @@ export function PRsTable({
 }: {
   prs: PR[]
   externalField?: string | null
+  /** Hide the Filters / Sorted-by bar while nothing is filtered or
+   *  re-sorted (it appears as soon as something is). Used where several
+   *  tables stack on one page, e.g. the Reviewer To Do tab. */
+  hideIdleFilters?: boolean
   externalState?: "open" | "merged" | "closed" | null
   onExternalFieldConsumed?: () => void
   /** Namespaces this table's URL params. Two tabs render this component, and
@@ -1273,6 +1278,7 @@ export function PRsTable({
     }
   }, [externalField, externalState, onExternalFieldConsumed])
 
+  const showFilterBar = !hideIdleFilters || !!anyChip || !isDefaultSort
   return (
     <>
     <PRSheet
@@ -1306,7 +1312,7 @@ export function PRsTable({
 
       {/* Active filters + sort — always rendered so activating/clearing one
           doesn't shift the table below (fixed two-row bar). */}
-      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+      <div className={cn("flex flex-col gap-2 rounded-lg border bg-muted/30 p-3", !showFilterBar && "hidden")}>
         <div className="flex items-start gap-2">
           <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Filters:</span>
           <div className="flex flex-wrap items-center gap-2">

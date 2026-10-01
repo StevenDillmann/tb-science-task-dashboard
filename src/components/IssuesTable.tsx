@@ -188,10 +188,15 @@ function sortText(sorting: SortingState): { label: string; detail: string; isDef
 export function IssuesTable({
   issues,
   externalField,
+  hideIdleFilters = false,
   onExternalFieldConsumed,
 }: {
   issues: Issue[]
   externalField?: string | null
+  /** Hide the Filters / Sorted-by bar while nothing is filtered or
+   *  re-sorted (it appears as soon as something is). Used where several
+   *  tables stack on one page, e.g. the Reviewer To Do tab. */
+  hideIdleFilters?: boolean
   onExternalFieldConsumed?: () => void
 }) {
   const { field_labels } = useTaxonomy()
@@ -581,6 +586,7 @@ export function IssuesTable({
   const anyChip = kind.length || field.length || category.length || author.length || assignee.length
   const rows = table.getRowModel().rows
 
+  const showFilterBar = !hideIdleFilters || !!anyChip || !sortInfo.isDefault
   return (
     <>
     <IssueSheet issue={active} open={active !== null} onOpenChange={(v) => !v && setActiveNum(null)} />
@@ -605,7 +611,7 @@ export function IssuesTable({
 
       {/* Fixed two-row bar, like the PRs tab, so toggling a filter never
           shifts the table. */}
-      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+      <div className={cn("flex flex-col gap-2 rounded-lg border bg-muted/30 p-3", !showFilterBar && "hidden")}>
         <div className="flex items-start gap-2">
           <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Filters:</span>
           <div className="flex flex-wrap items-center gap-2">

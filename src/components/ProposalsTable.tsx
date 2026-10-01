@@ -197,11 +197,16 @@ function propSortText(sorting: SortingState): { label: string; detail: string; i
 export function ProposalsTable({
   proposals,
   externalField,
+  hideIdleFilters = false,
   externalStatus,
   onExternalFieldConsumed,
 }: {
   proposals: Proposal[]
   externalField?: string | null
+  /** Hide the Filters / Sorted-by bar while nothing is filtered or
+   *  re-sorted (it appears as soon as something is). Used where several
+   *  tables stack on one page, e.g. the Reviewer To Do tab. */
+  hideIdleFilters?: boolean
   externalStatus?: "approved" | "pending" | "rejected" | null
   onExternalFieldConsumed?: () => void
 }) {
@@ -534,6 +539,7 @@ export function ProposalsTable({
   const anyChip = !!(field.length || author.length || reviewer.length || llm.length || fit.length || human.length)
   const { label: sortLabel, detail: sortDetail, isDefault: isDefaultSort } = propSortText(sorting)
 
+  const showFilterBar = !hideIdleFilters || !!anyChip || !isDefaultSort
   return (
     <>
     <ProposalSheet
@@ -566,7 +572,7 @@ export function ProposalsTable({
 
       {/* Active filters + sort — always rendered so activating/clearing one
           doesn't shift the table below (fixed two-row bar). */}
-      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+      <div className={cn("flex flex-col gap-2 rounded-lg border bg-muted/30 p-3", !showFilterBar && "hidden")}>
         <div className="flex items-start gap-2">
           <span className="shrink-0 pt-1 text-xs font-medium text-muted-foreground">Filters:</span>
           <div className="flex flex-wrap items-center gap-2">

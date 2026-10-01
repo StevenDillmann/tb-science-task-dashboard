@@ -11,6 +11,7 @@ import { PRsTable } from "@/components/PRsTable"
 import { ProposalsTable } from "@/components/ProposalsTable"
 import { IssuesTable } from "@/components/IssuesTable"
 import { StatsView } from "@/components/StatsView"
+import { ReviewerQueue } from "@/components/ReviewerQueue"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
 import { loadData, type Data } from "@/lib/data"
@@ -280,6 +281,10 @@ export default function App() {
                 )
               }}
             >
+              {/* The reviewer to-do list is a personal view across the other
+                  tabs, not another slice of the data, so it sits apart on the
+                  right in its own list. */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
               <TabsList>
                 <TabsTrigger value="proposals">
                   Task Proposals
@@ -307,6 +312,10 @@ export default function App() {
                 </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
+              <TabsList>
+                <TabsTrigger value="queue">Reviewer To Do</TabsTrigger>
+              </TabsList>
+              </div>
 
               <TabsContent value="proposals" className="mt-6">
                 <ProposalsTable
@@ -354,6 +363,14 @@ export default function App() {
                   issues={issues}
                   externalField={tab === "issues" ? forcedField : null}
                   onExternalFieldConsumed={() => setForcedField(null)}
+                />
+              </TabsContent>
+              <TabsContent value="queue" className="mt-6">
+                <ReviewerQueue
+                  prs={visiblePRs}
+                  fixes={visibleFixes}
+                  proposals={data.proposals}
+                  issues={issues}
                 />
               </TabsContent>
               <TabsContent value="stats" className="mt-6">
