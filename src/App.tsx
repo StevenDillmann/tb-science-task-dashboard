@@ -312,8 +312,17 @@ export default function App() {
                 </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
-              <TabsList>
-                <TabsTrigger value="queue">Reviewer To Do</TabsTrigger>
+              {/* Outlined rather than grey-filled, like the tables' state toggle:
+                  a border around, the teal pill inside when selected. */}
+              <TabsList className="border bg-transparent">
+                <TabsTrigger
+                  value="queue"
+                  // Selected, it takes the same teal as the "Waiting on you" toggle item
+                  // (EXTRA_STATE_TONE); otherwise it looks like the other tabs.
+                  className="hover:text-foreground data-[state=active]:bg-[#038F99]/15 data-[state=active]:text-[#036f78] data-[state=active]:shadow-none dark:data-[state=active]:bg-[#038F99]/25 dark:data-[state=active]:text-[#4fc3cc]"
+                >
+                  Reviewer To Do
+                </TabsTrigger>
               </TabsList>
               </div>
 
