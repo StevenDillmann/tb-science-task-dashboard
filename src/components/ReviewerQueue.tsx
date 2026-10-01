@@ -3,6 +3,7 @@ import { ChevronDown, UserRound } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { Issue, PR, Proposal, User } from "@/lib/data"
+import type { ExtraState } from "@/lib/extraState"
 import { useUrlState } from "@/lib/useUrlState"
 import { cn } from "@/lib/utils"
 import { IssuesTable } from "./IssuesTable"
@@ -57,28 +58,36 @@ const KINDS: Array<{ key: KindKey; label: string }> = [
   { key: "issues", label: "Task Issues" },
 ]
 
-/** Per tab: how many assigned rows are open, and how many of those are waiting
- *  on `login` right now ("to do"). For PRs the `waiting on …` label is the
- *  team's source of truth for whose turn it is, so it wins over the reviewer's
- *  own (possibly stale) review state. An issue with an open fix PR is in
- *  progress, not to do — the fix PR carries the work. */
-function tally(login: string, d: Sources): Tally {
+/** The assigned rows that are waiting on `login` right now. For PRs the
+ *  `waiting on …` label is the team's source of truth for whose turn it is, so
+ *  it wins over the reviewer's own (possibly stale) review state; a PR they've
+ *  approved is never theirs, even while a co-reviewer is still pending. An
+ *  issue with an open fix PR is in progress — the fix PR carries the work. */
+function waitingFor(login: string, d: Sources): Sources {
   const prTodo = (p: PR) => {
     if (p.state !== "open" || p.ball_in_court === "author") return false
     const me = p.reviewers.find((r) => same(r.login, login))
     if (!me || me.status === "approved") return false
     return me.status === "pending" || p.ball_in_court === "reviewer"
   }
-  const openProposals = d.proposals.filter((p) => p.status === "pending" && !p.closed)
-  const openIssues = d.issues.filter((i) => i.state === "open")
   return {
-    proposals: { todo: openProposals.length, open: openProposals.length },
-    prs: { todo: d.prs.filter(prTodo).length, open: d.prs.filter((p) => p.state === "open").length },
-    fixes: { todo: d.fixes.filter(prTodo).length, open: d.fixes.filter((p) => p.state === "open").length },
-    issues: {
-      todo: openIssues.filter((i) => !i.linked_prs.some((l) => l.state.toLowerCase() === "open")).length,
-      open: openIssues.length,
-    },
+    proposals: d.proposals.filter((p) => p.status === "pending" && !p.closed),
+    prs: d.prs.filter(prTodo),
+    fixes: d.fixes.filter(prTodo),
+    issues: d.issues.filter(
+      (i) => i.state === "open" && !i.linked_prs.some((l) => l.state.toLowerCase() === "open"),
+    ),
+  }
+}
+
+/** Per tab: how many assigned rows are waiting on `login`, and how many are open. */
+function tally(login: string, d: Sources): Tally {
+  const w = waitingFor(login, d)
+  return {
+    proposals: { todo: w.proposals.length, open: d.proposals.filter((p) => p.status === "pending" && !p.closed).length },
+    prs: { todo: w.prs.length, open: d.prs.filter((p) => p.state === "open").length },
+    fixes: { todo: w.fixes.length, open: d.fixes.filter((p) => p.state === "open").length },
+    issues: { todo: w.issues.length, open: d.issues.filter((i) => i.state === "open").length },
   }
 }
 
@@ -247,24 +256,11 @@ function ReviewerPicker({
   )
 }
 
-function Section({
-  id,
-  title,
-  todo,
-  children,
-}: {
-  id: KindKey
-  title: string
-  todo: number
-  children: ReactNode
-}) {
+function Section({ id, title, children }: { id: KindKey; title: string; children: ReactNode }) {
   return (
     <section id={`queue-${id}`} className="scroll-mt-4 space-y-3">
       {/* Same heading treatment as the page's "How to contribute" label. */}
-      <h2 className="flex items-baseline gap-3 text-sm font-semibold uppercase tracking-wider text-foreground">
-        {title}
-        <span className="text-xs font-normal text-muted-foreground">{todo} WAITING ON YOU</span>
-      </h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">{title}</h2>
       {children}
     </section>
   )
@@ -305,6 +301,22 @@ export function ReviewerQueue(all: Sources) {
   )
 
   const mine = useMemo(() => (me ? assignedTo(me, sources) : null), [me, sources])
+  // Each table gets a "Waiting on you" item in its own state toggle, selected
+  // by default; the rest of the toggle (Open, Merged …) works as on its tab.
+  const waiting = useMemo(() => {
+    if (!me || !mine) return null
+    const w = waitingFor(me, mine)
+    const extra = <T,>(rows: T[]): ExtraState<T> => {
+      const set = new Set(rows)
+      return { label: "Waiting on you", match: (r) => set.has(r) }
+    }
+    return {
+      proposals: extra(w.proposals),
+      prs: extra(w.prs),
+      fixes: extra(w.fixes),
+      issues: extra(w.issues),
+    }
+  }, [me, mine])
   const c = me ? counts.get(me.toLowerCase()) : undefined
 
   return (
@@ -314,27 +326,27 @@ export function ReviewerQueue(all: Sources) {
         {c && <TodoSummary tally={c.tally} />}
       </div>
 
-      {!mine ? (
+      {!mine || !waiting ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
           Pick your GitHub handle above to see every proposal, task PR and task fix assigned to you.
           Your choice is remembered in this browser.
         </div>
       ) : (
         <>
-          <Section id="proposals" title="Task Proposals" todo={c?.tally.proposals.todo ?? 0}>
-            <ProposalsTable proposals={mine.proposals} hideIdleFilters />
+          <Section id="proposals" title="Task Proposals">
+            <ProposalsTable proposals={mine.proposals} extraState={waiting.proposals} hideIdleFilters />
           </Section>
-          <Section id="prs" title="Task Pull Requests" todo={c?.tally.prs.todo ?? 0}>
+          <Section id="prs" title="Task Pull Requests">
             {/* Own URL namespaces so the queue's filters never leak into the
                 main tabs (and the two PR tables here don't share theirs). */}
-            <PRsTable prs={mine.prs} urlPrefix="q_" hideIdleFilters />
+            <PRsTable prs={mine.prs} urlPrefix="q_" extraState={waiting.prs} hideIdleFilters />
           </Section>
-          <Section id="fixes" title="Task Fixes" todo={c?.tally.fixes.todo ?? 0}>
-            <PRsTable prs={mine.fixes} urlPrefix="qfix_" variant="fixes" hideIdleFilters />
+          <Section id="fixes" title="Task Fixes">
+            <PRsTable prs={mine.fixes} urlPrefix="qfix_" variant="fixes" extraState={waiting.fixes} hideIdleFilters />
           </Section>
           {mine.issues.length > 0 && (
-            <Section id="issues" title="Task Issues" todo={c?.tally.issues.todo ?? 0}>
-              <IssuesTable issues={mine.issues} hideIdleFilters />
+            <Section id="issues" title="Task Issues">
+              <IssuesTable issues={mine.issues} extraState={waiting.issues} hideIdleFilters />
             </Section>
           )}
         </>

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table"
 import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
+import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
 import { searchableLabels, tagLabels } from "@/lib/labels"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
@@ -302,17 +303,21 @@ function StateToggle({
   onChange,
   counts,
   total,
+  extra,
   sets = true,
 }: {
-  value: PRBucket | "all"
-  onChange: (v: PRBucket | "all") => void
+  value: PRBucket | "all" | "mine"
+  onChange: (v: PRBucket | "all" | "mine") => void
   counts: Record<PRBucket, number>
   total: number
+  /** Page-supplied extra item, e.g. "Waiting on you" (see ExtraState). */
+  extra?: { label: string; count: number }
   /** Show the Lite / Archived buckets (task PRs only). */
   sets?: boolean
 }) {
-  const items: { value: PRBucket | "all"; label: string; count: number }[] = [
+  const items: { value: PRBucket | "all" | "mine"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
+    ...(extra ? [{ value: "mine" as const, label: extra.label, count: extra.count }] : []),
     { value: "open", label: "Open", count: counts.open ?? 0 },
     { value: "merged", label: "Merged", count: counts.merged ?? 0 },
     { value: "closed", label: "Closed", count: counts.closed ?? 0 },
@@ -327,6 +332,7 @@ function StateToggle({
   // closed=grey, all=neutral accent; lite in the brand teal, archived muted.
   const activeTone: Record<string, string> = {
     all: "bg-accent text-accent-foreground",
+    mine: EXTRA_STATE_TONE,
     open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
     merged: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
     closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -392,6 +398,7 @@ export function PRsTable({
   prs,
   externalField,
   hideIdleFilters = false,
+  extraState,
   externalState,
   onExternalFieldConsumed,
   urlPrefix = "",
@@ -404,6 +411,8 @@ export function PRsTable({
    *  re-sorted (it appears as soon as something is). Used where several
    *  tables stack on one page, e.g. the Reviewer To Do tab. */
   hideIdleFilters?: boolean
+  /** Extra toggle item, selected by default when given (see ExtraState). */
+  extraState?: ExtraState<PR>
   externalState?: "open" | "merged" | "closed" | null
   onExternalFieldConsumed?: () => void
   /** Namespaces this table's URL params. Two tabs render this component, and
@@ -442,7 +451,12 @@ export function PRsTable({
   // Filters are bound to URL query params so a filtered view is shareable and
   // survives reload / back-forward. `pr` holds the opened PR's number.
   const [search, setSearch] = useUrlState(k("q"), "")
-  const [state, setState] = useUrlState<PRBucket | "all">(k("state"), defaultState)
+  const [state, setState] = useUrlState<PRBucket | "all" | "mine">(
+    k("state"),
+    extraState ? "mine" : defaultState,
+  )
+  const inState = (p: PR) =>
+    state === "all" || (state === "mine" ? !!extraState?.match(p) : bucketOf(p, variant) === state)
   const [activeNum, setActiveNum] = useUrlState<number | null>(k("pr"), null, numberCodec)
   // Multi-select filters (OR within a column); `ball` (Action) stays single.
   const [field, setField] = useUrlState<string[]>(k("field"), [], stringArrayCodec)
@@ -480,7 +494,7 @@ export function PRsTable({
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
-      if (state !== "all" && bucketOf(p, variant) !== state) return false
+      if (!inState(p)) return false
       if (field.length) {
         // `__domain:<slug>` matches any item in that domain; a plain slug
         // matches by subfield. A PR passes if it matches ANY selected entry.
@@ -515,7 +529,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, variant])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, variant, extraState])
 
   // Fix subrows obey the state pill too — otherwise the filter promises one
   // thing and the rows show another. `merged` is the one view that admits a
@@ -528,7 +542,7 @@ export function PRsTable({
     if (state === "all") return filtered
     // Lite and archived tasks are landed tasks too: their open fixes stay in sight.
     const shown: PRState[] =
-      state === "merged" || state === "lite" || state === "archived" ? ["merged", "open"] : [state]
+      state === "merged" || state === "lite" || state === "archived" ? ["merged", "open"] : state === "mine" ? ["open"] : [state]
     return filtered.map((p) =>
       p.fix_rows?.some((f) => !shown.includes(f.state))
         ? { ...p, fix_rows: p.fix_rows.filter((f) => shown.includes(f.state)) }
@@ -539,8 +553,8 @@ export function PRsTable({
   // Popover counts respect the active state pill so the dropdown number
   // matches the actual row count after applying that author/field/etc.
   const stateFiltered = useMemo(
-    () => (state === "all" ? prs : prs.filter((p) => bucketOf(p, variant) === state)),
-    [prs, state, variant],
+    () => (state === "all" ? prs : prs.filter(inState)),
+    [prs, state, variant, extraState],
   )
   const fieldCounts = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.subfield)
@@ -1295,7 +1309,7 @@ export function PRsTable({
           placeholder="Search"
           className="max-w-sm"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} sets={variant === "tasks"} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} extra={extraState && { label: extraState.label, count: prs.filter(extraState.match).length }} sets={variant === "tasks"} />
         <span className="text-xs text-muted-foreground">
           {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>

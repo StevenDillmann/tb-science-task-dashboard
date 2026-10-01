@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table"
 import { DOMAIN_LABELS, type Domain, type Issue, type IssueKind } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
+import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import { FieldChip, HumanReviewChip, UserCell } from "./Chips"
@@ -125,20 +126,25 @@ function StateToggle({
   onChange,
   counts,
   total,
+  extra,
 }: {
-  value: StateFilter | "all"
-  onChange: (v: StateFilter | "all") => void
+  value: StateFilter | "all" | "mine"
+  onChange: (v: StateFilter | "all" | "mine") => void
   counts: Record<StateFilter, number>
   total: number
+  /** Page-supplied extra item, e.g. "Waiting on you" (see ExtraState). */
+  extra?: { label: string; count: number }
 }) {
-  const items: { value: StateFilter | "all"; label: string; count: number }[] = [
+  const items: { value: StateFilter | "all" | "mine"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
+    ...(extra ? [{ value: "mine" as const, label: extra.label, count: extra.count }] : []),
     { value: "open", label: "Open", count: counts.open },
     { value: "completed", label: "Completed", count: counts.completed },
     { value: "closed", label: "Closed", count: counts.closed },
   ]
   const activeTone: Record<string, string> = {
     all: "bg-accent text-accent-foreground",
+    mine: EXTRA_STATE_TONE,
     open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
     completed: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
     closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -189,6 +195,7 @@ export function IssuesTable({
   issues,
   externalField,
   hideIdleFilters = false,
+  extraState,
   onExternalFieldConsumed,
 }: {
   issues: Issue[]
@@ -197,13 +204,15 @@ export function IssuesTable({
    *  re-sorted (it appears as soon as something is). Used where several
    *  tables stack on one page, e.g. the Reviewer To Do tab. */
   hideIdleFilters?: boolean
+  /** Extra toggle item, selected by default when given (see ExtraState). */
+  extraState?: ExtraState<Issue>
   onExternalFieldConsumed?: () => void
 }) {
   const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([{ id: "number", desc: true }])
   // URL params prefixed `i` so they don't collide with the other tabs.
   const [search, setSearch] = useUrlState("iq", "")
-  const [state, setState] = useUrlState<StateFilter | "all">("istate", "open")
+  const [state, setState] = useUrlState<StateFilter | "all" | "mine">("istate", extraState ? "mine" : "open")
   const [activeNum, setActiveNum] = useUrlState<number | null>("issue", null, numberCodec)
   const [kind, setKind] = useUrlState<string[]>("ikind", [], stringArrayCodec)
   const [field, setField] = useUrlState<string[]>("ifield", [], stringArrayCodec)
@@ -237,7 +246,7 @@ export function IssuesTable({
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return issues.filter((i) => {
-      if (state !== "all" && bucketOf(i) !== state) return false
+      if (state === "mine" ? !extraState?.match(i) : state !== "all" && bucketOf(i) !== state) return false
       if (kind.length && !kind.includes(i.kind)) return false
       if (field.length) {
         const ok = field.some((f) =>
@@ -270,13 +279,16 @@ export function IssuesTable({
       }
       return true
     })
-  }, [issues, search, state, kind, field, category, author, assignee])
+  }, [issues, search, state, kind, field, category, author, assignee, extraState])
 
   // Column-filter counts follow the state pill only, so picking one value never
   // hides the others.
   const stateFiltered = useMemo(
-    () => (state === "all" ? issues : issues.filter((i) => bucketOf(i) === state)),
-    [issues, state],
+    () =>
+      state === "all"
+        ? issues
+        : issues.filter((i) => (state === "mine" ? !!extraState?.match(i) : bucketOf(i) === state)),
+    [issues, state, extraState],
   )
   const kindOptions = useMemo(() => {
     const c = countBy(stateFiltered, (i) => i.kind)
@@ -593,7 +605,7 @@ export function IssuesTable({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
         <SearchInput value={search} onChange={setSearch} placeholder="Search" className="max-w-sm" />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} total={issues.length} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={issues.length} extra={extraState && { label: extraState.label, count: issues.filter(extraState.match).length }} />
         <span className="text-xs text-muted-foreground">
           {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>

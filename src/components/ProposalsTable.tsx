@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table"
 import { DOMAIN_LABELS, type Domain, type Proposal } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
+import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
 import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import { AuthorFitChip, CoiBadge, FieldChip, HumanReviewChip, LLMReviewChip, StatePill, UserCell } from "./Chips"
@@ -102,14 +103,18 @@ function StateToggle({
   onChange,
   counts,
   total,
+  extra,
 }: {
-  value: ProposalStateFilter | "all"
-  onChange: (v: ProposalStateFilter | "all") => void
+  value: ProposalStateFilter | "all" | "mine"
+  onChange: (v: ProposalStateFilter | "all" | "mine") => void
   counts: Record<ProposalStateFilter, number>
   total: number
+  /** Page-supplied extra item, e.g. "Waiting on you" (see ExtraState). */
+  extra?: { label: string; count: number }
 }) {
-  const items: { value: ProposalStateFilter | "all"; label: string; count: number }[] = [
+  const items: { value: ProposalStateFilter | "all" | "mine"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
+    ...(extra ? [{ value: "mine" as const, label: extra.label, count: extra.count }] : []),
     { value: "open", label: "Open", count: counts.open ?? 0 },
     { value: "approved", label: "Approved", count: counts.approved ?? 0 },
     { value: "closed", label: "Declined", count: counts.closed ?? 0 },
@@ -118,6 +123,7 @@ function StateToggle({
   // declined=grey, all=neutral accent.
   const activeTone: Record<string, string> = {
     all: "bg-accent text-accent-foreground",
+    mine: EXTRA_STATE_TONE,
     open: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
     approved: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
     closed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -198,6 +204,7 @@ export function ProposalsTable({
   proposals,
   externalField,
   hideIdleFilters = false,
+  extraState,
   externalStatus,
   onExternalFieldConsumed,
 }: {
@@ -207,6 +214,8 @@ export function ProposalsTable({
    *  re-sorted (it appears as soon as something is). Used where several
    *  tables stack on one page, e.g. the Reviewer To Do tab. */
   hideIdleFilters?: boolean
+  /** Extra toggle item, selected by default when given (see ExtraState). */
+  extraState?: ExtraState<Proposal>
   externalStatus?: "approved" | "pending" | "rejected" | null
   onExternalFieldConsumed?: () => void
 }) {
@@ -218,7 +227,7 @@ export function ProposalsTable({
   // Filters bound to URL query params (p-prefixed so they don't collide with
   // the PRs tab's params). `prop` holds the opened proposal's number.
   const [search, setSearch] = useUrlState("pq", "")
-  const [state, setState] = useUrlState<ProposalStateFilter | "all">("pstate", "open")
+  const [state, setState] = useUrlState<ProposalStateFilter | "all" | "mine">("pstate", extraState ? "mine" : "open")
   const [activeNum, setActiveNum] = useUrlState<number | null>("prop", null, numberCodec)
   const [field, setField] = useUrlState<string[]>("pfield", [], stringArrayCodec)
   const [author, setAuthor] = useUrlState<string[]>("pauthor", [], stringArrayCodec)
@@ -264,7 +273,7 @@ export function ProposalsTable({
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return proposals.filter((p) => {
-      if (state !== "all" && bucketOf(p) !== state) return false
+      if (state === "mine" ? !extraState?.match(p) : state !== "all" && bucketOf(p) !== state) return false
       if (field.length) {
         const ok = field.some((f) =>
           f.startsWith("__domain:") ? p.domain === f.slice("__domain:".length) : p.subfield === f,
@@ -292,12 +301,16 @@ export function ProposalsTable({
       }
       return true
     })
-  }, [proposals, search, state, field, author, reviewer, llm, fit, human])
+  }, [proposals, search, state, field, author, reviewer, llm, fit, human, extraState])
 
   const stateFiltered = useMemo(
     () =>
-      state === "all" ? proposals : proposals.filter((p) => p.state === state),
-    [proposals, state],
+      state === "all"
+        ? proposals
+        : state === "mine"
+          ? proposals.filter((p) => !!extraState?.match(p))
+          : proposals.filter((p) => p.state === state),
+    [proposals, state, extraState],
   )
   const fieldCounts = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.subfield)
@@ -555,7 +568,7 @@ export function ProposalsTable({
           placeholder="Search"
           className="max-w-md"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} total={proposals.length} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={proposals.length} extra={extraState && { label: extraState.label, count: proposals.filter(extraState.match).length }} />
         <span className="text-xs text-muted-foreground">
           {filtered.length} {filtered.length === 1 ? "row" : "rows"}
         </span>
