@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react"
-import { ArrowDown, ArrowUp, Check, ChevronDown, Filter, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Ban, Check, ChevronDown, Filter, X } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -13,6 +13,9 @@ export type FilterOption = {
    * `label` is still used for the active-filter chip and search matching. */
   render?: ReactNode
   count?: number
+  /** Exclude mode only: rows that clicking ⊘ would leave (`count` is then the
+   *  rows clicking ✓ would leave). */
+  excludeCount?: number
 }
 
 /**
@@ -35,6 +38,8 @@ export function ColumnFilter({
   selected,
   onToggle,
   onClearAll,
+  excluded,
+  onToggleExclude,
   open: openProp,
   onOpenChange,
 }: {
@@ -51,6 +56,12 @@ export function ColumnFilter({
   selected?: string[]
   onToggle?: (v: string) => void
   onClearAll?: () => void
+  /** Multi-select mode only: values excluded from the column (AND NOT). When
+   *  `onToggleExclude` is given, each option row shows two buttons instead of
+   *  being clickable itself — ✓ "only these" (toggles `selected`) and ⊘
+   *  "exclude" (toggles this set) — each with the row count it would give. */
+  excluded?: string[]
+  onToggleExclude?: (v: string) => void
   /** When `sortOptions` is provided, a Sort section renders below the filter
    *  options so one header button can both filter and sort the column. */
   sortValue?: string | null
@@ -79,7 +90,9 @@ export function ColumnFilter({
 
   const multiple = selected !== undefined
   const isSelected = (v: string) => (multiple ? selected!.includes(v) : value === v)
-  const filterActive = multiple ? selected!.length > 0 : value !== null
+  const isExcluded = (v: string) => !!excluded?.includes(v)
+  const activeCount = multiple ? selected!.length + (excluded?.length ?? 0) : 0
+  const filterActive = multiple ? activeCount > 0 : value !== null
   const hasFilter = options.length > 0
   const hasSort = !!sortOptions && sortOptions.length > 0
   const active = filterActive || sortValue !== null
@@ -140,7 +153,7 @@ export function ColumnFilter({
               >
                 <span>
                   {multiple ? (
-                    <>Clear <span className="font-medium text-foreground">{selected!.length}</span> selected</>
+                    <>Clear <span className="font-medium text-foreground">{activeCount}</span> selected</>
                   ) : (
                     <>Active: <span className="font-medium text-foreground">{activeLabel}</span></>
                   )}
@@ -152,7 +165,50 @@ export function ColumnFilter({
               {filtered.length === 0 ? (
                 <div className="px-3 py-2 text-xs text-muted-foreground">No matches.</div>
               ) : (
-                filtered.map((opt) => (
+                filtered.map((opt) =>
+                  multiple && onToggleExclude ? (
+                    <div key={opt.value} className="flex items-center justify-between gap-2 px-3 py-1">
+                      <span className="truncate text-sm">{opt.render ?? opt.label}</span>
+                      <span className="flex shrink-0 items-center gap-1">
+                        {(
+                          [
+                            {
+                              on: isSelected(opt.value),
+                              icon: <Check className="h-3 w-3" strokeWidth={3} />,
+                              n: opt.count,
+                              title: `Only ${opt.label}`,
+                              click: () => onToggle?.(opt.value),
+                              tone: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+                            },
+                            {
+                              on: isExcluded(opt.value),
+                              icon: <Ban className="h-3 w-3" />,
+                              n: opt.excludeCount,
+                              title: `Exclude ${opt.label}`,
+                              click: () => onToggleExclude(opt.value),
+                              tone: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+                            },
+                          ] as const
+                        ).map((b) => (
+                          <button
+                            key={b.title}
+                            type="button"
+                            onClick={b.click}
+                            title={b.title}
+                            aria-label={b.title}
+                            aria-pressed={b.on}
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-muted-foreground hover:bg-accent hover:text-foreground",
+                              b.on && cn("border-transparent", b.tone),
+                            )}
+                          >
+                            {b.icon}
+                            {b.n !== undefined && <span className="font-mono text-[10px]">{b.n}</span>}
+                          </button>
+                        ))}
+                      </span>
+                    </div>
+                  ) : (
                   <button
                     key={opt.value}
                     type="button"
@@ -181,7 +237,8 @@ export function ColumnFilter({
                       )}
                     </span>
                   </button>
-                ))
+                  ),
+                )
               )}
             </div>
           </>

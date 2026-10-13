@@ -472,6 +472,10 @@ export function PRsTable({
   // Tags: the upstream labels no other column models (`gpu`, `lite`, …). Lives
   // on the Task column, since that's where the chips render.
   const [tags, setTags] = useUrlState<string[]>(k("tags"), [], stringArrayCodec)
+  // Excluded tags ride in the same URL param with a `!` prefix (`?tags=!lite`),
+  // so "everything except lite" is a shareable link like any other filter.
+  const tagIn = tags.filter((t) => !t.startsWith("!"))
+  const tagOut = tags.filter((t) => t.startsWith("!")).map((t) => t.slice(1))
   // Which task rows have their fix subrows open. Deliberately NOT in the URL:
   // it's a transient reading gesture, not a view worth sharing.
   const [expanded, setExpanded] = useState<ExpandedState>({})
@@ -491,7 +495,15 @@ export function PRsTable({
     return null
   }, [prs, activeNum])
 
-  const filtered = useMemo(() => {
+  // Tag constraints, split out so the Tags facet can count each tag against
+  // every OTHER active filter. `skip` drops that one tag's own constraint.
+  // "Only" tags AND together: lite-only + gpu-only means lite GPU tasks.
+  const passesTags = (p: PR, skip?: string) =>
+    tagIn.every((t) => t === skip || p.labels.includes(t)) &&
+    !tagOut.some((t) => t !== skip && p.labels.includes(t))
+
+  // Every filter except the tags.
+  const baseFiltered = useMemo(() => {
     const needle = search.toLowerCase().trim()
     return prs.filter((p) => {
       if (!inState(p)) return false
@@ -519,7 +531,6 @@ export function PRsTable({
         const ok = fit.some((f) => (f === "coi" ? !!p.coi : p.author_fit === f))
         if (!ok) return false
       }
-      if (tags.length && !tags.some((t) => p.labels.includes(t))) return false
       if (needle) {
         // Labels are searchable so hardware/workflow tags that have no column of
         // their own (e.g. `gpu`) are still reachable by typing their name.
@@ -529,7 +540,11 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, tags, variant, extraState])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, variant, extraState])
+  const filtered = useMemo(
+    () => baseFiltered.filter((p) => passesTags(p)),
+    [baseFiltered, tags],
+  )
 
   // Fix subrows obey the state pill too — otherwise the filter promises one
   // thing and the rows show another. `merged` is the one view that admits a
@@ -566,22 +581,27 @@ export function PRsTable({
     }
     return c
   }, [stateFiltered])
-  // Tag options come straight from the data, so a label upstream adds later
-  // shows up as a filter choice without a code change. Most-common first.
+  // Tag options: every tag present in the current state, with the row counts
+  // its ✓ (only) and ⊘ (exclude) buttons would give under all the other active
+  // filters — so each number is exactly what clicking it shows. Alphabetical, so
+  // rows stay put as the counts change.
   const tagOptions = useMemo(() => {
-    const c: Record<string, number> = {}
-    for (const p of stateFiltered) {
-      for (const t of tagLabels(p.labels)) c[t] = (c[t] ?? 0) + 1
-    }
-    return Object.entries(c)
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([value, count]) => ({
-        value,
-        label: value,
-        render: <TagChip tag={value} />,
-        count,
-      }))
-  }, [stateFiltered])
+    const present = new Set<string>()
+    for (const p of stateFiltered) for (const t of tagLabels(p.labels)) present.add(t)
+    return [...present]
+      .map((value) => {
+        const base = baseFiltered.filter((p) => passesTags(p, value))
+        const count = base.filter((p) => p.labels.includes(value)).length
+        return {
+          value,
+          label: value,
+          render: <TagChip tag={value} />,
+          count,
+          excludeCount: base.length - count,
+        }
+      })
+      .sort((a, b) => a.value.localeCompare(b.value))
+  }, [stateFiltered, baseFiltered, tags])
   const authorOptions = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.author.login)
     return Object.entries(c)
@@ -675,8 +695,10 @@ export function PRsTable({
               title="TITLE"
               heading="Tags"
               options={tagOptions}
-              selected={tags}
-              onToggle={(v) => setTags(toggleVal(tags, v))}
+              selected={tagIn}
+              onToggle={(v) => setTags(toggleVal(tags.filter((t) => t !== `!${v}`), v))}
+              excluded={tagOut}
+              onToggleExclude={(v) => setTags(toggleVal(tags.filter((t) => t !== v), `!${v}`))}
               onClearAll={() => setTags([])}
               sortOptions={TITLE_SORT_OPTIONS}
               sortValue={cur ? `title:${cur.desc ? "desc" : "asc"}` : null}
@@ -1387,7 +1409,11 @@ export function PRsTable({
                 />
               )}
               {tags.length > 0 && (
-                <FilterChip label="Tags" value={tags.join(", ")} onClear={() => setTags([])} />
+                <FilterChip
+                  label="Tags"
+                  value={[...tagIn.map((t) => `${t} only`), ...tagOut.map((t) => `no ${t}`)].join(", ")}
+                  onClear={() => setTags([])}
+                />
               )}
               <button
                 type="button"
