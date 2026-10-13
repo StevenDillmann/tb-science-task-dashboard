@@ -39,6 +39,7 @@ function formatGeneratedAt(iso: string): string {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
+  closed_prs: "closed PRs",
   open_prs: "open PRs",
   discussions: "proposals",
   issues: "issues",

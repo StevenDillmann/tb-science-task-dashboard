@@ -1833,13 +1833,6 @@ def paged(
 # cost more round-trips but each is cheap enough to complete and be retried.
 PR_PAGE = 10
 DISC_PAGE = 25
-# Rolling closed/merged-PR history kept in the cache/payload. Open PRs are
-# always kept in full; without this bound, incremental merges would accumulate
-# every PR ever seen and the payload would grow without limit. 40 cold-start
-# pages of PR_PAGE fill exactly this window.
-CLOSED_HISTORY = 400
-
-
 # Filled in by the fetches: source -> {"shown": kept, "upstream": totalCount}.
 # Surfaced in the payload so the dashboard can SHOW that it is complete rather
 # than leaving the reader to trust it.
@@ -1889,6 +1882,7 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     stale = False
     fresh: list[dict[str, Any]] = []
     open_stats: dict[str, Any] = {}
+    closed_stats: dict[str, Any] = {}
     try:
         # NO page cap: every open PR has to be on the board. A cap here silently
         # dropped the tail once already — 254 open PRs upstream against a
@@ -1906,13 +1900,30 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         sys.stderr.write(f"open-PR fetch failed ({e}); keeping cached open PRs.\n")
         stale = True
     try:
-        # max_pages only bounds a COLD start (empty cache): warm runs early-stop
-        # at the first unchanged PR. 40 pages preserves the same ~400-PR
-        # closed/merged history window the pre-incremental full fetch had.
+        # NO history window either: every closed/merged PR is kept. A rolling
+        # 400-PR window once silently dropped 37 merged task fixes (and merged
+        # tasks would have followed), since each newly closed PR pushed the
+        # oldest out. Warm runs still early-stop at the first unchanged PR.
+        closed_query = PR_QUERY.replace("__STATES__", "[CLOSED,MERGED]")
         fresh += paged(
-            PR_QUERY.replace("__STATES__", "[CLOSED,MERGED]"), "pullRequests",
-            extra_vars={"first": PR_PAGE}, max_pages=40, stop=_unchanged(base),
+            closed_query, "pullRequests",
+            extra_vars={"first": PR_PAGE}, max_pages=None, stop=_unchanged(base),
+            stats=closed_stats,
         )
+        # Self-heal: the early stop trusts the cache to hold everything older.
+        # If the cache is short of GitHub's count (rows lost to the old window,
+        # or a cache that lost nodes), walk the whole history once.
+        cached = {n["number"] for n in base if n.get("state") != "OPEN"}
+        cached |= {n["number"] for n in fresh if n.get("state") != "OPEN"}
+        if closed_stats.get("total_count", 0) > len(cached):
+            sys.stderr.write(
+                f"closed-PR cache holds {len(cached)} of "
+                f"{closed_stats['total_count']}; refetching full history.\n"
+            )
+            fresh += paged(
+                closed_query, "pullRequests",
+                extra_vars={"first": PR_PAGE}, max_pages=None, require_complete=True,
+            )
     except GHError as e:
         if not base:
             raise
@@ -1924,14 +1935,7 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     # merged/closed PR is fetched once and then served from cache forever, so a
     # file list truncated at 100 would never repair itself.
     backfill_pr_files(merged)
-    # Bound growth: keep every open PR plus the most-recently-updated
-    # CLOSED_HISTORY closed/merged ones (merged is already UPDATED_AT-DESC).
-    open_nodes = [n for n in merged if n.get("state") == "OPEN"]
-    closed_nodes = [n for n in merged if n.get("state") != "OPEN"]
-    kept = sorted(
-        open_nodes + closed_nodes[:CLOSED_HISTORY],
-        key=lambda n: n.get("updatedAt") or "", reverse=True,
-    )
+    kept = merged  # every PR, open and closed — already UPDATED_AT-DESC
     # Completeness is CHECKED, not assumed: compare what we kept against the
     # count GitHub itself reports. This catches any future way of losing rows —
     # a reintroduced cap, an early-stop bug, a cache that drops nodes — instead
@@ -1940,6 +1944,16 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     # UI badge and the CI log both say so.
     open_total = open_stats.get("total_count")
     open_kept = sum(1 for n in kept if n.get("state") == "OPEN")
+    closed_total = closed_stats.get("total_count")
+    closed_kept = len(kept) - open_kept
+    if closed_total is not None:
+        COVERAGE["closed_prs"] = {"shown": closed_kept, "upstream": closed_total}
+        if closed_kept < closed_total:
+            sys.stderr.write(
+                f"INCOMPLETE: kept {closed_kept} closed/merged PRs but GitHub "
+                f"reports {closed_total}.\n"
+            )
+            stale = True
     if open_total is not None:
         COVERAGE["open_prs"] = {"shown": open_kept, "upstream": open_total}
     if open_total is not None and open_kept < open_total:
