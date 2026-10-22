@@ -305,6 +305,9 @@ export type Data = {
   /** Every `task fix` PR as its own row. Also nested on the task rows they
    *  touch as `fix_rows`; unmatched fixes appear only here. */
   fixes: PR[]
+  /** Every PR that is neither a task nor a task fix: CI, workflows, tooling,
+   *  docs. Absent in snapshots that predate the Infrastructure tab. */
+  infra?: PR[]
   /** Every issue, classified and resolved to its task where it concerns one. */
   issues?: Issue[]
   proposals: Proposal[]

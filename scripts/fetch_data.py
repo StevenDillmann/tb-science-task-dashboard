@@ -2295,6 +2295,31 @@ def build_dir_aliases(nodes: list[dict[str, Any]]) -> dict[str, set[str]]:
     return {d: groups[find(d)] for d in parent}
 
 
+TASK_TITLE_RE = re.compile(r"^\s*(\[WIP\]\s*)?\[TASK\b", re.IGNORECASE)
+
+
+def is_infra_pr(n: dict[str, Any], labels: list[str]) -> bool:
+    """A PR that is neither a task nor a task fix: CI, workflows, tooling, docs.
+
+    Upstream labels infra PRs inconsistently (most carry no label at all), so
+    an explicit `infra` / `documentation` label wins, and otherwise any PR
+    without a task label counts — unless it is an unlabeled task PR (it adds
+    files inside a task directory, or has the `[TASK: …]` title prefix), which
+    stays off the board as before rather than landing in the infra list. Any
+    added file counts, not just task.toml: a task PR can be opened before its
+    task.toml exists (#1281). Renames are not additions, so a repo-wide move of
+    task directories stays infra.
+    """
+    if "infra" in labels or "documentation" in labels:
+        return True
+    if TASK_TITLE_RE.search(n.get("title") or ""):
+        return False
+    for f in (n.get("files") or {}).get("nodes", []) or []:
+        if f.get("changeType") == "ADDED" and split_task_path(f.get("path", "")):
+            return False
+    return True
+
+
 def build_prs(
     nodes: list[dict[str, Any]],
     now: datetime,
@@ -2305,7 +2330,7 @@ def build_prs(
     issues: list[dict[str, Any]] | None = None,
     task_sets: dict[str, dict[str, str]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Returns (task rows, `task fix` rows)."""
+    """Returns (task rows, `task fix` rows, infra rows)."""
     issues_by_number = {i["number"]: i for i in (issues or [])}
     task_sets = task_sets or {}
     proposals_by_num: dict[int, dict[str, Any]] = {}
@@ -2557,11 +2582,18 @@ def build_prs(
         fix_rows.append(row)
 
     rows = []
+    infra_rows: list[dict[str, Any]] = []
     for n in nodes:
         labels = [lab["name"] for lab in n["labels"]["nodes"]]
         # Source of truth = upstream labels. Mislabeled PRs are an upstream
         # issue to fix there, not here.
         if "new task" not in labels:
+            if "task fix" not in labels and is_infra_pr(n, labels):
+                row = build_row(n, labels)
+                # No task, so no field: the title fallback would otherwise read
+                # a `[CI]`-style prefix as one.
+                row["domain"] = row["subfield"] = row["field"] = None
+                infra_rows.append(row)
             continue
         row = build_row(n, labels)
         row["fix_rows"] = []
@@ -2617,7 +2649,11 @@ def build_prs(
         # different sets (or matching no task) carries none.
         parent_sets = {rows_by_num[n]["set"] for n in fix["fix_of"] if n in rows_by_num}
         fix["set"] = parent_sets.pop() if len(parent_sets) == 1 else None
-    return rows, sorted(fix_rows, key=lambda f: -f["number"])
+    return (
+        rows,
+        sorted(fix_rows, key=lambda f: -f["number"]),
+        sorted(infra_rows, key=lambda f: -f["number"]),
+    )
 
 
 def build_proposals(
@@ -2821,7 +2857,7 @@ def main() -> int:
     # after PR build, but the PR's linked_proposal points back here.
     proposals_pre = build_proposals(discussion_nodes, now, [], field_to_domain)
     issues = build_issues(issue_nodes, now, taxonomy, task_locations, task_sets)
-    prs, fixes = build_prs(
+    prs, fixes, infra = build_prs(
         pr_nodes, now, taxonomy, field_to_domain, task_locations, proposals_pre, issues, task_sets
     )
     attach_task_authors(issues, prs)
@@ -2857,7 +2893,10 @@ def main() -> int:
         # on the task rows they touch as `fix_rows`; a fix that matches no task
         # row is visible here and only here.
         "fixes": fixes,
-        # Every issue (the Task Issues tab), classified `task fix` / `task` /
+        # Every PR that is neither a task nor a task fix (the Infrastructure
+        # tab, next to the infra issues). See is_infra_pr.
+        "infra": infra,
+        # Every issue (the Task Issues and Infrastructure tabs), classified `task fix` / `task` /
         # `infra` and resolved to its task where it concerns one.
         "issues": issues,
         "proposals": proposals,

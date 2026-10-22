@@ -30,6 +30,7 @@ import { IssueSheet } from "./IssueSheet"
 
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const NEW_ISSUE_URL = `https://github.com/${UPSTREAM}/issues/new?template=task-fix.yml`
+const NEW_INFRA_ISSUE_URL = `https://github.com/${UPSTREAM}/issues/new?template=infra.yml`
 
 const toggleVal = (arr: string[], v: string) =>
   arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]
@@ -197,6 +198,8 @@ export function IssuesTable({
   hideIdleFilters = false,
   extraState,
   onExternalFieldConsumed,
+  variant = "tasks",
+  urlPrefix = "",
 }: {
   issues: Issue[]
   externalField?: string | null
@@ -207,18 +210,25 @@ export function IssuesTable({
   /** Extra toggle item, selected by default when given (see ExtraState). */
   extraState?: ExtraState<Issue>
   onExternalFieldConsumed?: () => void
+  /** `infra` drops the task-only FIELD and CATEGORY columns and points the
+   *  report button at the infra issue form. */
+  variant?: "tasks" | "infra"
+  /** Namespaces this table's URL params, for a page showing two of them. */
+  urlPrefix?: string
 }) {
+  const k = (name: string) => `${urlPrefix}${name}`
   const { field_labels } = useTaxonomy()
   const [sorting, setSorting] = useState<SortingState>([{ id: "number", desc: true }])
-  // URL params prefixed `i` so they don't collide with the other tabs.
-  const [search, setSearch] = useUrlState("iq", "")
-  const [state, setState] = useUrlState<StateFilter | "all" | "mine">("istate", extraState ? "mine" : "open")
-  const [activeNum, setActiveNum] = useUrlState<number | null>("issue", null, numberCodec)
-  const [kind, setKind] = useUrlState<string[]>("ikind", [], stringArrayCodec)
-  const [field, setField] = useUrlState<string[]>("ifield", [], stringArrayCodec)
-  const [category, setCategory] = useUrlState<string[]>("icat", [], stringArrayCodec)
-  const [author, setAuthor] = useUrlState<string[]>("iauthor", [], stringArrayCodec)
-  const [assignee, setAssignee] = useUrlState<string[]>("iassignee", [], stringArrayCodec)
+  // URL params prefixed `i` (plus `urlPrefix`) so they don't collide with the
+  // other tabs.
+  const [search, setSearch] = useUrlState(k("iq"), "")
+  const [state, setState] = useUrlState<StateFilter | "all" | "mine">(k("istate"), extraState ? "mine" : "open")
+  const [activeNum, setActiveNum] = useUrlState<number | null>(k("issue"), null, numberCodec)
+  const [kind, setKind] = useUrlState<string[]>(k("ikind"), [], stringArrayCodec)
+  const [field, setField] = useUrlState<string[]>(k("ifield"), [], stringArrayCodec)
+  const [category, setCategory] = useUrlState<string[]>(k("icat"), [], stringArrayCodec)
+  const [author, setAuthor] = useUrlState<string[]>(k("iauthor"), [], stringArrayCodec)
+  const [assignee, setAssignee] = useUrlState<string[]>(k("iassignee"), [], stringArrayCodec)
   const [openCol, setOpenCol] = useState<string | null>(null)
   const openProps = (id: string) => ({
     open: openCol === id,
@@ -327,8 +337,8 @@ export function IssuesTable({
     return opts
   }, [stateFiltered])
 
-  const columns = useMemo<ColumnDef<Issue>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<Issue>[]>(() => {
+    const cols: ColumnDef<Issue>[] = [
       {
         accessorKey: "number",
         header: "#",
@@ -581,9 +591,10 @@ export function IssuesTable({
           </span>
         ),
       },
-    ],
-    [sorting, kind, kindOptions, field, fieldCounts, category, categoryOptions, author, authorOptions, assignee, assigneeOptions, openCol],
-  )
+    ]
+    if (variant !== "infra") return cols
+    return cols.filter((c) => !["subfield", "category"].includes(c.id ?? (c as { accessorKey?: string }).accessorKey ?? ""))
+  }, [variant, sorting, kind, kindOptions, field, fieldCounts, category, categoryOptions, author, authorOptions, assignee, assigneeOptions, openCol])
 
   const table = useReactTable({
     data: filtered,
@@ -610,14 +621,14 @@ export function IssuesTable({
           {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>
         <a
-          href={NEW_ISSUE_URL}
+          href={variant === "infra" ? NEW_INFRA_ISSUE_URL : NEW_ISSUE_URL}
           target="_blank"
           rel="noreferrer"
           className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background transition-opacity hover:opacity-90"
-          title="Report a problem with a merged task"
+          title={variant === "infra" ? "Report a problem with CI, workflows, tooling or docs" : "Report a problem with a merged task"}
         >
           <CircleDot className="h-3.5 w-3.5" />
-          Report a task issue
+          {variant === "infra" ? "Report an infra issue" : "Report a task issue"}
         </a>
       </div>
 

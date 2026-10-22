@@ -290,7 +290,15 @@ const CI_OPTIONS = [
  *  benchmark and the other two are one click away. */
 export type PRBucket = PRState | "lite" | "archived"
 
-export function bucketOf(p: PR, variant: "tasks" | "fixes" = "tasks"): PRBucket {
+/** Which list the table shows: new-task PRs, `task fix` PRs, or infra PRs
+ *  (CI, workflows, tooling, docs — no task behind them). */
+export type PRVariant = "tasks" | "fixes" | "infra"
+
+// The infra variant keeps only the columns that mean something without a task:
+// no field, review stage, rubric, trials, author fit or proposal.
+const INFRA_COLUMNS = new Set(["number", "title", "author", "dri", "ball_in_court", "ci", "linked_issues", "updated_days", "age_days"])
+
+export function bucketOf(p: PR, variant: PRVariant = "tasks"): PRBucket {
   // A fix PR is bucketed by its own merge state. Its task's set is shown as
   // information under the number, but a repair to an archived task is still
   // a merged (or open, or closed) repair.
@@ -422,9 +430,10 @@ export function PRsTable({
   /** Both tabs default to `open` — the review queue in one, the fixes still
    *  needing review in the other. Merged/closed history is a pill click away. */
   defaultState?: PRBucket | "all"
-  /** `tasks` (new-task PRs, linked to a proposal) or `fixes` (repair PRs,
-   *  linked to the Task Issue they fix). Swaps the PROPOSAL column for ISSUE. */
-  variant?: "tasks" | "fixes"
+  /** `tasks` (new-task PRs, linked to a proposal), `fixes` (repair PRs,
+   *  linked to the Task Issue they fix — swaps the PROPOSAL column for ISSUE)
+   *  or `infra` (the ISSUE column, without the task-only columns). */
+  variant?: PRVariant
 }) {
   const k = (name: string) => `${urlPrefix}${name}`
   const { field_labels } = useTaxonomy()
@@ -624,8 +633,8 @@ export function PRsTable({
       .map((value) => ({ value, label: value, count: pending[value] ?? 0 }))
   }, [stateFiltered])
 
-  const columns = useMemo<ColumnDef<PR>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<PR>[]>(() => {
+    const cols: ColumnDef<PR>[] = [
       {
         accessorKey: "number",
         size: 70,
@@ -1140,12 +1149,12 @@ export function PRsTable({
           )
         },
       },
-      ...(variant === "fixes"
+      ...(variant !== "tasks"
         ? ([
       {
         id: "linked_issues",
         size: 130,
-        header: () => <span title="The Task Issue this repair PR says it fixes (Fixes #N)">ISSUE</span>,
+        header: () => <span title="The issue this PR says it fixes (Fixes #N)">ISSUE</span>,
         cell: ({ row }) => {
           const li = row.original.linked_issues ?? []
           if (!li.length) return <span className="text-xs text-muted-foreground">—</span>
@@ -1257,9 +1266,10 @@ export function PRsTable({
           </span>
         ),
       },
-    ],
-    [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, state, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol],
-  )
+    ]
+    if (variant !== "infra") return cols
+    return cols.filter((c) => INFRA_COLUMNS.has(c.id ?? (c as { accessorKey?: string }).accessorKey ?? ""))
+  }, [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, state, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol])
 
   const table = useReactTable({
     data: rows,

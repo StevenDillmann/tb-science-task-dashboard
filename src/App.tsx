@@ -118,8 +118,14 @@ export default function App() {
     [data],
   )
 
-  // Upstream issues — task problems (form-filed or free-form) plus infra.
-  const issues = useMemo(() => data?.issues ?? [], [data])
+  // Upstream issues, split by kind: task problems (form-filed or free-form)
+  // on the Task Issues tab, the rest on Infrastructure next to the infra PRs.
+  const issues = useMemo(() => (data?.issues ?? []).filter((i) => i.kind !== "infra"), [data])
+  const infraIssues = useMemo(() => (data?.issues ?? []).filter((i) => i.kind === "infra"), [data])
+  const infraPRs = useMemo(
+    () => (data ? (data.infra ?? []).filter((p) => !p.is_draft) : []),
+    [data],
+  )
 
   useEffect(() => {
     loadData()
@@ -311,6 +317,12 @@ export default function App() {
                     {issues.length}
                   </Badge>
                 </TabsTrigger>
+                <TabsTrigger value="infra">
+                  Infrastructure
+                  <Badge variant="secondary" className="ml-2">
+                    {infraPRs.length + infraIssues.length}
+                  </Badge>
+                </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
               {/* Outlined rather than grey-filled, like the tables' state toggle:
@@ -375,12 +387,30 @@ export default function App() {
                   onExternalFieldConsumed={() => setForcedField(null)}
                 />
               </TabsContent>
+              <TabsContent value="infra" className="mt-6 space-y-8">
+                {/* CI, workflows, tooling and docs — the work with no task
+                    behind it. PRs first, then the issues they fix. */}
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                    Pull Requests
+                  </h2>
+                  <PRsTable prs={infraPRs} urlPrefix="infra_" variant="infra" />
+                </section>
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                    Issues
+                  </h2>
+                  <IssuesTable issues={infraIssues} variant="infra" />
+                </section>
+              </TabsContent>
               <TabsContent value="queue" className="mt-6">
                 <ReviewerQueue
                   prs={visiblePRs}
                   fixes={visibleFixes}
                   proposals={data.proposals}
                   issues={issues}
+                  infraPRs={infraPRs}
+                  infraIssues={infraIssues}
                 />
               </TabsContent>
               <TabsContent value="stats" className="mt-6">

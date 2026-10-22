@@ -35,7 +35,14 @@ function writeStored(login: string) {
 const same = (a: string | null | undefined, b: string) =>
   !!a && a.toLowerCase() === b.toLowerCase()
 
-type Sources = { prs: PR[]; fixes: PR[]; proposals: Proposal[]; issues: Issue[] }
+type Sources = {
+  prs: PR[]
+  fixes: PR[]
+  proposals: Proposal[]
+  issues: Issue[]
+  infraPRs: PR[]
+  infraIssues: Issue[]
+}
 
 /** Every row assigned to `login`, per tab — the same rows those tabs show. */
 function assignedTo(login: string, d: Sources): Sources {
@@ -45,6 +52,8 @@ function assignedTo(login: string, d: Sources): Sources {
     prs: d.prs.filter(onPR),
     fixes: d.fixes.filter(onPR),
     issues: d.issues.filter((i) => i.assignees.some((a) => same(a.login, login))),
+    infraPRs: d.infraPRs.filter(onPR),
+    infraIssues: d.infraIssues.filter((i) => i.assignees.some((a) => same(a.login, login))),
   }
 }
 
@@ -56,7 +65,13 @@ const KINDS: Array<{ key: KindKey; label: string }> = [
   { key: "prs", label: "Task PRs" },
   { key: "fixes", label: "Task Fixes" },
   { key: "issues", label: "Task Issues" },
+  { key: "infraPRs", label: "Infra PRs" },
+  { key: "infraIssues", label: "Infra Issues" },
 ]
+
+// Shown only to reviewers who have some: most reviewers never get an issue or
+// an infra item, and a standing "0 Infra PRs" would be noise for them.
+const OPTIONAL_KINDS = new Set<KindKey>(["issues", "infraPRs", "infraIssues"])
 
 /** The assigned rows that are waiting on `login` right now. For PRs the
  *  `waiting on …` label is the team's source of truth for whose turn it is, so
@@ -70,13 +85,15 @@ function waitingFor(login: string, d: Sources): Sources {
     if (!me || me.status === "approved") return false
     return me.status === "pending" || p.ball_in_court === "reviewer"
   }
+  const issueTodo = (i: Issue) =>
+    i.state === "open" && !i.linked_prs.some((l) => l.state.toLowerCase() === "open")
   return {
     proposals: d.proposals.filter((p) => p.status === "pending" && !p.closed),
     prs: d.prs.filter(prTodo),
     fixes: d.fixes.filter(prTodo),
-    issues: d.issues.filter(
-      (i) => i.state === "open" && !i.linked_prs.some((l) => l.state.toLowerCase() === "open"),
-    ),
+    issues: d.issues.filter(issueTodo),
+    infraPRs: d.infraPRs.filter(prTodo),
+    infraIssues: d.infraIssues.filter(issueTodo),
   }
 }
 
@@ -88,6 +105,8 @@ function tally(login: string, d: Sources): Tally {
     prs: { todo: w.prs.length, open: d.prs.filter((p) => p.state === "open").length },
     fixes: { todo: w.fixes.length, open: d.fixes.filter((p) => p.state === "open").length },
     issues: { todo: w.issues.length, open: d.issues.filter((i) => i.state === "open").length },
+    infraPRs: { todo: w.infraPRs.length, open: d.infraPRs.filter((p) => p.state === "open").length },
+    infraIssues: { todo: w.infraIssues.length, open: d.infraIssues.filter((i) => i.state === "open").length },
   }
 }
 
@@ -98,7 +117,7 @@ const sumTally = (t: Tally, k: "todo" | "open") => KINDS.reduce((n, x) => n + t[
  *  filtering lives in each section's own table, so this only summarises. */
 function TodoSummary({ tally }: { tally: Tally }) {
   const total = sumTally(tally, "todo")
-  const parts = KINDS.filter((k) => k.key !== "issues" || tally.issues.open > 0)
+  const parts = KINDS.filter((k) => !OPTIONAL_KINDS.has(k.key) || tally[k.key].open > 0)
   return (
     <span className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm text-muted-foreground">
       <span className="font-semibold text-foreground">{total} WAITING ON YOU</span>
@@ -137,6 +156,8 @@ function collectReviewers(d: Sources): Array<User & { lower: string }> {
   d.prs.forEach((p) => p.reviewers.forEach(add))
   d.fixes.forEach((p) => p.reviewers.forEach(add))
   d.issues.forEach((i) => i.assignees.forEach(add))
+  d.infraPRs.forEach((p) => p.reviewers.forEach(add))
+  d.infraIssues.forEach((i) => i.assignees.forEach(add))
   return [...seen.values()]
 }
 
@@ -278,8 +299,11 @@ export function ReviewerQueue(all: Sources) {
     writeStored(login)
   }
 
-  const { prs, fixes, proposals, issues } = all
-  const sources = useMemo(() => ({ prs, fixes, proposals, issues }), [prs, fixes, proposals, issues])
+  const { prs, fixes, proposals, issues, infraPRs, infraIssues } = all
+  const sources = useMemo(
+    () => ({ prs, fixes, proposals, issues, infraPRs, infraIssues }),
+    [prs, fixes, proposals, issues, infraPRs, infraIssues],
+  )
   const reviewers = useMemo(() => collectReviewers(sources), [sources])
   const counts = useMemo(() => {
     const m = new Map<string, { waiting: number; open: number; tally: Tally }>()
@@ -315,6 +339,8 @@ export function ReviewerQueue(all: Sources) {
       prs: extra(w.prs),
       fixes: extra(w.fixes),
       issues: extra(w.issues),
+      infraPRs: extra(w.infraPRs),
+      infraIssues: extra(w.infraIssues),
     }
   }, [me, mine])
   const c = me ? counts.get(me.toLowerCase()) : undefined
@@ -347,6 +373,16 @@ export function ReviewerQueue(all: Sources) {
           {mine.issues.length > 0 && (
             <Section id="issues" title="Task Issues">
               <IssuesTable issues={mine.issues} extraState={waiting.issues} hideIdleFilters />
+            </Section>
+          )}
+          {mine.infraPRs.length > 0 && (
+            <Section id="infraPRs" title="Infra Pull Requests">
+              <PRsTable prs={mine.infraPRs} urlPrefix="qinfra_" variant="infra" extraState={waiting.infraPRs} hideIdleFilters />
+            </Section>
+          )}
+          {mine.infraIssues.length > 0 && (
+            <Section id="infraIssues" title="Infra Issues">
+              <IssuesTable issues={mine.infraIssues} urlPrefix="qinfra_" variant="infra" extraState={waiting.infraIssues} hideIdleFilters />
             </Section>
           )}
         </>
