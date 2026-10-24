@@ -341,7 +341,16 @@ export function IssuesTable({
     const cols: ColumnDef<Issue>[] = [
       {
         accessorKey: "number",
-        header: "#",
+        header: ({ column }) => (
+          // Default order is newest first; one click flips it to oldest first.
+          <button
+            className="inline-flex items-start gap-1 text-left"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <span className="font-medium">#</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
+          </button>
+        ),
         size: 70,
         cell: ({ row }) => {
           const i = row.original

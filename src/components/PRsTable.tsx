@@ -638,7 +638,16 @@ export function PRsTable({
       {
         accessorKey: "number",
         size: 70,
-        header: "#",
+        header: ({ column }) => (
+          // Default order is newest first; one click flips it to oldest first.
+          <button
+            className="inline-flex items-start gap-1 text-left"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <span className="font-medium">#</span>
+            <ArrowUpDown className="mt-0.5 h-3 w-3 shrink-0" />
+          </button>
+        ),
         cell: ({ row }) => {
           // On a fix subrow, say which task PR it belongs to. It goes here
           // rather than in the title so every column stays aligned with the
