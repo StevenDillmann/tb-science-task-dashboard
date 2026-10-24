@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DOMAIN_LABELS, type Domain, type PR, type PRState } from "@/lib/data"
+import { DOMAIN_LABELS, type Domain, type PR, type PRState, type TaskSet } from "@/lib/data"
 import { useTaxonomy } from "@/lib/taxonomy"
 import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
@@ -286,8 +286,8 @@ const CI_OPTIONS = [
 /** Pill-shaped All / Open / Merged / Closed switcher — same shape language as
  * the theme toggle, just with text + count instead of icons. */
 /** The pill's buckets. `merged` means merged INTO THE MAIN SET; a merged task
- *  that now sits in lite/ or archive/ is its own bucket, so "Merged" is the
- *  benchmark and the other two are one click away. */
+ *  that now sits in archive/ is its own bucket, so "Merged" is the benchmark
+ *  and the archive is one click away. Lite PRs have a tab of their own. */
 export type PRBucket = PRState | "lite" | "archived"
 
 /** Which list the table shows: new-task PRs, `task fix` PRs, or infra PRs
@@ -298,11 +298,21 @@ export type PRVariant = "tasks" | "fixes" | "infra"
 // no field, review stage, rubric, trials, author fit or proposal.
 const INFRA_COLUMNS = new Set(["number", "title", "author", "dri", "ball_in_court", "ci", "linked_issues", "updated_days", "age_days"])
 
-export function bucketOf(p: PR, variant: PRVariant = "tasks"): PRBucket {
+// Stable defaults for PRsTable's `setBuckets` (they feed a useMemo).
+const ARCHIVED_BUCKET: TaskSet[] = ["archived"]
+const NO_BUCKETS: TaskSet[] = []
+
+/** A task PR whose task is in the lite set: merged into lite/, or still open
+ *  after `/lite` moved its directory there. These get the Lite tab. */
+export function isLitePR(p: PR): boolean {
+  return p.set === "lite" || (p.task_dir ?? "").startsWith("lite/")
+}
+
+export function bucketOf(p: PR, variant: PRVariant = "tasks", sets: TaskSet[] = []): PRBucket {
   // A fix PR is bucketed by its own merge state. Its task's set is shown as
   // information under the number, but a repair to an archived task is still
   // a merged (or open, or closed) repair.
-  if (variant === "tasks" && p.state === "merged" && (p.set === "lite" || p.set === "archived")) return p.set
+  if (variant === "tasks" && p.state === "merged" && p.set && p.set !== "main" && sets.includes(p.set)) return p.set
   return p.state
 }
 
@@ -312,7 +322,7 @@ function StateToggle({
   counts,
   total,
   extra,
-  sets = true,
+  sets = [],
 }: {
   value: PRBucket | "all" | "mine"
   onChange: (v: PRBucket | "all" | "mine") => void
@@ -320,8 +330,8 @@ function StateToggle({
   total: number
   /** Page-supplied extra item, e.g. "Waiting on you" (see ExtraState). */
   extra?: { label: string; count: number }
-  /** Show the Lite / Archived buckets (task PRs only). */
-  sets?: boolean
+  /** Which set buckets (Lite / Archived) to show (task PRs only). */
+  sets?: TaskSet[]
 }) {
   const items: { value: PRBucket | "all" | "mine"; label: string; count: number }[] = [
     { value: "all", label: "All", count: total },
@@ -329,12 +339,8 @@ function StateToggle({
     { value: "open", label: "Open", count: counts.open ?? 0 },
     { value: "merged", label: "Merged", count: counts.merged ?? 0 },
     { value: "closed", label: "Closed", count: counts.closed ?? 0 },
-    ...(sets
-      ? [
-          { value: "lite" as const, label: "Lite", count: counts.lite ?? 0 },
-          { value: "archived" as const, label: "Archived", count: counts.archived ?? 0 },
-        ]
-      : []),
+    ...(sets.includes("lite") ? [{ value: "lite" as const, label: "Lite", count: counts.lite ?? 0 }] : []),
+    ...(sets.includes("archived") ? [{ value: "archived" as const, label: "Archived", count: counts.archived ?? 0 }] : []),
   ]
   // Active highlight matches the state-pill palette: open=amber, merged=green,
   // closed=grey, all=neutral accent; lite in the brand teal, archived muted.
@@ -412,6 +418,7 @@ export function PRsTable({
   urlPrefix = "",
   defaultState = "open",
   variant = "tasks",
+  setBuckets = variant === "tasks" ? ARCHIVED_BUCKET : NO_BUCKETS,
 }: {
   prs: PR[]
   externalField?: string | null
@@ -434,6 +441,9 @@ export function PRsTable({
    *  linked to the Task Issue they fix — swaps the PROPOSAL column for ISSUE)
    *  or `infra` (the ISSUE column, without the task-only columns). */
   variant?: PRVariant
+  /** Task sets that get their own pill bucket instead of counting as Merged.
+   *  The Lite tab passes none: there, a merged lite task is just merged. */
+  setBuckets?: TaskSet[]
 }) {
   const k = (name: string) => `${urlPrefix}${name}`
   const { field_labels } = useTaxonomy()
@@ -465,7 +475,7 @@ export function PRsTable({
     extraState ? "mine" : defaultState,
   )
   const inState = (p: PR) =>
-    state === "all" || (state === "mine" ? !!extraState?.match(p) : bucketOf(p, variant) === state)
+    state === "all" || (state === "mine" ? !!extraState?.match(p) : bucketOf(p, variant, setBuckets) === state)
   const [activeNum, setActiveNum] = useUrlState<number | null>(k("pr"), null, numberCodec)
   // Multi-select filters (OR within a column); `ball` (Action) stays single.
   const [field, setField] = useUrlState<string[]>(k("field"), [], stringArrayCodec)
@@ -689,7 +699,7 @@ export function PRsTable({
                 <SetPill
                   set={row.original.set}
                   onClick={
-                    variant === "tasks"
+                    variant === "tasks" && row.original.set && setBuckets.includes(row.original.set)
                       ? () => setState(state === row.original.set ? "all" : (row.original.set as PRBucket))
                       : undefined
                   }
@@ -1320,9 +1330,9 @@ export function PRsTable({
   // numbers stay stable as you select inside a state.
   const stateCounts = useMemo(() => {
     const c: Record<PRBucket, number> = { open: 0, closed: 0, merged: 0, lite: 0, archived: 0 }
-    for (const p of prs) c[bucketOf(p, variant)] += 1
+    for (const p of prs) c[bucketOf(p, variant, setBuckets)] += 1
     return c
-  }, [prs, variant])
+  }, [prs, variant, setBuckets])
 
   // Receive filters from Stats and apply them.
   useEffect(() => {
@@ -1350,7 +1360,7 @@ export function PRsTable({
           placeholder="Search"
           className="max-w-sm"
         />
-        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} extra={extraState && { label: extraState.label, count: prs.filter(extraState.match).length }} sets={variant === "tasks"} />
+        <StateToggle value={state} onChange={setState} counts={stateCounts} total={prs.length} extra={extraState && { label: extraState.label, count: prs.filter(extraState.match).length }} sets={setBuckets} />
         <span className="text-xs text-muted-foreground">
           {rows.length} {rows.length === 1 ? "row" : "rows"}
         </span>

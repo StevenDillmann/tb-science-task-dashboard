@@ -7,14 +7,14 @@ import logoDark from "@/assets/tb-science-logo-dark-bold.png"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Pipeline } from "@/components/Pipeline"
-import { PRsTable } from "@/components/PRsTable"
+import { isLitePR, PRsTable } from "@/components/PRsTable"
 import { ProposalsTable } from "@/components/ProposalsTable"
 import { IssuesTable } from "@/components/IssuesTable"
 import { StatsView } from "@/components/StatsView"
 import { ReviewerQueue } from "@/components/ReviewerQueue"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
-import { loadData, type Data } from "@/lib/data"
+import { loadData, type Data, type TaskSet } from "@/lib/data"
 import { TaxonomyProvider } from "@/lib/taxonomy"
 import { useUrlState } from "@/lib/useUrlState"
 
@@ -90,6 +90,9 @@ function CoverageBadge({ data }: { data: Data }) {
   )
 }
 
+// The Lite tab has no set buckets: a merged lite task is simply merged there.
+const NO_SET_BUCKETS: TaskSet[] = []
+
 export default function App() {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +112,11 @@ export default function App() {
     () => (data ? data.prs.filter((p) => !p.is_draft) : []),
     [data],
   )
+  // Once `/lite` moves a PR's task into lite/ (or it merges there), the PR
+  // leaves the Task Pull Requests tab for the Lite tab: it is no longer a
+  // candidate for the main benchmark.
+  const taskPRs = useMemo(() => visiblePRs.filter((p) => !isLitePR(p)), [visiblePRs])
+  const litePRs = useMemo(() => visiblePRs.filter(isLitePR), [visiblePRs])
   // `task fix` PRs get their own tab so every fix is visible — including the
   // ones no task row could be matched to (task outside the fetched window, or
   // upstream moved its directory). They ALSO show as subrows under the task
@@ -302,7 +310,13 @@ export default function App() {
                 <TabsTrigger value="prs">
                   Task Pull Requests
                   <Badge variant="secondary" className="ml-2">
-                    {visiblePRs.length}
+                    {taskPRs.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="lite">
+                  Lite Pull Requests
+                  <Badge variant="secondary" className="ml-2">
+                    {litePRs.length}
                   </Badge>
                 </TabsTrigger>
                 <TabsTrigger value="fixes">
@@ -354,7 +368,7 @@ export default function App() {
               </TabsContent>
               <TabsContent value="prs" className="mt-6">
                 <PRsTable
-                  prs={visiblePRs}
+                  prs={taskPRs}
                   externalField={tab === "prs" ? forcedField : null}
                   externalState={tab === "prs" ? forcedPRState : null}
                   onExternalFieldConsumed={() => {
@@ -362,6 +376,12 @@ export default function App() {
                     setForcedPRState(null)
                   }}
                 />
+              </TabsContent>
+              <TabsContent value="lite" className="mt-6">
+                {/* Own URL namespace, like Task Fixes. Defaults to All: the tab
+                    is small, and merged lite tasks are as much the point as
+                    the ones still in review. */}
+                <PRsTable prs={litePRs} urlPrefix="lite_" defaultState="all" setBuckets={NO_SET_BUCKETS} />
               </TabsContent>
               <TabsContent value="fixes" className="mt-6">
                 <PRsTable
@@ -418,7 +438,7 @@ export default function App() {
                   proposals={data.proposals}
                   // Statistics describe the MAIN set: a task that landed in
                   // lite/ or archive/ is a merged PR but not a benchmark task.
-                  prs={visiblePRs.filter((p) => p.set !== "lite" && p.set !== "archived")}
+                  prs={taskPRs.filter((p) => p.set !== "archived")}
                   onPickField={(pick) => {
                     setForcedField(pick.field)
                     if (pick.kind === "proposals") {
