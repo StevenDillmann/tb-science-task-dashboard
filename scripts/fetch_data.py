@@ -13,6 +13,7 @@ Uses the `gh` CLI for GraphQL/REST so we don't need a token explicitly:
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import random
@@ -20,6 +21,7 @@ import re
 import subprocess
 import sys
 import time
+import tomllib
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -843,6 +845,41 @@ def field_from_title_fallback(
     slug = slugify(field_text)
     domain = field_to_domain.get(slug)
     return domain, (slug if domain else None), field_text
+
+
+_TASK_TOML_FIELDS: dict[tuple[str, str], tuple[str | None, str | None]] = {}
+
+
+def field_from_task_toml(
+    sha: str,
+    task_dir: str,
+    taxonomy: dict[str, dict[str, list[str]]],
+) -> tuple[str | None, str | None]:
+    """(domain, subfield) from the task's own `task.toml` [metadata] at `sha`.
+
+    Flat roots (`lite/<slug>`, `archive/<slug>`) carry no domain or field in the
+    path, and the `[TASK: …]` title is free text that often names an old or
+    invented field ("Data Science and Statistics"), so read what the task says
+    about itself. A fork PR's head commit is reachable from the upstream repo
+    (refs/pull/N/head), so one contents call covers fork and branch PRs alike.
+    Cached per (sha, dir); anything unreadable or off-taxonomy returns (None, None)
+    and the caller falls back to the title as before.
+    """
+    key = (sha, task_dir)
+    if key not in _TASK_TOML_FIELDS:
+        found: tuple[str | None, str | None] = (None, None)
+        try:
+            # retries=1: a 404 (task.toml moved or deleted) is an answer, not a blip.
+            raw = gh(["api", f"repos/{UPSTREAM}/contents/{task_dir}/task.toml?ref={sha}",
+                      "--jq", ".content"], retries=1)
+            meta = tomllib.loads(base64.b64decode(raw).decode()).get("metadata", {})
+            domain, field = meta.get("domain"), meta.get("field")
+            if domain in taxonomy and field in taxonomy.get(domain, {}):
+                found = (domain, field)
+        except (GHError, ValueError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+            pass
+        _TASK_TOML_FIELDS[key] = found
+    return _TASK_TOML_FIELDS[key]
 
 
 def field_from_proposal_body(
@@ -2379,6 +2416,10 @@ def build_prs(
         # A fix PR that touches no task.toml at all still belongs to a task.
         task_dir = task_dir or task_dir_hint
         raw_field: str | None = None
+        # A flat lite/ or archive/ task has no field in its path: ask its task.toml
+        # before trusting the free-text title.
+        if not subfield and task_dir and task_dir.split("/")[0] in ("lite", "archive") and n.get("headRefOid"):
+            domain, subfield = field_from_task_toml(n["headRefOid"], task_dir, taxonomy)
         if not subfield:
             domain, subfield, raw_field = field_from_title_fallback(
                 n["title"], field_to_domain
