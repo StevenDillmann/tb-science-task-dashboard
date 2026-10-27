@@ -48,6 +48,11 @@ export type TrialRun = {
     cost_trials: number
     avg_runtime_secs: number | null
     runtime_trials: number
+    /** Harbor Hub compute (sandbox) cost of the whole run, USD — present only
+     *  when the trials ran on Hub. A run total (Hub costs per job, not trial). */
+    compute_cost_usd?: number | null
+    compute_jobs?: number
+    compute_pending?: number
     /** When this run was posted upstream (shown in the chip's tooltip). */
     at: string | null
   }
@@ -116,6 +121,9 @@ export type PR = {
     cost_trials: number
     avg_runtime_secs: number | null
     runtime_trials: number
+    compute_cost_usd?: number | null
+    compute_jobs?: number
+    compute_pending?: number
   } | null
   /** Which set the task is in on main now (by slug), or null. Set on the
    *  task PR and on the fix PRs that touch it. */

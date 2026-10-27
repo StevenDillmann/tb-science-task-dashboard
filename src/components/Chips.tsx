@@ -9,6 +9,7 @@ import {
   Pen,
   RotateCw,
   Search,
+  Server,
   TriangleAlert,
   X as XIcon,
   XCircle,
@@ -1007,6 +1008,40 @@ export function CostTimeChip({
           )}
         </>
       )}
+    </span>
+  )
+}
+
+/** Harbor Hub compute (sandbox) cost of a /run or /cheat, shown in blue
+ *  between the roll-up chip and the trial dots. This is what Hub credits pay
+ *  for, on top of the LLM cost in the roll-up. Upstream posts it only for runs
+ *  that executed on Hub, and as a run total (Hub costs per job, not trial). */
+export function HubComputeChip({
+  costUsd,
+  jobs,
+  pending,
+}: {
+  costUsd?: number | null
+  jobs?: number
+  pending?: number
+}) {
+  if (!jobs) return null
+  const cost = costUsd == null ? "pending" : `$${costUsd.toFixed(2)}`
+  const title = [
+    `Harbor Hub compute ${cost} for this run, over ${jobs} hosted job(s)`,
+    pending ? `${pending} job(s) not yet costed by Hub` : null,
+    "billed to Hub credits, separate from the LLM cost",
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  return (
+    <span
+      title={title}
+      className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-medium text-blue-700 dark:text-blue-400"
+    >
+      <Server className="h-3 w-3 shrink-0" />
+      {cost} Hub compute
+      {pending ? <span className="opacity-60">(+{pending} pending)</span> : null}
     </span>
   )
 }

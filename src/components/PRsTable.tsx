@@ -45,6 +45,7 @@ import {
   CIChip,
   CoiBadge,
   CostTimeChip,
+  HubComputeChip,
   FieldChip,
   HumanReviewChip,
   RubricChip,
@@ -142,6 +143,8 @@ const TRIAL_SORT_OPTIONS = [
   { value: "time:asc", label: "runtime (low → high)" },
   { value: "cost:desc", label: "cost (high → low)" },
   { value: "cost:asc", label: "cost (low → high)" },
+  { value: "compute:desc", label: "Hub compute (high → low)" },
+  { value: "compute:asc", label: "Hub compute (low → high)" },
 ]
 
 // Sort choices for the Cheat Trials column (success rate / avg cost / runtime).
@@ -152,6 +155,8 @@ const CHEAT_SORT_OPTIONS = [
   { value: "time:asc", label: "runtime (low → high)" },
   { value: "cost:desc", label: "cost (high → low)" },
   { value: "cost:asc", label: "cost (low → high)" },
+  { value: "compute:desc", label: "Hub compute (high → low)" },
+  { value: "compute:asc", label: "Hub compute (low → high)" },
 ]
 
 // Toggle a value in/out of a multi-select filter array.
@@ -179,7 +184,9 @@ function prSortText(
           ? "runtime"
           : m === "cost"
             ? "cost"
-            : "trials"
+            : m === "compute"
+              ? "Hub compute"
+              : "trials"
   let label: string
   let detail: string
   switch (s.id) {
@@ -454,9 +461,9 @@ export function PRsTable({
   ])
   // Which trial metric the Frontier Trials column sorts by (cost or runtime);
   // null = not sorting on trials. Direction lives in `sorting` (id "trials").
-  const [trialMetric, setTrialMetric] = useState<"cost" | "time" | "pass" | null>(null)
+  const [trialMetric, setTrialMetric] = useState<"cost" | "time" | "pass" | "compute" | null>(null)
   // Same, for the Cheat Trials column (success rate / cost / runtime).
-  const [cheatMetric, setCheatMetric] = useState<"cost" | "time" | "success" | null>(null)
+  const [cheatMetric, setCheatMetric] = useState<"cost" | "time" | "success" | "compute" | null>(null)
   // Same, for the Oracle column — pass rate or runtime, there being no cost.
   const [oracleMetric, setOracleMetric] = useState<"time" | "pass" | null>(null)
   // Which column's filter popover is open — lifted here so it survives the
@@ -970,6 +977,7 @@ export function PRsTable({
           const pick = (r: typeof a) => {
             const t = r.original.trials
             if (trialMetric === "cost") return t?.avg_cost_usd ?? -1
+            if (trialMetric === "compute") return t?.compute_cost_usd ?? -1
             if (trialMetric === "time") return t?.avg_runtime_secs ?? -1
             // pass rate: passed / total; no trials sorts last
             return t && t.total ? t.passed / t.total : -1
@@ -994,7 +1002,7 @@ export function PRsTable({
                   return
                 }
                 const [metric, dir] = v.split(":")
-                setTrialMetric(metric as "cost" | "time" | "pass")
+                setTrialMetric(metric as "cost" | "time" | "pass" | "compute")
                 setSorting([{ id: "trials", desc: dir === "desc" }])
               }}
             />
@@ -1015,6 +1023,13 @@ export function PRsTable({
                   runtimeTrials={t.runtime_trials}
                 />
               )}
+              {t && (
+                <HubComputeChip
+                  costUsd={t.compute_cost_usd}
+                  jobs={t.compute_jobs}
+                  pending={t.compute_pending}
+                />
+              )}
               <TrialsChip trials={t} />
             </div>
           )
@@ -1027,6 +1042,7 @@ export function PRsTable({
           const pick = (r: typeof a) => {
             const c = r.original.cheat
             if (cheatMetric === "cost") return c?.avg_cost_usd ?? -1
+            if (cheatMetric === "compute") return c?.compute_cost_usd ?? -1
             if (cheatMetric === "time") return c?.avg_runtime_secs ?? -1
             // success rate = succeeded / total; no cheat trials sorts last
             return c && c.total ? c.succeeded / c.total : -1
@@ -1051,7 +1067,7 @@ export function PRsTable({
                   return
                 }
                 const [metric, dir] = v.split(":")
-                setCheatMetric(metric as "cost" | "time" | "success")
+                setCheatMetric(metric as "cost" | "time" | "success" | "compute")
                 setSorting([{ id: "cheat", desc: dir === "desc" }])
               }}
             />
@@ -1070,6 +1086,13 @@ export function PRsTable({
                   runtimeSecs={c.avg_runtime_secs}
                   costTrials={c.cost_trials}
                   runtimeTrials={c.runtime_trials}
+                />
+              )}
+              {c && (
+                <HubComputeChip
+                  costUsd={c.compute_cost_usd}
+                  jobs={c.compute_jobs}
+                  pending={c.compute_pending}
                 />
               )}
               <CheatChip cheat={c} />

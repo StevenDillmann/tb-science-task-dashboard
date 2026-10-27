@@ -1199,6 +1199,25 @@ CHEAT_RUNTIME_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Harbor Hub compute (sandbox) cost, posted on /run and /cheat comments only
+# when the trials ran on Hub (env=hosted). It is a run total, since Hub costs
+# per job rather than per trial, e.g.
+#   🖥️ Compute cost on Harbor Hub: $94.02 (3 hosted job(s); 1 not yet reported by Hub)
+HUB_COMPUTE_RE = re.compile(
+    r"Compute cost on Harbor Hub\s*:\s*([^\n(]+?)\s*\((\d+)\s+hosted job"
+    r"(?:\(s\))?(?:;\s*(\d+)\s+not yet reported)?",
+    re.IGNORECASE,
+)
+
+
+def _parse_hub_compute(body_text: str) -> dict:
+    m = HUB_COMPUTE_RE.search(body_text)
+    return {
+        "compute_cost_usd": _parse_cost_token(m.group(1)) if m else None,
+        "compute_jobs": int(m.group(2)) if m else 0,
+        "compute_pending": int(m.group(3)) if m and m.group(3) else 0,
+    }
+
 
 def _parse_cost_token(tok: str) -> float | None:
     """`$1.23` → 1.23, `94.0¢` → 0.94, `—`/blank → None (USD)."""
@@ -1484,6 +1503,7 @@ def parse_cheat_results(comments: list[dict[str, Any]]) -> dict[str, Any] | None
             "cost_trials": int(cost_m.group(2)) if cost_m else 0,
             "avg_runtime_secs": avg_runtime,
             "runtime_trials": int(runtime_m.group(2)) if runtime_m else 0,
+            **_parse_hub_compute(body_text),
         }
     return None
 
@@ -1683,6 +1703,7 @@ def parse_trial_results(
             "cost_trials": int(cost_m.group(2)) if cost_m else 0,
             "avg_runtime_secs": avg_runtime,
             "runtime_trials": int(runtime_m.group(2)) if runtime_m else 0,
+            **_parse_hub_compute(body_text),
         }
     return None
 
