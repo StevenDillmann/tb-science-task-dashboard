@@ -149,7 +149,6 @@ export type PR = {
   body: string
   head_sha: string | null
   task_dir: string | null
-  task_files: string[]
   created_at: string
   updated_at: string
   merged_at: string | null

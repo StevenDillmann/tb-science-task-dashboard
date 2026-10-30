@@ -2589,17 +2589,6 @@ def build_prs(
             "body": n.get("body") or "",
             "head_sha": n.get("headRefOid"),
             "task_dir": task_dir,
-            # Every file path inside the PR's task directory (relative paths)
-            # so the side panel can list tests/ and solution/ contents.
-            "task_files": (
-                sorted(
-                    f[len(task_dir) + 1 :]
-                    for f in files
-                    if task_dir and f.startswith(f"{task_dir}/")
-                )
-                if task_dir
-                else []
-            ),
             "created_at": n["createdAt"],
             "updated_at": n["updatedAt"],
             "merged_at": n.get("mergedAt"),

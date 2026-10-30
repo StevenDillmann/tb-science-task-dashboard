@@ -37,7 +37,7 @@ import { useTaxonomy } from "@/lib/taxonomy"
 import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
 import { searchableLabels, tagLabels } from "@/lib/labels"
-import { numberCodec, stringArrayCodec, useUrlState } from "@/lib/useUrlState"
+import { stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import {
   AuthorFitChip,
   BallChip,
@@ -60,7 +60,6 @@ import {
 import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
-import { PRSheet } from "./PRSheet"
 
 // Mirrors StageChip's layout for the filter row: two parallel slots, a gate
 // chevron, then the final slot (which stays dimmed until both parallel fill).
@@ -483,7 +482,6 @@ export function PRsTable({
   )
   const inState = (p: PR) =>
     state === "all" || (state === "mine" ? !!extraState?.match(p) : bucketOf(p, variant, setBuckets) === state)
-  const [activeNum, setActiveNum] = useUrlState<number | null>(k("pr"), null, numberCodec)
   // Multi-select filters (OR within a column); `ball` (Action) stays single.
   const [field, setField] = useUrlState<string[]>(k("field"), [], stringArrayCodec)
   const [stage, setStage] = useUrlState<string[]>(k("stage"), [], stringArrayCodec)
@@ -505,22 +503,6 @@ export function PRsTable({
   // Which task rows have their fix subrows open. Deliberately NOT in the URL:
   // it's a transient reading gesture, not a view worth sharing.
   const [expanded, setExpanded] = useState<ExpandedState>({})
-  // The opened PR, resolved from its number in the URL (looked up in the full
-  // list so a deep link opens the panel regardless of the active filters). Fix
-  // PRs live inside their parent's `fix_rows`, so they are searched too —
-  // otherwise clicking a fix subrow's title would open an empty sheet. `fixOf`
-  // carries the parent, which is the only place the fix's task context lives.
-  const active = useMemo(() => {
-    if (activeNum == null) return null
-    const parent = prs.find((p) => p.number === activeNum)
-    if (parent) return { pr: parent, fixOf: null as PR | null }
-    for (const p of prs) {
-      const fix = p.fix_rows?.find((f) => f.number === activeNum)
-      if (fix) return { pr: fix, fixOf: p }
-    }
-    return null
-  }, [prs, activeNum])
-
   // Tag constraints, split out so the Tags facet can count each tag against
   // every OTHER active filter. `skip` drops that one tag's own constraint.
   // "Only" tags AND together: lite-only + gpu-only means lite GPU tasks.
@@ -755,13 +737,17 @@ export function PRsTable({
                   like one more word at the end of the title — sitting after the
                   last word and wrapping with it. */}
               <div>
-                <button
-                  type="button"
-                  onClick={() => setActiveNum(row.original.number)}
+                {/* Straight to GitHub, not a side panel: the panel rendered the
+                    task's files (solution/ and tests/ included), which put a
+                    second public copy of the answers one click from the table. */}
+                <a
+                  href={row.original.url}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline text-left font-medium hover:underline underline-offset-4"
                 >
                   {row.original.title}
-                </button>
+                </a>
                 {tagLabels(row.original.labels).map((tag) => (
                   <Fragment key={tag}>
                     {" "}
@@ -1369,12 +1355,6 @@ export function PRsTable({
   const showFilterBar = !hideIdleFilters || !!anyChip || !isDefaultSort
   return (
     <>
-    <PRSheet
-      pr={active?.pr ?? null}
-      fixOf={active?.fixOf ?? null}
-      open={active !== null}
-      onOpenChange={(v) => !v && setActiveNum(null)}
-    />
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
         <SearchInput
