@@ -1,4 +1,5 @@
 import {
+  Bot,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -956,6 +957,10 @@ export function CostTimeChip({
   ratePct,
   rateTone,
   rateTitle,
+  hubCostUsd,
+  hubTrials,
+  hubJobs,
+  hubPending,
 }: {
   costUsd: number | null
   runtimeSecs: number | null
@@ -965,9 +970,21 @@ export function CostTimeChip({
   ratePct?: number | null
   rateTone?: "pass" | "cheat"
   rateTitle?: string
+  /** Harbor Hub compute (sandbox) cost for the whole run, billed to Hub
+   *  credits on top of the LLM cost. Hub reports it per job, not per trial,
+   *  so it is shown divided by `hubTrials` to sit beside the per-trial LLM
+   *  cost. Only runs that executed on Hub carry it (`hubJobs` > 0). */
+  hubCostUsd?: number | null
+  hubTrials?: number
+  hubJobs?: number
+  hubPending?: number
 }) {
   const hasRate = ratePct != null
-  if (!hasRate && costUsd == null && runtimeSecs == null) {
+  const hasHub = !!hubJobs
+  const hubAvg =
+    hasHub && hubCostUsd != null && hubTrials ? hubCostUsd / hubTrials : null
+  const hub = !hasHub ? null : hubAvg == null ? "—" : `$${hubAvg.toFixed(2)}${hubPending ? "+" : ""}`
+  if (!hasRate && costUsd == null && runtimeSecs == null && !hasHub) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
   const time = runtimeSecs == null ? null : `${(runtimeSecs / 60).toFixed(1)}m`
@@ -976,7 +993,14 @@ export function CostTimeChip({
   const title = [
     rateTitle ?? null,
     runtimeSecs != null ? `avg runtime ${time} over ${runtimeTrials ?? 0} trial(s)` : null,
-    costUsd != null ? `avg cost ${cost} over ${costTrials ?? 0} trial(s)` : null,
+    costUsd != null ? `avg agent API cost ${cost} over ${costTrials ?? 0} trial(s)` : null,
+    hasHub
+      ? `avg Harbor Hub compute ${hub} per trial (run total ${
+          hubCostUsd == null ? "pending" : `$${hubCostUsd.toFixed(2)}`
+        } over ${hubJobs} hosted job(s)${
+          hubPending ? `; ${hubPending} not yet costed by Hub, so this is a lower bound` : ""
+        })`
+      : null,
   ]
     .filter(Boolean)
     .join(" · ")
@@ -1003,45 +1027,19 @@ export function CostTimeChip({
           {cost != null && (
             <>
               <span className="opacity-40">·</span>
+              <Bot className="h-3 w-3 shrink-0" />
               {cost}
             </>
           )}
         </>
       )}
-    </span>
-  )
-}
-
-/** Harbor Hub compute (sandbox) cost of a /run or /cheat, shown in blue
- *  between the roll-up chip and the trial dots. This is what Hub credits pay
- *  for, on top of the LLM cost in the roll-up. Upstream posts it only for runs
- *  that executed on Hub, and as a run total (Hub costs per job, not trial). */
-export function HubComputeChip({
-  costUsd,
-  jobs,
-  pending,
-}: {
-  costUsd?: number | null
-  jobs?: number
-  pending?: number
-}) {
-  if (!jobs) return null
-  const cost = costUsd == null ? "pending" : `$${costUsd.toFixed(2)}`
-  const title = [
-    `Harbor Hub compute ${cost} for this run, over ${jobs} hosted job(s)`,
-    pending ? `${pending} job(s) not yet costed by Hub` : null,
-    "billed to Hub credits, separate from the LLM cost",
-  ]
-    .filter(Boolean)
-    .join(" · ")
-  return (
-    <span
-      title={title}
-      className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-medium text-blue-700 dark:text-blue-400"
-    >
-      <Server className="h-3 w-3 shrink-0" />
-      {cost} Hub compute
-      {pending ? <span className="opacity-60">(+{pending} pending)</span> : null}
+      {hasHub && (
+        <>
+          {(hasRate || hasRun) && <span className="opacity-40">·</span>}
+          <Server className="h-3 w-3 shrink-0" />
+          {hub}
+        </>
+      )}
     </span>
   )
 }

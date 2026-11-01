@@ -45,7 +45,6 @@ import {
   CIChip,
   CoiBadge,
   CostTimeChip,
-  HubComputeChip,
   FieldChip,
   HumanReviewChip,
   RubricChip,
@@ -956,14 +955,14 @@ export function PRsTable({
       },
       {
         accessorKey: "trials",
-        size: 210,
+        size: 270,
         // Sort the column by average trial cost or runtime (the ⏱/$ toggles).
         // Rows with no reported value for the active metric sort last.
         sortingFn: (a, b) => {
           const pick = (r: typeof a) => {
             const t = r.original.trials
             if (trialMetric === "cost") return t?.avg_cost_usd ?? -1
-            if (trialMetric === "compute") return t?.compute_cost_usd ?? -1
+            if (trialMetric === "compute") return t?.compute_cost_usd != null && t.total ? t.compute_cost_usd / t.total : -1
             if (trialMetric === "time") return t?.avg_runtime_secs ?? -1
             // pass rate: passed / total; no trials sorts last
             return t && t.total ? t.passed / t.total : -1
@@ -1007,13 +1006,10 @@ export function PRsTable({
                   runtimeSecs={t.avg_runtime_secs}
                   costTrials={t.cost_trials}
                   runtimeTrials={t.runtime_trials}
-                />
-              )}
-              {t && (
-                <HubComputeChip
-                  costUsd={t.compute_cost_usd}
-                  jobs={t.compute_jobs}
-                  pending={t.compute_pending}
+                  hubCostUsd={t.compute_cost_usd}
+                  hubTrials={t.total}
+                  hubJobs={t.compute_jobs}
+                  hubPending={t.compute_pending}
                 />
               )}
               <TrialsChip trials={t} />
@@ -1023,12 +1019,12 @@ export function PRsTable({
       },
       {
         accessorKey: "cheat",
-        size: 180,
+        size: 240,
         sortingFn: (a, b) => {
           const pick = (r: typeof a) => {
             const c = r.original.cheat
             if (cheatMetric === "cost") return c?.avg_cost_usd ?? -1
-            if (cheatMetric === "compute") return c?.compute_cost_usd ?? -1
+            if (cheatMetric === "compute") return c?.compute_cost_usd != null && c.total ? c.compute_cost_usd / c.total : -1
             if (cheatMetric === "time") return c?.avg_runtime_secs ?? -1
             // success rate = succeeded / total; no cheat trials sorts last
             return c && c.total ? c.succeeded / c.total : -1
@@ -1072,13 +1068,10 @@ export function PRsTable({
                   runtimeSecs={c.avg_runtime_secs}
                   costTrials={c.cost_trials}
                   runtimeTrials={c.runtime_trials}
-                />
-              )}
-              {c && (
-                <HubComputeChip
-                  costUsd={c.compute_cost_usd}
-                  jobs={c.compute_jobs}
-                  pending={c.compute_pending}
+                  hubCostUsd={c.compute_cost_usd}
+                  hubTrials={c.total}
+                  hubJobs={c.compute_jobs}
+                  hubPending={c.compute_pending}
                 />
               )}
               <CheatChip cheat={c} />
