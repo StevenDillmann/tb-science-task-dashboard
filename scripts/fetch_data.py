@@ -1532,6 +1532,88 @@ def _classify_model(text: str) -> str:
     return "other"
 
 
+def _parse_trial_table(body_md: str, header: str) -> tuple[list[dict[str, Any]], int, int, int]:
+    """Parse the first markdown trial table after `header` in a results comment.
+
+    Returns (by_model, oracle_rows, cell_pass, cell_verdict). Shared by the /run,
+    /oracle and /verify comments, which all render the /run table shape.
+    """
+    by_model: list[dict[str, Any]] = []
+    oracle_rows = 0
+    cell_pass = 0
+    cell_verdict = 0  # pass + fail + errored — the count of attempted trials
+    header_idx = body_md.find(header)
+    if header_idx >= 0:
+        tail = body_md[header_idx:]
+        # First non-trivial table is the trial table.
+        # Split on lines, pick the first `|...|` block.
+        in_table = False
+        header_seen = False
+        # Per-model "Average" / "Hub Link" columns are summaries, not trials —
+        # pick the trial columns by header so they aren't counted as extra
+        # (errored) trial cells.
+        pick_trials = lambda cells: cells[1:]  # noqa: E731 — replaced from the header row
+        for line in tail.splitlines():
+            if line.startswith("|"):
+                if not in_table:
+                    in_table = True
+                if "---" in line:
+                    header_seen = True
+                    continue
+                if not header_seen:
+                    header_cells = [x.strip() for x in line.strip("|").split("|")]
+                    pick_trials = _trial_cell_picker(header_cells)
+                    continue
+                cells = [x.strip() for x in line.strip("|").split("|")]
+                if len(cells) < 2:
+                    continue
+                model_label = cells[0]
+                # Trim leading backticks etc. and grab a short readable
+                # display name (first chunk before parens/backticks).
+                display = re.sub(r"`", "", model_label)
+                display = display.split("<br>")[0].strip()
+                results: list[str] = []
+                for cell in pick_trials(cells):
+                    c_clean = cell.strip()
+                    if "✅" in c_clean:
+                        results.append("pass")
+                        cell_pass += 1
+                        cell_verdict += 1
+                    elif "❌" in c_clean:
+                        results.append("fail")
+                        cell_verdict += 1
+                    elif "⚠" in c_clean:
+                        # Errored/incomplete trial. Rendered as a warning by
+                        # the UI (its "none" branch); still an attempt, so it
+                        # counts toward the derived total.
+                        results.append("none")
+                        cell_verdict += 1
+                    else:
+                        results.append("none")  # blank placeholder cell
+                if results:
+                    if ORACLE_AGENT_RE.search(model_label):
+                        oracle_rows += 1
+                    by_model.append({
+                        # Under the oracle heading the first column is the
+                        # TASK, not a model — `/oracle`'s own renderer
+                        # dropped the agent column — so classify by the
+                        # comment we're in rather than by the row label,
+                        # which would otherwise read OTHER.
+                        "model": (
+                            "oracle"
+                            if header == ORACLE_HEADER
+                            else _classify_model(model_label)
+                        ),
+                        "display": display,
+                        "results": results,
+                    })
+            elif in_table:
+                # First non-pipe line after entering the table = table end.
+                break
+
+    return by_model, oracle_rows, cell_pass, cell_verdict
+
+
 def parse_trial_results(
     comments: list[dict[str, Any]],
     want_oracle: bool = False,
@@ -1579,78 +1661,7 @@ def parse_trial_results(
         # summary line — single-trial and all-errored runs don't emit it, but the
         # table is always present. Deriving keeps the latest /run visible instead
         # of silently falling back to an older run that happened to have a summary.
-        by_model: list[dict[str, Any]] = []
-        oracle_rows = 0
-        cell_pass = 0
-        cell_verdict = 0  # pass + fail + errored — the count of attempted trials
-        header_idx = body_md.find(header)
-        if header_idx >= 0:
-            tail = body_md[header_idx:]
-            # First non-trivial table is the trial table.
-            # Split on lines, pick the first `|...|` block.
-            in_table = False
-            header_seen = False
-            # Per-model "Average" / "Hub Link" columns are summaries, not trials —
-            # pick the trial columns by header so they aren't counted as extra
-            # (errored) trial cells.
-            pick_trials = lambda cells: cells[1:]  # noqa: E731 — replaced from the header row
-            for line in tail.splitlines():
-                if line.startswith("|"):
-                    if not in_table:
-                        in_table = True
-                    if "---" in line:
-                        header_seen = True
-                        continue
-                    if not header_seen:
-                        header_cells = [x.strip() for x in line.strip("|").split("|")]
-                        pick_trials = _trial_cell_picker(header_cells)
-                        continue
-                    cells = [x.strip() for x in line.strip("|").split("|")]
-                    if len(cells) < 2:
-                        continue
-                    model_label = cells[0]
-                    # Trim leading backticks etc. and grab a short readable
-                    # display name (first chunk before parens/backticks).
-                    display = re.sub(r"`", "", model_label)
-                    display = display.split("<br>")[0].strip()
-                    results: list[str] = []
-                    for cell in pick_trials(cells):
-                        c_clean = cell.strip()
-                        if "✅" in c_clean:
-                            results.append("pass")
-                            cell_pass += 1
-                            cell_verdict += 1
-                        elif "❌" in c_clean:
-                            results.append("fail")
-                            cell_verdict += 1
-                        elif "⚠" in c_clean:
-                            # Errored/incomplete trial. Rendered as a warning by
-                            # the UI (its "none" branch); still an attempt, so it
-                            # counts toward the derived total.
-                            results.append("none")
-                            cell_verdict += 1
-                        else:
-                            results.append("none")  # blank placeholder cell
-                    if results:
-                        if ORACLE_AGENT_RE.search(model_label):
-                            oracle_rows += 1
-                        by_model.append({
-                            # Under the oracle heading the first column is the
-                            # TASK, not a model — `/oracle`'s own renderer
-                            # dropped the agent column — so classify by the
-                            # comment we're in rather than by the row label,
-                            # which would otherwise read OTHER.
-                            "model": (
-                                "oracle"
-                                if header == ORACLE_HEADER
-                                else _classify_model(model_label)
-                            ),
-                            "display": display,
-                            "results": results,
-                        })
-                elif in_table:
-                    # First non-pipe line after entering the table = table end.
-                    break
+        by_model, oracle_rows, cell_pass, cell_verdict = _parse_trial_table(body_md, header)
 
         # An all-oracle table is an oracle run; anything with a real agent in it
         # is an agent run. Mixed tables (never seen in practice) count as agent
@@ -1706,6 +1717,60 @@ def parse_trial_results(
             **_parse_hub_compute(body_text),
         }
     return None
+
+
+# `/verify` re-scores a past /run's recorded agent outputs with the PR head's
+# verifier, no agent re-run, and posts "🔁 Verifier Re-run — /run run [<id>]" in
+# the /run table shape with /run's pass-rate line. When it re-scored the run the
+# Trials column is showing, and is newer, its verdicts ARE that run's current
+# result: same agent work, current verifier. Its cost/runtime are not (it ran no
+# agent), so those stay the /run's. Only a finished re-score carries the
+# pass-rate line, so a placeholder, a refusal and a "nothing was re-scored"
+# comment never override. Old-format /verify comments (Before/After table, before
+# 2026-11-04) carry no such line and are ignored.
+VERIFY_HEADER = "Verifier Re-run"
+VERIFY_SOURCE_RE = re.compile(r"Verifier Re-run\s*—\s*/run run \[(\d+)\]")
+# The /run comment's sticky marker names its ORIGINATING run (the one /verify
+# cites); its footer link can name a hosted continuation run instead.
+RUN_MARKER_RE = re.compile(r"agent-trial-results-(\d+)")
+
+
+def apply_verify_rescore(comments: list[dict[str, Any]], trials: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not trials:
+        return trials
+    run_comment = next((c for c in comments if c.get("url") == trials.get("url")), None)
+    m = RUN_MARKER_RE.search((run_comment or {}).get("body", "") or "")
+    if not m:
+        return trials
+    run_id = m.group(1)
+    for c in reversed(comments):
+        if (c.get("author") or {}).get("login", "") not in LLM_REVIEW_BOTS:
+            continue
+        body_text = c.get("bodyText", "") or ""
+        body_md = c.get("body", "") or ""
+        src = VERIFY_SOURCE_RE.search(body_md)
+        if not src or src.group(1) != run_id:
+            continue
+        if (c.get("createdAt") or "") <= (trials.get("at") or ""):
+            break  # older than the /run it would re-score: nothing newer exists
+        pr_m = TRIAL_PASSRATE_RE.search(body_text)
+        if not pr_m:
+            continue
+        by_model, _, _, _ = _parse_trial_table(body_md, VERIFY_HEADER)
+        if not by_model:
+            continue
+        return {
+            **trials,
+            "passed": int(pr_m.group(1)),
+            "total": int(pr_m.group(2)),
+            "by_model": by_model,
+            "url": c.get("url"),
+            "at": c.get("createdAt"),
+            # The /run whose agent outputs these verdicts re-score.
+            "rescored_from": {"url": trials.get("url"), "at": trials.get("at"),
+                              "passed": trials.get("passed"), "total": trials.get("total")},
+        }
+    return trials
 
 DISCUSSION_QUERY = """
 query($owner:String!,$name:String!,$first:Int!,$cursor:String){
@@ -2487,7 +2552,7 @@ def build_prs(
         # meaningful. Stage/ball then derive from the SAME list the column
         # shows, and can never disagree with it.
         reviewers = build_reviewers(n, reviewer_roles) if state != "closed" else []
-        trials = parse_trial_results(comments)
+        trials = apply_verify_rescore(comments, parse_trial_results(comments))
         # `/run agents=oracle` — the reference solution through the same harness.
         # Its own column, so it can't be mistaken for an agent result.
         oracle_trials = parse_trial_results(comments, want_oracle=True)

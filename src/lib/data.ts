@@ -55,6 +55,10 @@ export type TrialRun = {
     compute_pending?: number
     /** When this run was posted upstream (shown in the chip's tooltip). */
     at: string | null
+    /** Set when a newer `/verify` re-scored this run's agent outputs with the
+     *  current verifier: passed/total/by_model/url/at are then the re-score's,
+     *  and this names the /run it re-scored and its original verdict. */
+    rescored_from?: { url: string | null; at: string | null; passed: number; total: number } | null
   }
 
 export type PR = {

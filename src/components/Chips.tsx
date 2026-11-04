@@ -612,17 +612,23 @@ export function TrialsChip({
     }>
     url: string | null
     at?: string | null
+    rescored_from?: { url: string | null; at: string | null; passed: number; total: number } | null
   } | null
 }) {
   if (!trials || trials.total === 0) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
-  const { passed, total, by_model, url, at } = trials
+  const { passed, total, by_model, url, at, rescored_from } = trials
   // The run date matters on a merged task: a `task fix` may have changed the
   // task since, in which case these numbers describe the pre-fix version.
-  const title =
-    `Agent trials: ${passed} of ${total} passed` +
-    (at ? ` · run ${formatExactDateTime(at)}` : "")
+  // A /verify re-score shows the latest /run's agent outputs graded by the
+  // current verifier, so name both dates and the verdict before the re-score.
+  const title = rescored_from
+    ? `Agent trials: ${passed} of ${total} passed · re-scored by /verify ${at ? formatExactDateTime(at) : ""}` +
+      ` (was ${rescored_from.passed} of ${rescored_from.total}` +
+      (rescored_from.at ? `, run ${formatExactDateTime(rescored_from.at)}` : "") + ")"
+    : `Agent trials: ${passed} of ${total} passed` +
+      (at ? ` · run ${formatExactDateTime(at)}` : "")
 
   // Fallback to summary chip if we couldn't parse per-model data.
   const inner = by_model.length === 0 ? (
