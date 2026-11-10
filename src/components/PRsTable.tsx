@@ -403,6 +403,14 @@ function formatPostedDate(iso: string): string {
   })
 }
 
+/** A fix PR's issue categories (short form) for the ISSUE column filter. */
+const ISSUE_CAT_LABEL: Record<string, string> = { __none: "No linked issue", __uncat: "Uncategorised issue" }
+function issueCats(p: PR): string[] {
+  const li = p.linked_issues ?? []
+  if (!li.length) return ["__none"]
+  return [...new Set(li.map((i) => shortCategory(i.category ?? null) ?? "__uncat"))]
+}
+
 function countBy<T>(items: T[], key: (t: T) => string | null): Record<string, number> {
   const out: Record<string, number> = {}
   for (const it of items) {
@@ -488,6 +496,8 @@ export function PRsTable({
   const [author, setAuthor] = useUrlState<string[]>(k("author"), [], stringArrayCodec)
   const [dri, setDri] = useUrlState<string[]>(k("dri"), [], stringArrayCodec)
   const [ci, setCi] = useUrlState<string[]>(k("ci"), [], stringArrayCodec)
+  // Fixes tab: filter by the linked issue's fix category ("__none" = no linked issue).
+  const [issueCat, setIssueCat] = useUrlState<string[]>(k("icat"), [], stringArrayCodec)
   // Filter by the linked proposal's review status (or "none" = no linked proposal).
   const [propStatus, setPropStatus] = useUrlState<string[]>(k("prop_status"), [], stringArrayCodec)
   // Author-fit filter: fit verdicts + "coi" (COI disclosed).
@@ -529,6 +539,7 @@ export function PRsTable({
       if (author.length && !author.includes(p.author.login)) return false
       if (dri.length && !p.reviewers.some((d) => dri.includes(d.login))) return false
       if (ci.length && !ci.includes(p.ci ?? "")) return false
+      if (issueCat.length && !issueCats(p).some((c) => issueCat.includes(c))) return false
       if (propStatus.length) {
         const lp = p.linked_proposal
         const ok = propStatus.some((s) => (s === "none" ? !lp : lp?.status === s))
@@ -547,7 +558,7 @@ export function PRsTable({
       }
       return true
     })
-  }, [prs, search, state, field, stage, ball, author, dri, ci, propStatus, fit, variant, extraState])
+  }, [prs, search, state, field, stage, ball, author, dri, ci, issueCat, propStatus, fit, variant, extraState])
   const filtered = useMemo(
     () => baseFiltered.filter((p) => passesTags(p)),
     [baseFiltered, tags],
@@ -609,6 +620,13 @@ export function PRsTable({
       })
       .sort((a, b) => a.value.localeCompare(b.value))
   }, [stateFiltered, baseFiltered, tags])
+  const issueCatOptions = useMemo(() => {
+    const c: Record<string, number> = {}
+    for (const p of stateFiltered) for (const v of issueCats(p)) c[v] = (c[v] ?? 0) + 1
+    return Object.entries(c)
+      .sort((a, b) => (a[0].startsWith("__") ? 1 : 0) - (b[0].startsWith("__") ? 1 : 0) || b[1] - a[1])
+      .map(([value, count]) => ({ value, label: ISSUE_CAT_LABEL[value] ?? value, count }))
+  }, [stateFiltered])
   const authorOptions = useMemo(() => {
     const c = countBy(stateFiltered, (p) => p.author.login)
     return Object.entries(c)
@@ -807,7 +825,16 @@ export function PRsTable({
       {
         id: "linked_issues",
         size: 130,
-        header: () => <span title="The issue this PR says it fixes (Fixes #N), and that issue's fix category">ISSUE</span>,
+        header: () => (
+          <ColumnFilter
+            title="ISSUE"
+            selected={issueCat}
+            onToggle={(v) => setIssueCat(toggleVal(issueCat, v))}
+            onClearAll={() => setIssueCat([])}
+            options={issueCatOptions}
+            {...openProps("issueCat")}
+          />
+        ),
         cell: ({ row }) => {
           const li = row.original.linked_issues ?? []
           if (!li.length) return <span className="text-xs text-muted-foreground">—</span>
@@ -1298,7 +1325,7 @@ export function PRsTable({
     ]
     if (variant !== "infra") return cols
     return cols.filter((c) => INFRA_COLUMNS.has(c.id ?? (c as { accessorKey?: string }).accessorKey ?? ""))
-  }, [variant, field, stage, ball, dri, author, ci, propStatus, fit, tags, state, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol])
+  }, [variant, field, stage, ball, dri, author, ci, issueCat, issueCatOptions, propStatus, fit, tags, state, fieldCounts, driOptions, authorOptions, tagOptions, trialMetric, cheatMetric, oracleMetric, sorting, openCol])
 
   const table = useReactTable({
     data: rows,
@@ -1325,6 +1352,7 @@ export function PRsTable({
     dri.length ||
     author.length ||
     ci.length ||
+    issueCat.length ||
     propStatus.length ||
     fit.length ||
     tags.length
@@ -1415,6 +1443,13 @@ export function PRsTable({
               )}
               {author.length > 0 && (
                 <FilterChip label="Author" value={author.join(", ")} onClear={() => setAuthor([])} />
+              )}
+              {issueCat.length > 0 && (
+                <FilterChip
+                  label="Issue type"
+                  value={issueCat.map((c) => ISSUE_CAT_LABEL[c] ?? c).join(", ")}
+                  onClear={() => setIssueCat([])}
+                />
               )}
               {ci.length > 0 && (
                 <FilterChip
