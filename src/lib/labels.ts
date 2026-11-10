@@ -42,6 +42,8 @@ export function searchableLabels(labels: string[]): string[] {
 export const CATEGORY_SHORT: Record<string, string> = {
   "Instruction (ambiguous, wrong, or underspecified)": "Instruction",
   "Verifier / tests (wrong assertions, doesn't match instruction)": "Verifier / tests",
+  // Same option, spelled out by issues filed via the API rather than the form.
+  "Verifier / tests (wrong assertions, does not match instruction)": "Verifier / tests",
   "Solution / oracle (doesn't solve the task)": "Solution / oracle",
   "Environment / Dockerfile (missing deps, leaks solution or tests)": "Environment",
   "Flaky / nondeterministic": "Flaky",
