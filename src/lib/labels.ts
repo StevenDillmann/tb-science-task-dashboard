@@ -36,3 +36,17 @@ export function searchableLabels(labels: string[]): string[] {
       !COVERED_LABEL_PREFIXES.some((p) => l.startsWith(p)),
   )
 }
+
+// The form's Category dropdown, shortened for a table cell. Free-form issues
+// have none.
+export const CATEGORY_SHORT: Record<string, string> = {
+  "Instruction (ambiguous, wrong, or underspecified)": "Instruction",
+  "Verifier / tests (wrong assertions, doesn't match instruction)": "Verifier / tests",
+  "Solution / oracle (doesn't solve the task)": "Solution / oracle",
+  "Environment / Dockerfile (missing deps, leaks solution or tests)": "Environment",
+  "Flaky / nondeterministic": "Flaky",
+  "Cheatable (shortcut lets an agent pass without the intended work)": "Cheatable",
+  "Dataset / input files": "Dataset",
+  Other: "Other",
+}
+export const shortCategory = (c: string | null) => (c ? (CATEGORY_SHORT[c] ?? c) : null)

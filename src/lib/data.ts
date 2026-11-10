@@ -149,6 +149,8 @@ export type PR = {
     state: "open" | "closed"
     state_reason?: "completed" | "not_planned" | "duplicate" | "reopened" | null
     kind: "task fix" | "task" | "infra"
+    /** The issue form's Category dropdown (full text); null for free-form issues. */
+    category?: string | null
   }>
   body: string
   head_sha: string | null

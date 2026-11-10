@@ -36,7 +36,7 @@ import { DOMAIN_LABELS, type Domain, type PR, type PRState, type TaskSet } from 
 import { useTaxonomy } from "@/lib/taxonomy"
 import { EXTRA_STATE_TONE, type ExtraState } from "@/lib/extraState"
 import { cn, formatExactDateTime, formatRelativeTime } from "@/lib/utils"
-import { searchableLabels, tagLabels } from "@/lib/labels"
+import { searchableLabels, shortCategory, tagLabels } from "@/lib/labels"
 import { stringArrayCodec, useUrlState } from "@/lib/useUrlState"
 import {
   AuthorFitChip,
@@ -801,6 +801,50 @@ export function PRsTable({
           )
         },
       },
+      // Fix/infra PRs: the issue (and its category) sits right after the title.
+      ...(variant !== "tasks"
+        ? ([
+      {
+        id: "linked_issues",
+        size: 130,
+        header: () => <span title="The issue this PR says it fixes (Fixes #N), and that issue's fix category">ISSUE</span>,
+        cell: ({ row }) => {
+          const li = row.original.linked_issues ?? []
+          if (!li.length) return <span className="text-xs text-muted-foreground">—</span>
+          return (
+            <span className="flex flex-col gap-0.5">
+              {li.map((i) => (
+                <span key={i.number} className="inline-flex items-center gap-1.5">
+                  <a
+                    href={i.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={i.title}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    #{i.number}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {/* open = pending a fix · completed = green · not planned = red */}
+                  <HumanReviewChip
+                    status={
+                      i.state === "open" ? "pending" : i.state_reason === "not_planned" ? "rejected" : "approved"
+                    }
+                    compact
+                  />
+                </span>
+              ))}
+              {/* The fix-form Category of the issue(s) it fixes; free-form issues have none. */}
+              {[...new Set(li.map((i) => shortCategory(i.category ?? null)).filter(Boolean))].map((c) => (
+                <span key={c} className="text-xs text-muted-foreground">{c}</span>
+              ))}
+            </span>
+          )
+        },
+      },
+        ] as ColumnDef<PR>[])
+        : []),
       {
         accessorKey: "subfield",
         size: 185,
@@ -1171,43 +1215,7 @@ export function PRsTable({
         },
       },
       ...(variant !== "tasks"
-        ? ([
-      {
-        id: "linked_issues",
-        size: 130,
-        header: () => <span title="The issue this PR says it fixes (Fixes #N)">ISSUE</span>,
-        cell: ({ row }) => {
-          const li = row.original.linked_issues ?? []
-          if (!li.length) return <span className="text-xs text-muted-foreground">—</span>
-          return (
-            <span className="flex flex-col gap-0.5">
-              {li.map((i) => (
-                <span key={i.number} className="inline-flex items-center gap-1.5">
-                  <a
-                    href={i.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={i.title}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    #{i.number}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                  {/* open = pending a fix · completed = green · not planned = red */}
-                  <HumanReviewChip
-                    status={
-                      i.state === "open" ? "pending" : i.state_reason === "not_planned" ? "rejected" : "approved"
-                    }
-                    compact
-                  />
-                </span>
-              ))}
-            </span>
-          )
-        },
-      },
-        ] as ColumnDef<PR>[])
+        ? ([] as ColumnDef<PR>[])
         : ([
       {
         accessorKey: "linked_proposal",

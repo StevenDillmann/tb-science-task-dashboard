@@ -27,6 +27,7 @@ import { ColumnFilter } from "./ColumnFilter"
 import { FieldColumnFilter } from "./FieldColumnFilter"
 import { FilterChip, SearchInput } from "./Filters"
 import { IssueSheet } from "./IssueSheet"
+import { shortCategory } from "@/lib/labels"
 
 const UPSTREAM = "harbor-framework/terminal-bench-science"
 const NEW_ISSUE_URL = `https://github.com/${UPSTREAM}/issues/new?template=task-fix.yml`
@@ -98,19 +99,6 @@ const TITLE_SORT_OPTIONS = [
   { value: "title:desc", label: "Z→A" },
 ]
 
-// The form's Category dropdown, shortened for a table cell. Free-form issues
-// have none.
-const CATEGORY_SHORT: Record<string, string> = {
-  "Instruction (ambiguous, wrong, or underspecified)": "Instruction",
-  "Verifier / tests (wrong assertions, doesn't match instruction)": "Verifier / tests",
-  "Solution / oracle (doesn't solve the task)": "Solution / oracle",
-  "Environment / Dockerfile (missing deps, leaks solution or tests)": "Environment",
-  "Flaky / nondeterministic": "Flaky",
-  "Cheatable (shortcut lets an agent pass without the intended work)": "Cheatable",
-  "Dataset / input files": "Dataset",
-  Other: "Other",
-}
-const shortCategory = (c: string | null) => (c ? (CATEGORY_SHORT[c] ?? c) : null)
 
 /** Pill buckets. GitHub closes an issue as completed (done) or not planned
  *  (won't do); the pill shows them as Completed (green) and Closed (red). */

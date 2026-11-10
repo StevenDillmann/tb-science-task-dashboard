@@ -1327,6 +1327,9 @@ def find_linked_issues(
             "state": issue["state"],
             "state_reason": issue.get("state_reason"),
             "kind": issue["kind"],
+            # The fix form's Category, so the Task Fixes tab can show what
+            # kind of fix the PR is without the author restating it.
+            "category": issue.get("category"),
         })
     return out
 
