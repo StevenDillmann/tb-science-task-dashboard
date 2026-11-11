@@ -453,7 +453,7 @@ export function CheatChip({
     blocked: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
+      model: "claude" | "gpt" | "gemini" | "kimi" | "oracle" | "other"
       display: string
       results: Array<"succeeded" | "blocked" | "none">
     }>
@@ -585,6 +585,7 @@ const MODEL_LABEL: Record<string, string> = {
   claude: "CLAUDE",
   gpt: "GPT",
   gemini: "GEMINI",
+  kimi: "KIMI",
   other: "OTHER",
 }
 
@@ -606,7 +607,7 @@ export function TrialsChip({
     passed: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
+      model: "claude" | "gpt" | "gemini" | "kimi" | "oracle" | "other"
       display: string
       results: Array<"pass" | "fail" | "none">
     }>

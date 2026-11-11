@@ -59,6 +59,10 @@ jobs:
       - name: Fetch upstream PRs + proposals
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Event-driven rebuilds re-read only the open PRs whose updatedAt
+          # moved (plus every PR's checks); the hourly cron re-reads them all,
+          # so anything an update didn't bump is repaired within the hour.
+          DASHBOARD_FULL_REFRESH: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python3 scripts/fetch_data.py --out public/data.json --cache .cache/raw.json
 
       - run: npm run build

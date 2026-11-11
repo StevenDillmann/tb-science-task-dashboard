@@ -1239,6 +1239,10 @@ def _parse_duration_token(tok: str) -> int | None:
     return round(val * 60) if "m" in tok else round(val)
 
 CHEAT_HEADER = "Cheating Agent Trial Results"
+# `/run hints` posts "💡 Hinted Agent Trial Results": the agent was handed the
+# task's own authoring/hint.md, so its verdicts say whether the task is solvable
+# with help, not how frontier agents do on it. Never a Trials-column run.
+HINT_HEADER = "Hinted Agent Trial Results"
 # In the cheat comment ✅ means the cheat SUCCEEDED (bad) and ❌ means the
 # cheat was blocked (good). We're after a robust per-row "X of Y cheats
 # blocked" view, so count ✅ = succeeded and ❌ = blocked across the trial
@@ -1530,6 +1534,10 @@ def _classify_model(text: str) -> str:
     # "openai" and would otherwise be misclassified as gpt.
     if "gemini" in t or "google" in t:
         return "gemini"
+    # Kimi is routed the same way (`openai/kimi-k3.1-pro`, served by Moonshot),
+    # so it too has to be checked before the gpt/openai test.
+    if "kimi" in t or "moonshot" in t:
+        return "kimi"
     if "gpt" in t or "openai" in t:
         return "gpt"
     return "other"
@@ -1657,6 +1665,10 @@ def parse_trial_results(
         # the trial header, so skip it here — otherwise the latest cheat run gets
         # mistaken for the latest /run and the Trials column shows cheat data.
         if CHEAT_HEADER in body_text:
+            continue
+        # Same containment for hinted runs (see HINT_HEADER): skip them, so the
+        # Trials column keeps showing the latest UN-hinted /run.
+        if HINT_HEADER in body_text:
             continue
         # Parse the first markdown table after the trial header. We tally verdict
         # cells (✅ pass / ❌ fail / ⚠️ errored) as we go so we can DERIVE the
@@ -1995,12 +2007,109 @@ def _unchanged(base: list[dict[str, Any]]) -> Callable[[dict[str, Any]], bool]:
     return lambda node: seen.get(node["number"]) == node["updatedAt"]
 
 
+def _pr_node_fields() -> str:
+    """The `nodes{ ... }` selection of PR_QUERY, so per-PR fetches stay in sync."""
+    i = PR_QUERY.index("nodes{") + len("nodes{")
+    depth, j = 1, i
+    while depth:
+        c = PR_QUERY[j]
+        depth += (c == "{") - (c == "}")
+        j += 1
+    return PR_QUERY[i:j - 1]
+
+
+# Cheap pass over every open PR: just what changes WITHOUT bumping updatedAt
+# (the head commit's checks). Everything else a PR shows -- comments, labels,
+# reviews, assignees, pushes, edits -- does bump it.
+OPEN_PR_LIGHT_QUERY = """
+query($owner:String!,$name:String!,$first:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequests(states:[OPEN],first:$first,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}){
+      totalCount
+      pageInfo{ hasNextPage endCursor }
+      nodes{
+        number updatedAt headRefOid
+        commits(last:1){
+          nodes{
+            commit{
+              statusCheckRollup{
+                state
+                contexts(first:100){
+                  nodes{
+                    __typename
+                    ... on CheckRun { name conclusion status }
+                    ... on StatusContext { context state }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+LIGHT_PAGE = 50
+FULL_BATCH = 10  # PRs per aliased full query; same weight as one PR_PAGE page
+
+
+def fetch_prs_by_number(numbers: list[int]) -> list[dict[str, Any]]:
+    """Full PR nodes for the given numbers, FULL_BATCH per aliased query."""
+    fields = _pr_node_fields()
+    out: list[dict[str, Any]] = []
+    for k in range(0, len(numbers), FULL_BATCH):
+        chunk = numbers[k:k + FULL_BATCH]
+        sel = "\n".join(f"p{n}: pullRequest(number:{n}){{{fields}}}" for n in chunk)
+        q = ("query($owner:String!,$name:String!){repository(owner:$owner,name:$name){"
+             + sel + "}}")
+        repo = graphql(q, {"owner": UPSTREAM_OWNER, "name": UPSTREAM_NAME})["data"]["repository"]
+        out += [repo[f"p{n}"] for n in chunk if repo.get(f"p{n}")]
+    return out
+
+
+def fetch_open_prs(base: list[dict[str, Any]], stats: dict[str, Any]) -> list[dict[str, Any]]:
+    """Open PR nodes: fresh where updatedAt moved, cached (with fresh checks) elsewhere.
+
+    A full open-PR page carries every comment body, file and review, and with
+    450+ open PRs re-fetching them all was ~5 of the rebuild's ~6 fetch minutes.
+    `DASHBOARD_FULL_REFRESH=1` (set on the hourly cron) or a cold cache takes
+    the old path, so anything this skips is still repaired within the hour.
+    """
+    full = PR_QUERY.replace("__STATES__", "[OPEN]")
+    cached = {n["number"]: n for n in base if n.get("state") == "OPEN"}
+    if os.environ.get("DASHBOARD_FULL_REFRESH") == "1" or not cached:
+        return paged(full, "pullRequests", extra_vars={"first": PR_PAGE},
+                     max_pages=None, require_complete=True, stats=stats)
+    light = paged(OPEN_PR_LIGHT_QUERY, "pullRequests", extra_vars={"first": LIGHT_PAGE},
+                  max_pages=None, require_complete=True, stats=stats)
+    changed = [n["number"] for n in light
+               if cached.get(n["number"], {}).get("updatedAt") != n["updatedAt"]]
+    out = fetch_prs_by_number(changed)
+    got = {n["number"] for n in out}
+    for n in light:
+        if n["number"] in got or n["number"] not in cached:
+            continue
+        node = dict(cached[n["number"]])
+        node["commits"] = n["commits"]
+        node["headRefOid"] = n["headRefOid"]
+        # The cached comment list is already complete (backfilled when it was
+        # fetched); mark it so, or backfill_pr_comments appends the tail again.
+        comments = dict(node.get("comments") or {})
+        comments["pageInfo"] = {"hasNextPage": False, "endCursor": None}
+        node["comments"] = comments
+        out.append(node)
+    sys.stderr.write(f"Open PRs: {len(changed)} changed of {len(light)}; "
+                     f"{len(light) - len(changed)} served from cache with fresh checks.\n")
+    return out
+
+
 def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
     """Fetch PR nodes, merged over `base`. Returns (nodes, "ok"|"stale").
 
-    Open PRs are always fetched fresh: a CI check completing does NOT bump a
-    PR's updatedAt, so an incremental-by-updatedAt scan would leave stale CI
-    dots on open PRs. Closed/merged PRs are effectively immutable, so those are
+    Open PRs: a CI check completing does NOT bump a PR's updatedAt, so every
+    open PR's checks are re-read each run, but its full node (comments, files,
+    reviews) only when updatedAt moved -- see fetch_open_prs. Closed/merged PRs are effectively immutable, so those are
     fetched incrementally (early-stop at the first unchanged one). A state
     transition (open→merged) bumps updatedAt to the top of the closed list, so
     it's always re-fetched and overwrites the stale open copy on merge.
@@ -2015,11 +2124,7 @@ def fetch_prs(base: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         # 20-page × 10-per-page budget meant ~46 open task PRs were missing —
         # so the only safe budget is "until GitHub says there are no more".
         # `require_complete` keeps that honest if a cap is ever reintroduced.
-        fresh += paged(
-            PR_QUERY.replace("__STATES__", "[OPEN]"), "pullRequests",
-            extra_vars={"first": PR_PAGE}, max_pages=None, require_complete=True,
-            stats=open_stats,
-        )
+        fresh += fetch_open_prs(base, open_stats)
     except GHError as e:
         if not base:
             raise

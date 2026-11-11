@@ -33,7 +33,7 @@ export type TrialRun = {
     passed: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "oracle" | "other"
+      model: "claude" | "gpt" | "gemini" | "kimi" | "oracle" | "other"
       display: string
       results: Array<"pass" | "fail" | "none">
     }>
@@ -114,7 +114,7 @@ export type PR = {
     blocked: number
     total: number
     by_model: Array<{
-      model: "claude" | "gpt" | "gemini" | "other"
+      model: "claude" | "gpt" | "gemini" | "kimi" | "other"
       display: string
       results: Array<"succeeded" | "blocked" | "none">
     }>
