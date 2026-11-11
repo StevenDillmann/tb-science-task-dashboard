@@ -1,0 +1,69 @@
+name: Poll Upstream
+
+# Keeps the dashboard fresh even when the upstream repo cannot ping us.
+#
+# Upstream's notify-dashboard.yml dispatches a rebuild on every change, but it
+# runs on terminal-bench-science's runners. When those are saturated (a burst
+# of /run jobs holding them for hours), the ping waits in the same queue and
+# the dashboard goes stale: on 2026-11-11 it sat 3h behind with ~800 upstream
+# runs queued. This poller runs on THIS repo's runners instead.
+#
+# One long-lived job polls upstream's public event feed (one cheap API call)
+# every few minutes and dispatches rebuild.yml when the newest event id moves.
+# Near the 6h job cap it re-dispatches itself, so polling never stops; the
+# hourly cron only revives it if that chain ever breaks. GITHUB_TOKEN may fire
+# workflow_dispatch (one of the two events it is allowed to trigger).
+
+on:
+  schedule:
+    - cron: "43 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  # One poller at a time; a revival queues behind a live one and exits at once.
+  group: poll-upstream
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - name: Poll and dispatch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          UPSTREAM: harbor-framework/terminal-bench-science
+          INTERVAL: "180"          # seconds between polls
+          MIN_GAP: "240"           # never dispatch rebuilds closer than this
+          RUN_FOR: "20400"         # 5h40m, then hand off to a fresh run
+        run: |
+          set -u
+          # A live poller is already running (this one was queued behind it): exit.
+          LIVE=$(gh run list --repo "$REPO" --workflow poll-upstream.yml --status in_progress \
+                   --json databaseId --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID})] | length")
+          if [ "${LIVE:-0}" -gt 0 ]; then echo "Another poller is live; exiting."; exit 0; fi
+
+          start=$(date +%s); last_seen=""; last_dispatch=0
+          while [ $(( $(date +%s) - start )) -lt "$RUN_FOR" ]; do
+            newest=$(gh api "repos/$UPSTREAM/events?per_page=1" --jq '.[0].id' 2>/dev/null || true)
+            now=$(date +%s)
+            if [ -n "$newest" ] && [ "$newest" != "$last_seen" ]; then
+              if [ -n "$last_seen" ] && [ $(( now - last_dispatch )) -ge "$MIN_GAP" ]; then
+                gh workflow run rebuild.yml --repo "$REPO" \
+                  && echo "$(date -u +%H:%M) upstream moved ($last_seen -> $newest); rebuild dispatched" \
+                  || echo "::warning::could not dispatch rebuild"
+                last_dispatch=$now
+                last_seen=$newest
+              elif [ -z "$last_seen" ]; then
+                last_seen=$newest   # first poll: baseline only
+              fi
+              # Inside MIN_GAP: leave last_seen stale so the next poll dispatches.
+            fi
+            sleep "$INTERVAL"
+          done
+          gh workflow run poll-upstream.yml --repo "$REPO" && echo "Handed off to a fresh poller."
