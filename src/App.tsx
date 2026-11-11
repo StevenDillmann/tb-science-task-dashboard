@@ -93,6 +93,22 @@ function CoverageBadge({ data }: { data: Data }) {
 // The Lite tab has no set buckets: a merged lite task is simply merged there.
 const NO_SET_BUCKETS: TaskSet[] = []
 
+/** Tab badge: how many items are still open (amber, the Open pill's tone —
+ *  what is left to act on) next to the tab's total. */
+function TabCount({ items }: { items: Array<{ state: string }> }) {
+  const open = items.filter((i) => i.state === "open").length
+  return (
+    <Badge
+      variant="secondary"
+      className="ml-2 gap-1 font-normal"
+      title={`${open} open of ${items.length} total`}
+    >
+      <span className="font-semibold text-amber-700 dark:text-amber-400">{open}</span>
+      <span className="text-muted-foreground">/ {items.length}</span>
+    </Badge>
+  )
+}
+
 export default function App() {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -303,39 +319,27 @@ export default function App() {
               <TabsList>
                 <TabsTrigger value="proposals">
                   Task Proposals
-                  <Badge variant="secondary" className="ml-2">
-                    {data.proposals.length}
-                  </Badge>
+                  <TabCount items={data.proposals} />
                 </TabsTrigger>
                 <TabsTrigger value="prs">
                   Task Pull Requests
-                  <Badge variant="secondary" className="ml-2">
-                    {taskPRs.length}
-                  </Badge>
+                  <TabCount items={taskPRs} />
                 </TabsTrigger>
                 <TabsTrigger value="lite">
                   Lite Pull Requests
-                  <Badge variant="secondary" className="ml-2">
-                    {litePRs.length}
-                  </Badge>
+                  <TabCount items={litePRs} />
                 </TabsTrigger>
                 <TabsTrigger value="fixes">
                   Task Fixes
-                  <Badge variant="secondary" className="ml-2">
-                    {visibleFixes.length}
-                  </Badge>
+                  <TabCount items={visibleFixes} />
                 </TabsTrigger>
                 <TabsTrigger value="issues">
                   Task Issues
-                  <Badge variant="secondary" className="ml-2">
-                    {issues.length}
-                  </Badge>
+                  <TabCount items={issues} />
                 </TabsTrigger>
                 <TabsTrigger value="infra">
                   Infrastructure
-                  <Badge variant="secondary" className="ml-2">
-                    {infraPRs.length + infraIssues.length}
-                  </Badge>
+                  <TabCount items={[...infraPRs, ...infraIssues]} />
                 </TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
               </TabsList>
