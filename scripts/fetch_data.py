@@ -214,7 +214,7 @@ def graphql(query: str, variables: dict[str, Any] | None = None) -> dict[str, An
 #   * graceful degradation — fall back to it when the API is unreachable, so a
 #     GitHub outage never freezes the deployed dashboard;
 #   * incremental fetch — pull only what changed since it was written.
-CACHE_VERSION = 1
+CACHE_VERSION = 2  # 2: issue cross-refs carry willCloseTarget + PR title/body
 
 
 def load_raw_cache(path: str | None) -> dict[str, Any]:
@@ -1063,7 +1063,8 @@ query($owner:String!,$name:String!,$first:Int!,$cursor:String){
         timelineItems(first:50, itemTypes:[CROSS_REFERENCED_EVENT]){
           nodes{
             ... on CrossReferencedEvent {
-              source{ ... on PullRequest { number state url } }
+              willCloseTarget
+              source{ ... on PullRequest { number state url title body } }
             }
           }
         }
@@ -2412,10 +2413,19 @@ def build_issues(
             key=lambda a: (role_order[a["role"]], a["login"].lower()),
         )
 
+        # A PR is this issue's repair only if it closes it (`Fixes #N`) or
+        # names it in its own title/body. A cross-reference also fires for a
+        # mere mention in a PR *comment* -- e.g. "moved this to its own issue,
+        # #2760" on the PR that fixed a different issue (#2620) -- and listing
+        # that PR here showed an unfixed issue as having a fix.
+        mention = re.compile(rf"(?<![\w/])#{n['number']}(?!\d)|/issues/{n['number']}(?!\d)")
         linked: list[dict[str, Any]] = []
         for ev in n.get("timelineItems", {}).get("nodes", []) or []:
             src = (ev or {}).get("source") or {}
             num = src.get("number")
+            if not (ev.get("willCloseTarget")
+                    or mention.search(f"{src.get('title') or ''}\n{src.get('body') or ''}")):
+                continue
             if num and all(x["number"] != num for x in linked):
                 linked.append({
                     "number": num,
