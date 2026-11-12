@@ -84,12 +84,19 @@ jobs:
   #
   # So this calls the Pages deployment API itself, the same requests
   # deploy-pages makes, with a per-run build version. deploy-pages takes no
-  # input for it, and a step-level `env: GITHUB_SHA` is ignored (tried in
-  # 637b573: the payload still carried the plain sha).
+  # input for it, a step-level `env: GITHUB_SHA` is ignored (tried in
+  # 637b573), and the API 404s a version that is not a commit in the repo
+  # (tried in 7b87ed6). So each run makes its own commit object: HEAD's tree,
+  # HEAD as parent, on no branch, so no history changes. If that fails the
+  # step falls back to the plain sha, which is deploy-pages' behaviour.
   deploy:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write  # create the per-run commit object (no ref is updated)
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -99,7 +106,16 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo
-            const version = `${context.sha}-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+            let version = context.sha
+            try {
+              const { data: head } = await github.rest.git.getCommit({ owner, repo, commit_sha: context.sha })
+              const { data: c } = await github.rest.git.createCommit({ owner, repo, tree: head.tree.sha,
+                parents: [context.sha],
+                message: `pages deploy: run ${context.runId} attempt ${process.env.GITHUB_RUN_ATTEMPT}` })
+              version = c.sha
+            } catch (e) {
+              core.warning(`per-run commit failed (${e.message}); deploying as ${context.sha}`)
+            }
             const { data: arts } = await github.rest.actions.listWorkflowRunArtifacts({
               owner, repo, run_id: context.runId, name: 'github-pages' })
             const artifact = arts.artifacts.find(a => a.name === 'github-pages')
