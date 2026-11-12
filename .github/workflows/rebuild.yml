@@ -87,5 +87,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # deploy-pages names the deployment after $GITHUB_SHA, and this repo
+      # redeploys the same commit dozens of times a day (only data.json
+      # changes). On 2026-11-12 Pages stopped swapping content for that
+      # reused ID: every deploy from 13:33 to 17:10 UTC "succeeded" while the
+      # site kept serving the 13:33 data.json, until a new commit gave the
+      # deploy a fresh ID. A per-run ID keeps every deploy distinct.
       - id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          GITHUB_SHA: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
