@@ -73,27 +73,51 @@ jobs:
         with:
           path: ./dist
 
-  # Observed 2026-08-16: every deploy reported `success` (waiting → queued →
-  # in_progress → success in ~15s) while the live origin stayed frozen on the
-  # 02:50 deploy for 6.5h — index.html and data.json both pinned to that
-  # last-modified, cache-busted requests included. Distinct from the stall
-  # pages-watchdog.yml handles, where deploys hang at `queued` instead.
-  # Every deployment carried the same sha (the data refresh needs no commit),
-  # so a sha-level dedupe on the Pages side is the leading suspect.
+  # Frozen-origin failure, seen 2026-08-16 (6.5h) and 2026-11-12 (13:33 to
+  # 17:10 UTC): every deploy reported `success` in ~15s while the site kept
+  # serving one old deploy, cache-busted requests included. Distinct from the
+  # stall pages-watchdog.yml handles, where deploys hang at `queued` instead.
+  # Both times every deploy carried the same build version: deploy-pages uses
+  # $GITHUB_SHA, and a data refresh needs no commit, so dozens of deploys a
+  # day share one deployment ID. On 11-12 a new commit (a fresh ID) unfroze
+  # it at once, which confirms the cause.
+  #
+  # So this calls the Pages deployment API itself, the same requests
+  # deploy-pages makes, with a per-run build version. deploy-pages takes no
+  # input for it, and a step-level `env: GITHUB_SHA` is ignored (tried in
+  # 637b573: the payload still carried the plain sha).
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # deploy-pages names the deployment after $GITHUB_SHA, and this repo
-      # redeploys the same commit dozens of times a day (only data.json
-      # changes). On 2026-11-12 Pages stopped swapping content for that
-      # reused ID: every deploy from 13:33 to 17:10 UTC "succeeded" while the
-      # site kept serving the 13:33 data.json, until a new commit gave the
-      # deploy a fresh ID. A per-run ID keeps every deploy distinct.
       - id: deployment
-        uses: actions/deploy-pages@v4
-        env:
-          GITHUB_SHA: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const version = `${context.sha}-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+            const { data: arts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner, repo, run_id: context.runId, name: 'github-pages' })
+            const artifact = arts.artifacts.find(a => a.name === 'github-pages')
+            if (!artifact) return core.setFailed('no github-pages artifact in this run')
+            const { data: dep } = await github.request('POST /repos/{owner}/{repo}/pages/deployments', {
+              owner, repo, artifact_id: artifact.id, pages_build_version: version,
+              oidc_token: await core.getIDToken() })
+            core.info(`Created Pages deployment ${version}`)
+            const id = dep.id || dep.status_url.split('/').pop()
+            const failed = ['deployment_failed', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost']
+            const deadline = Date.now() + 10 * 60 * 1000
+            while (Date.now() < deadline) {
+              await new Promise(r => setTimeout(r, 5000))
+              const { data: st } = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{id}', { owner, repo, id })
+              if (st.status === 'succeed') {
+                core.setOutput('page_url', dep.page_url)
+                return core.info(`Deployed ${dep.page_url}`)
+              }
+              if (failed.includes(st.status)) return core.setFailed(`Pages deployment ${version}: ${st.status}`)
+            }
+            core.setFailed(`Pages deployment ${version} did not finish within 10 min`)
